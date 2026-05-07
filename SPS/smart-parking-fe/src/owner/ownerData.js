@@ -2,10 +2,11 @@ export const OWNER_NAV_ITEMS = [
   { to: "/owner", label: "Tổng quan", icon: "dashboard" },
   { to: "/owner/parking", label: "Quản lý bãi đỗ", icon: "parking" },
   { to: "/owner/bookings", label: "Quản lý đặt chỗ", icon: "booking" },
+  { to: "/owner/booking-owner", label: "Đặt chỗ giúp khách", icon: "booking" },
   { to: "/owner/customers", label: "Quản lý khách hàng", icon: "customer" },
   { to: "/owner/revenue", label: "Doanh thu", icon: "revenue" },
-  { to: "/owner/reviews", label: "Đánh giá", icon: "reviews" },
-  { to: "/owner/notifications", label: "Thông báo", icon: "bell" },
+  { to: "/owner/reviews", label: "Đánh giá tổng quan", icon: "reviews" },
+  { to: "/owner/review-replies", label: "Phản hồi đánh giá", icon: "reviews" },
   { to: "/owner/settings", label: "Cài đặt & nhân viên", icon: "settings" },
 ];
 
@@ -18,9 +19,9 @@ export const OWNER_ROUTE_META = {
     title: "Quản lý bãi đỗ",
     description: "Quản trị trạng thái từng chỗ đỗ, khu vực và năng lực vận hành.",
   },
-  "/owner/bookings": {
-    title: "Quản lý đặt chỗ",
-    description: "Kiểm soát danh sách booking, xác nhận lịch vào bãi và xử lý thay đổi.",
+  "/owner/booking-owner": {
+    title: "Đặt chỗ giúp khách hàng",
+    description: "Tạo booking cho khách hàng với xác nhận từ họ.",
   },
   "/owner/customers": {
     title: "Quản lý khách hàng",
@@ -35,8 +36,12 @@ export const OWNER_ROUTE_META = {
     description: "Quản lý thông tin owner, cấu hình bãi đỗ và tạo tài khoản nhân viên.",
   },
   "/owner/reviews": {
-    title: "Đánh giá khách hàng",
-    description: "Theo dõi phản hồi của người dùng và trả lời trực tiếp cho bãi đỗ của bạn.",
+    title: "Đánh giá tổng quan",
+    description: "Xem tổng quan đánh giá, điểm số và phân loại đánh giá của khách hàng.",
+  },
+  "/owner/review-replies": {
+    title: "Phản hồi đánh giá",
+    description: "Trả lời trực tiếp các đánh giá của khách hàng cho bãi đỗ của bạn.",
   },
   "/owner/notifications": {
     title: "Thông báo & Cảnh báo",

@@ -1,18 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { formatDateTime, SectionCard } from "../../owner/OwnerUI";
 import { useOwnerContext } from "../../owner/useOwnerContext";
 import API from "../../services/api";
 
 export default function OwnerReviews() {
-  const { ownerData, actions } = useOwnerContext();
+  const { ownerData } = useOwnerContext();
   const [reviews, setReviews] = useState(ownerData.reviews);
   const [summary, setSummary] = useState({ avg_rating: 0, total_reviews: 0, rating_distribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 }, unreplied_count: 0 });
   const [sortMode, setSortMode] = useState("newest");
   const [filterMode, setFilterMode] = useState("all");
-  const [replyingId, setReplyingId] = useState("");
-  const [replies, setReplies] = useState(() => Object.fromEntries(ownerData.reviews.map((item) => [item.id, item.ownerReply || ""])));
-  const [savedId, setSavedId] = useState("");
-  const [savingId, setSavingId] = useState("");
 
   useEffect(() => {
     const fetchReviews = async () => {
@@ -26,10 +23,8 @@ export default function OwnerReviews() {
           rating_distribution: res.data?.rating_distribution || { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
           unreplied_count: res.data?.unreplied_count || 0,
         });
-        setReplies(Object.fromEntries(nextReviews.map((item) => [item.id, item.ownerReply || ""])));
       } catch {
         setReviews(ownerData.reviews);
-        setReplies(Object.fromEntries(ownerData.reviews.map((item) => [item.id, item.ownerReply || ""])));
       }
     };
     fetchReviews();
@@ -67,6 +62,11 @@ export default function OwnerReviews() {
             ))}
           </article>
         </div>
+        <div className="payment-success-actions" style={{ marginBottom: 12 }}>
+          <Link to="/owner/review-replies" className="btn-primary owner-btn">
+            Phản hồi đánh giá
+          </Link>
+        </div>
         <div className="owner-review-filters">
           <button type="button" className={`owner-filter-btn ${sortMode === "newest" ? "active" : ""}`} onClick={() => setSortMode("newest")}>Mới nhất</button>
           <button type="button" className={`owner-filter-btn ${sortMode === "highest" ? "active" : ""}`} onClick={() => setSortMode("highest")}>Điểm cao</button>
@@ -88,55 +88,7 @@ export default function OwnerReviews() {
               <p className="owner-review-content">{review.content}</p>
               {review.ownerReply ? (
                 <p className="owner-review-content"><strong>💬 Phản hồi của bạn:</strong> {review.ownerReply}</p>
-              ) : (
-                <div>
-                  {replyingId === review.id ? (
-                    <label className="owner-review-reply">
-                      Phản hồi của bãi
-                      <textarea
-                        className="owner-input owner-textarea"
-                        rows="3"
-                        maxLength={300}
-                        value={replies[review.id] || ""}
-                        onChange={(event) => {
-                          setSavedId("");
-                          setReplies((prev) => ({ ...prev, [review.id]: event.target.value }));
-                        }}
-                        placeholder="Nhập phản hồi cho khách hàng"
-                      />
-                    </label>
-                  ) : null}
-                  <div className="owner-review-actions">
-                    {savedId === review.id ? <p className="owner-save-note">Đã lưu phản hồi.</p> : <span />}
-                    {replyingId !== review.id ? (
-                      <button type="button" className="btn-primary owner-btn owner-btn--small" onClick={() => setReplyingId(review.id)}>
-                        Phản hồi đánh giá này
-                      </button>
-                    ) : (
-                      <>
-                        <button
-                          type="button"
-                          className="btn-primary owner-btn owner-btn--small"
-                          disabled={savingId === review.id || !(replies[review.id] || "").trim()}
-                          onClick={async () => {
-                            setSavingId(review.id);
-                            const ok = await actions.updateReviewReply(review.id, replies[review.id] || "");
-                            if (ok) {
-                              setSavedId(review.id);
-                              setReplyingId("");
-                              setReviews((prev) => prev.map((item) => (item.id === review.id ? { ...item, ownerReply: replies[review.id] || "" } : item)));
-                            }
-                            setSavingId("");
-                          }}
-                        >
-                          Gửi phản hồi
-                        </button>
-                        <button type="button" className="payment-success-btn secondary" onClick={() => setReplyingId("")}>Hủy</button>
-                      </>
-                    )}
-                  </div>
-                </div>
-              )}
+              ) : null}
             </article>
           ))}
         </div>

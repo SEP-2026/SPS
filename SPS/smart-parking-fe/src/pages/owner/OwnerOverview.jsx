@@ -152,9 +152,9 @@ export default function OwnerOverview() {
               <strong>Xem booking</strong>
               <span>Kiểm tra booking hôm nay.</span>
             </Link>
-            <Link to="/scan" className="owner-quick-action">
-              <strong>Quét QR</strong>
-              <span>Hỗ trợ xe vào hoặc ra bãi.</span>
+            <Link to="/owner/employees" className="owner-quick-action">
+              <strong>Tài khoản bãi</strong>
+              <span>Tạo tài khoản cho nhân viên quét QR tại cổng.</span>
             </Link>
             <Link to="/owner/reviews" className="owner-quick-action">
               <strong>⭐ Đánh giá gần đây</strong>

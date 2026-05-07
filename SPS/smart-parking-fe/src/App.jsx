@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { BrowserRouter, Navigate, NavLink, Route, Routes, useLocation, useNavigate } from "react-router-dom";
+import { Navigate, NavLink, Route, Routes, useLocation } from "react-router-dom";
 
 import Booking from "./pages/Booking";
 import BookingHistory from "./pages/BookingHistory";
@@ -124,16 +124,11 @@ function App() {
     return null;
   }
 
-  return (
-    <BrowserRouter>
-      <AppBody auth={auth} role={role} onLogin={setAuth} onLogout={handleLogout} />
-    </BrowserRouter>
-  );
+  return <AppBody auth={auth} role={role} onLogin={setAuth} onLogout={handleLogout} />;
 }
 
 function AppBody({ auth, role, onLogin, onLogout }) {
   const location = useLocation();
-  const navigate = useNavigate();
   const [notifications, setNotifications] = useState(() => loadNotifications());
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const isOwnerWorkspace = location.pathname.startsWith("/owner");
@@ -254,7 +249,7 @@ function AppBody({ auth, role, onLogin, onLogout }) {
       ) : null}
 
       <div className="page-transition">
-        <Routes>
+        <Routes location={location} key={`${location.pathname}${location.search}${location.hash}`}>
         <Route
           path="/login"
           element={auth ? <Navigate to={defaultAuthedRoute} replace /> : <Login onLogin={onLogin} />}

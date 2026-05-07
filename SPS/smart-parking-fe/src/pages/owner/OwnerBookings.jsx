@@ -10,6 +10,8 @@ export default function OwnerBookings() {
   const [currentPage, setCurrentPage] = useState(1);
   const [viewMode, setViewMode] = useState("row");
   const [selectedBooking, setSelectedBooking] = useState(null);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [currentPage, setCurrentPage] = useState(1);
 
   const rowLimitOptions = [5, 10, 25];
   const viewOptions = [
@@ -21,18 +23,20 @@ export default function OwnerBookings() {
     statusFilter === "all" ? true : booking.status === statusFilter
   )), [ownerData.bookings, statusFilter]);
 
-  const pageCount = Math.max(1, Math.ceil(filteredBookings.length / rowsPerPage));
+  const totalPages = Math.ceil(filteredBookings.length / itemsPerPage);
+  const paginatedBookings = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    return filteredBookings.slice(startIndex, startIndex + itemsPerPage);
+  }, [filteredBookings, currentPage, itemsPerPage]);
 
-  useEffect(() => {
-    if (currentPage > pageCount) {
-      setCurrentPage(pageCount);
-    }
-  }, [currentPage, pageCount]);
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+  };
 
-  const visibleBookings = useMemo(
-    () => filteredBookings.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage),
-    [filteredBookings, currentPage, rowsPerPage]
-  );
+  const handleItemsPerPageChange = (value) => {
+    setItemsPerPage(Number(value));
+    setCurrentPage(1);
+  };
 
   return (
     <div className="owner-page-grid">
@@ -40,7 +44,7 @@ export default function OwnerBookings() {
         title="Danh sách đơn đặt chỗ"
         subtitle="Theo dõi booking của bãi và hỗ trợ khách khi phát sinh sự cố như quên điện thoại."
         actions={
-          <>
+          <div className="owner-actions-row">
             <select className="owner-input owner-select" value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
               <option value="all">Tất cả trạng thái</option>
               <option value="pending">Chờ xác nhận</option>
@@ -49,31 +53,12 @@ export default function OwnerBookings() {
               <option value="completed">Hoàn tất</option>
               <option value="cancelled">Đã hủy</option>
             </select>
-            <div className="owner-segment owner-segment--limits">
-              {rowLimitOptions.map((limit) => (
-                <button
-                  key={limit}
-                  type="button"
-                  className={`owner-segment-button ${rowsPerPage === limit ? "active" : ""}`}
-                  onClick={() => setRowsPerPage(limit)}
-                >
-                  {limit}
-                </button>
-              ))}
-            </div>
-            <div className="owner-segment owner-segment--view-mode">
-              {viewOptions.map((option) => (
-                <button
-                  key={option.value}
-                  type="button"
-                  className={`owner-segment-button ${viewMode === option.value ? "active" : ""}`}
-                  onClick={() => setViewMode(option.value)}
-                >
-                  {option.label}
-                </button>
-              ))}
-            </div>
-          </>
+            <select className="owner-input owner-select" value={itemsPerPage} onChange={(event) => handleItemsPerPageChange(event.target.value)}>
+              <option value={5}>5 / trang</option>
+              <option value={10}>10 / trang</option>
+              <option value={25}>25 / trang</option>
+            </select>
+          </div>
         }
       >
         {isSyncing ? <p className="owner-empty">Đang đồng bộ booking từ CSDL...</p> : null}
@@ -99,65 +84,31 @@ export default function OwnerBookings() {
                   <td colSpan={10} className="owner-empty-cell">Chưa có booking nào khớp bộ lọc hiện tại.</td>
                 </tr>
               ) : null}
-              {viewMode === "row" ? (
-                visibleBookings.map((booking) => (
-                  <tr key={booking.id}>
-                    <td>{booking.code}</td>
-                    <td>{booking.parkingLotName || "Chưa có bãi"}</td>
-                    <td>{booking.user}</td>
-                    <td>{booking.plate}</td>
-                    <td>{formatDateTime(booking.startTime)}</td>
-                    <td>{formatDateTime(booking.endTime)}</td>
-                    <td>
-                      {formatDateTime(booking.bookingStartTime)}
-                      <br />
-                      {formatDateTime(booking.bookingEndTime)}
-                    </td>
-                    <td>{formatCurrency(booking.price)}</td>
-                    <td><StatusBadge status={booking.status} /></td>
-                    <td>
-                      <div className="owner-row-actions">
-                        {booking.status === "pending" ? (
-                          <button type="button" className="btn-primary owner-btn owner-btn--small" onClick={() => actions.updateBookingStatus(booking.id, "confirmed")}>Xác nhận</button>
-                        ) : null}
-                        {booking.status !== "cancelled" && booking.status !== "completed" ? (
-                          <button type="button" className="btn-secondary owner-btn owner-btn--small owner-btn--danger" onClick={() => actions.updateBookingStatus(booking.id, "cancelled")}>Hủy</button>
-                        ) : null}
-                        <button type="button" className="btn-secondary owner-btn owner-btn--small" onClick={() => setSelectedBooking({ ...booking, supportMode: true })}>Hỗ trợ khách</button>
-                        <button type="button" className="btn-secondary owner-btn owner-btn--small" onClick={() => setSelectedBooking(booking)}>Chi tiết</button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan={10} className="owner-card-view-cell">
-                    <div className="owner-booking-card-grid">
-                      {visibleBookings.map((booking) => (
-                        <article className="owner-booking-card" key={booking.id}>
-                          <div className="owner-booking-card-head">
-                            <strong>{booking.code}</strong>
-                            <StatusBadge status={booking.status} />
-                          </div>
-                          <div className="owner-booking-card-body">
-                            <p><span>Bãi đỗ</span> {booking.parkingLotName || "Chưa có bãi"}</p>
-                            <p><span>Người dùng</span> {booking.user}</p>
-                            <p><span>Biển số</span> {booking.plate}</p>
-                            <p><span>Giờ booking</span> {formatDateTime(booking.bookingStartTime)} - {formatDateTime(booking.bookingEndTime)}</p>
-                            <p><span>Giá tiền</span> {formatCurrency(booking.price)}</p>
-                          </div>
-                          <div className="owner-booking-card-actions">
-                            {booking.status === "pending" ? (
-                              <button type="button" className="btn-primary owner-btn owner-btn--small" onClick={() => actions.updateBookingStatus(booking.id, "confirmed")}>Xác nhận</button>
-                            ) : null}
-                            {booking.status !== "cancelled" && booking.status !== "completed" ? (
-                              <button type="button" className="btn-secondary owner-btn owner-btn--small owner-btn--danger" onClick={() => actions.updateBookingStatus(booking.id, "cancelled")}>Hủy</button>
-                            ) : null}
-                            <button type="button" className="btn-secondary owner-btn owner-btn--small" onClick={() => setSelectedBooking({ ...booking, supportMode: true })}>Hỗ trợ khách</button>
-                            <button type="button" className="btn-secondary owner-btn owner-btn--small" onClick={() => setSelectedBooking(booking)}>Chi tiết</button>
-                          </div>
-                        </article>
-                      ))}
+              {paginatedBookings.map((booking) => (
+                <tr key={booking.id}>
+                  <td>{booking.code}</td>
+                  <td>{booking.parkingLotName || "Chưa có bãi"}</td>
+                  <td>{booking.user}</td>
+                  <td>{booking.plate}</td>
+                  <td>{formatDateTime(booking.startTime)}</td>
+                  <td>{formatDateTime(booking.endTime)}</td>
+                  <td>
+                    {formatDateTime(booking.bookingStartTime)}
+                    <br />
+                    {formatDateTime(booking.bookingEndTime)}
+                  </td>
+                  <td>{formatCurrency(booking.price)}</td>
+                  <td><StatusBadge status={booking.status} /></td>
+                  <td>
+                    <div className="owner-row-actions">
+                      {booking.status === "pending" ? (
+                        <button type="button" className="btn-primary owner-btn owner-btn--small" onClick={() => actions.updateBookingStatus(booking.id, "confirmed")}>Xác nhận</button>
+                      ) : null}
+                      {booking.status !== "cancelled" && booking.status !== "completed" ? (
+                        <button type="button" className="btn-secondary owner-btn owner-btn--small owner-btn--danger" onClick={() => actions.updateBookingStatus(booking.id, "cancelled")}>Hủy</button>
+                      ) : null}
+                      <button type="button" className="btn-secondary owner-btn owner-btn--small" onClick={() => setSelectedBooking({ ...booking, supportMode: true })}>Hỗ trợ khách</button>
+                      <button type="button" className="btn-secondary owner-btn owner-btn--small" onClick={() => setSelectedBooking(booking)}>Chi tiết</button>
                     </div>
                   </td>
                 </tr>
@@ -165,36 +116,29 @@ export default function OwnerBookings() {
             </tbody>
           </table>
         </div>
-        {filteredBookings.length > rowsPerPage ? (
+        {filteredBookings.length > 0 && (
           <div className="owner-pagination">
             <button
               type="button"
-              className="owner-pagination-button owner-pagination-button--arrow"
+              className="btn-secondary owner-btn owner-btn--small"
               disabled={currentPage === 1}
-              onClick={() => setCurrentPage((page) => Math.max(page - 1, 1))}
+              onClick={() => handlePageChange(currentPage - 1)}
             >
-              ‹
+              ← Trang trước
             </button>
-            {Array.from({ length: pageCount }, (_, index) => index + 1).map((page) => (
-              <button
-                key={page}
-                type="button"
-                className={`owner-pagination-button ${currentPage === page ? "active" : ""}`}
-                onClick={() => setCurrentPage(page)}
-              >
-                {page}
-              </button>
-            ))}
+            <div className="owner-pagination-info">
+              Trang {currentPage} / {totalPages} ({filteredBookings.length} kết quả)
+            </div>
             <button
               type="button"
-              className="owner-pagination-button owner-pagination-button--arrow"
-              disabled={currentPage === pageCount}
-              onClick={() => setCurrentPage((page) => Math.min(page + 1, pageCount))}
+              className="btn-secondary owner-btn owner-btn--small"
+              disabled={currentPage === totalPages}
+              onClick={() => handlePageChange(currentPage + 1)}
             >
-              ›
+              Trang sau →
             </button>
           </div>
-        ) : null}
+        )}
       </SectionCard>
 
       {selectedBooking ? createPortal(

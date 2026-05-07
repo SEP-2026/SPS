@@ -367,8 +367,8 @@ export default function OwnerLayout({ auth, onLogout }) {
         <div className="owner-sidebar-panel owner-sidebar-panel--compact">
           <p className="owner-sidebar-title">Lối tắt</p>
           <Link to="/" className="owner-shortcut">Trang bãi xe</Link>
-          <Link to="/booking" className="owner-shortcut">Đặt chỗ</Link>
-          <Link to="/scan" className="owner-shortcut">Quét QR</Link>
+          <Link to="/owner/booking-owner" className="owner-shortcut">Đặt chỗ</Link>
+          <Link to="/scan" className="owner-shortcut" data-discover="true">Quét QR</Link>
         </div>
 
         <button type="button" className="owner-logout" onClick={onLogout}>
