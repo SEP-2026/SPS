@@ -180,7 +180,7 @@ def employee_change_password(
     db: Session = Depends(get_db),
 ):
     if payload.new_password != payload.confirm_password:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Xac nhan mat khau khong khop")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Xác nhận mật khẩu không khớp")
     if payload.old_password == payload.new_password:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Mat khau moi phai khac mat khau cu")
 
@@ -191,9 +191,9 @@ def employee_change_password(
         .first()
     )
     if not employee:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Tai khoan nhan vien khong ton tai")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Tài khoản nhân viên không tồn tại")
     if not employee.password_hash or not check_password_hash(employee.password_hash, payload.old_password):
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Mat khau cu khong dung")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Mật khẩu cũ không đúng")
 
     ensure_strong_password(payload.new_password)
     new_hash = generate_password_hash(payload.new_password)

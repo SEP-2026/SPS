@@ -106,8 +106,7 @@ function App() {
               ...me.data,
             },
           };
-          saveAuth(nextAuth);
-          return nextAuth;
+          return saveAuth(nextAuth) || nextAuth;
         });
       } catch {
         clearAuth();
@@ -223,7 +222,7 @@ function AppBody({ auth, role, onLogin, onLogout }) {
               <NavLink
                 key={link.to}
                 to={link.to}
-                end={link.to === "/"}
+                end
                 className={({ isActive }) => `app-link${isActive ? " active" : ""}`}
               >
                 {link.label}
@@ -335,4 +334,3 @@ function AppBody({ auth, role, onLogin, onLogout }) {
 }
 
 export default App;
-

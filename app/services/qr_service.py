@@ -21,12 +21,12 @@ logger = logging.getLogger(__name__)
 
 
 STATUS_LABELS = {
-    "pending": "Cho thanh toan",
-    "booked": "Cho check-in",
-    "checked_in": "Dang trong bai",
-    "checked_out": "Da ra bai",
-    "completed": "Hoan tat",
-    "cancelled": "Da huy",
+    "pending": "Chờ thanh toán",
+    "booked": "Chờ check-in",
+    "checked_in": "Đang trong bãi",
+    "checked_out": "Đã ra bãi",
+    "completed": "Hoàn tất",
+    "cancelled": "Đã hủy",
 }
 
 
@@ -113,19 +113,19 @@ def generate_booking_qr_code(booking_id: int, db: Session) -> dict:
     slot_display = _resolve_slot_display(slot)
     status_text = STATUS_LABELS.get((booking.status or "").lower(), booking.status or "Unknown")
     if booking.actual_checkout and (booking.status or "").lower() in {"completed", "checked_out"}:
-        status_text = f"Da check-out luc {_format_datetime_vi(booking.actual_checkout)}"
+        status_text = f"Đã check-out lúc {_format_datetime_vi(booking.actual_checkout)}"
 
     human_readable_content = (
         "=== PHIEU GUI XE THONG MINH ===\n"
-        f"Ma dat cho  : #{booking.id}\n"
-        f"Bien so xe  : {license_plate}\n"
-        f"Bai do      : {parking_name}\n"
-        f"Vi tri      : {slot_display}\n"
-        f"Vao luc     : {_format_datetime_vi(booking.start_time)}\n"
-        f"Ra du kien  : {_format_datetime_vi(booking.expire_time)}\n"
-        f"Trang thai  : {status_text}\n"
+        f"Mã đặt chỗ  : #{booking.id}\n"
+        f"Biển số xe  : {license_plate}\n"
+        f"Bãi đỗ      : {parking_name}\n"
+        f"Vị trí      : {slot_display}\n"
+        f"Vào lúc     : {_format_datetime_vi(booking.start_time)}\n"
+        f"Ra dự kiến  : {_format_datetime_vi(booking.expire_time)}\n"
+        f"Trạng thái  : {status_text}\n"
         "================================\n"
-        "Quet tai cong de vao/ra bai xe\n"
+        "Quét tại cổng để vào/ra bãi xe\n"
         f"Hotline: {parking_phone}"
     )
 

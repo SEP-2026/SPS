@@ -19,7 +19,7 @@ class PaymentCreateRequest(BaseModel):
 
 class MockPaymentRequest(BaseModel):
     booking_id: int = Field(gt=0)
-    status: str = Field(regex="^(success|fail)$")
+    status: str = Field(pattern="^(success|fail)$")
 
 
 def _ensure_qr_directory() -> None:

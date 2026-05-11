@@ -135,7 +135,7 @@ def get_current_user(
 
     user = db.query(User).filter(User.id == user_id, User.is_active == 1).first()
     if not user:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Tai khoan khong ton tai hoac da bi khoa")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Tài khoản không tồn tại hoac da bi khoa")
     if user.status and user.status.lower() == "banned":
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Tai khoan da bi vo hieu hoa")
     return user
@@ -289,7 +289,7 @@ def forgot_password_reset(payload: ForgotPasswordResetRequest, db: Session = Dep
     new_hash = generate_password_hash(payload.new_password)
     user = db.query(User).filter(User.id == int(record["subject_id"]), User.is_active == 1).first()
     if not user:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Tai khoan khong ton tai")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Tài khoản không tồn tại")
 
     user.password_hash = new_hash
     user.password = "__legacy_disabled__"
@@ -313,7 +313,7 @@ def update_me(
 ):
     user = db.query(User).filter(User.id == current_user.id).with_for_update().first()
     if not user:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Nguoi dung khong ton tai")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Người dùng không tồn tại")
 
     if payload.name is not None:
         name = payload.name.strip()
@@ -350,7 +350,7 @@ def change_password(
 ):
     user = db.query(User).filter(User.id == current_user.id).with_for_update().first()
     if not user:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Nguoi dung khong ton tai")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Người dùng không tồn tại")
     if payload.old_password == payload.new_password:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Mat khau moi phai khac mat khau cu")
 

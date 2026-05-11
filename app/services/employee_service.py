@@ -50,7 +50,7 @@ def _get_owner_assignment(owner_id: int, parking_id: int, db: Session) -> OwnerP
 def _get_employee_parking(employee: User, db: Session) -> ParkingLot:
     parking_lot = db.query(ParkingLot).filter(ParkingLot.id == employee.parking_id).first()
     if not parking_lot:
-        raise HTTPException(status_code=404, detail="Không tìm th?y bãi du?c phân công")
+        raise HTTPException(status_code=404, detail="Không tìm thấy bãi được phân công")
     return parking_lot
 
 
@@ -74,7 +74,7 @@ def _compute_slot_metrics(parking_id: int, db: Session) -> tuple[int, int, int]:
     occupied_slots = (
         db.query(func.count())
         .select_from(Booking)
-        .filter(Booking.parking_id == parking_id, Booking.status == "checked_in")
+        .filter(Booking.parking_id == parking_id, Booking.status.in_(["pending", "booked", "checked_in"]))
         .scalar()
         or 0
     )
@@ -105,9 +105,9 @@ def _assert_employee_can_check_in(parking_id: int, db: Session) -> None:
     total_slots, occupied_slots, _ = _compute_slot_metrics(parking_id, db)
     state = _get_operational_state(parking_id, db)
     if state.status == "closed":
-        raise HTTPException(status_code=409, detail="Bãi dang dóng, không th? check-in")
+        raise HTTPException(status_code=409, detail="Bãi đang đóng, không thể check-in")
     if state.status == "full" or (total_slots > 0 and occupied_slots >= total_slots):
-        raise HTTPException(status_code=409, detail="Bãi dang d?y, không th? check-in")
+        raise HTTPException(status_code=409, detail="Bãi đang đầy, không thể check-in")
 
 
 def _serialize_employee(employee: User) -> dict:
@@ -191,13 +191,13 @@ def create_employee_for_owner(
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Owner account is not authorized")
 
     if owner.role != "owner":
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Ch? owner m?i t?o du?c employee")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Chỉ owner mới tạo được employee")
     if _get_owner_assignment(owner.id, parking_id, db) is None:
         raise HTTPException(status_code=403, detail="Owner email is not allowed to manage this parking")
 
     parking_lot = db.query(ParkingLot).filter(ParkingLot.id == parking_id).first()
     if not parking_lot:
-        raise HTTPException(status_code=404, detail="Khong tim thay bai do de tao tai khoan nhan vien")
+        raise HTTPException(status_code=404, detail="Không tìm thấy bãi để tạo tài khoản nhân viên")
 
     login_token = _parking_login_token(parking_lot.name)
     normalized_email = f"bx{login_token}@gmail.com"
@@ -210,7 +210,7 @@ def create_employee_for_owner(
         raise HTTPException(status_code=400, detail="Employee phone is required")
     existing_user = db.query(User).filter(User.email == normalized_email).first()
     if existing_user:
-        raise HTTPException(status_code=409, detail="Email employee dã t?n t?i")
+        raise HTTPException(status_code=409, detail="Email employee đã tồn tại")
 
     user = User(
         name=normalized_full_name,
@@ -530,7 +530,7 @@ def get_employee_slots_overview(employee: User, db: Session) -> dict:
                 "booking_id": int(active_booking.id) if active_booking else None,
                 "booking_status": (active_booking.status if active_booking else None),
                 "zone": slot.zone or "Chua phân khu",
-                "level": slot.level or "Chua gán t?ng",
+                "level": slot.level or "Chưa gán tầng",
                 "status": status,
                 "owner_name": active_booking.user.name if active_booking and active_booking.user else None,
                 "owner_phone": active_booking.user.phone if active_booking and active_booking.user else None,
@@ -716,7 +716,7 @@ def employee_get_gate_booking(employee: User, booking_id: int, db: Session) -> d
     if not booking:
         raise HTTPException(status_code=404, detail="Không tìm th?y booking")
     if int(booking.parking_id or 0) != int(parking_lot.id):
-        raise HTTPException(status_code=403, detail="Employee không có quy?n thao tác t?i bãi này")
+        raise HTTPException(status_code=403, detail="Employee không có quyền thao tác tại bãi này")
     payment = _get_payment(booking.id, db, lock=False)
     _log_activity(
         employee,

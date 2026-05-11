@@ -171,10 +171,19 @@ const BOOKING_MODE_OPTIONS = [
   },
 ];
 
+const getEarliestStartDate = () => {
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+  const hoursPassedToday = (now.getTime() - today.getTime()) / (1000 * 60 * 60);
+  // Allow today if less than 12 hours have passed since 00:00, otherwise use tomorrow
+  return hoursPassedToday < 12 ? today : new Date(today.getTime() + 24 * 60 * 60 * 1000);
+};
+
 const buildDefaultBookingForm = (profile = {}) => {
-  const now = Date.now();
-  const startDate = new Date(now + 24 * 60 * 60 * 1000);
-  const endDate = new Date(now + 2 * 24 * 60 * 60 * 1000);
+  const now = new Date();
+  const startDateDaily = getEarliestStartDate();
+  const endDateDaily = new Date(startDateDaily.getTime() + 24 * 60 * 60 * 1000);
+  const afterTwoHours = new Date(now.getTime() + 2 * 60 * 60 * 1000);
   return {
     ownerName: profile?.name || "",
     licensePlate: profile?.vehicle_plate || profile?.licensePlate || "",
@@ -184,10 +193,10 @@ const buildDefaultBookingForm = (profile = {}) => {
     seats: "",
     brand: "",
     bookingMode: "hourly",
-    checkinTime: toDatetimeLocalValue(new Date(now + 60 * 60 * 1000)),
-    checkoutTime: toDatetimeLocalValue(new Date(now + 2 * 60 * 60 * 1000)),
-    startDate: toDateInputValue(startDate),
-    endDate: toDateInputValue(endDate),
+    checkinTime: toDatetimeLocalValue(new Date(now.getTime() + 60 * 60 * 1000)),
+    checkoutTime: toDatetimeLocalValue(afterTwoHours),
+    startDate: toDateInputValue(startDateDaily),
+    endDate: toDateInputValue(endDateDaily),
     monthCount: 1,
   };
 };
@@ -236,6 +245,7 @@ const normalizeSelectedLot = (lot) => {
 
 export default function Booking() {
   const location = useLocation();
+  const isBookingRoute = location.pathname === "/booking";
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const auth = getAuth();
@@ -589,7 +599,8 @@ export default function Booking() {
 
   const handleBookingModeChange = (mode) => {
     const now = new Date();
-    const nextDay = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+    const startDateDaily = getEarliestStartDate();
+    const endDateDaily = new Date(startDateDaily.getTime() + 24 * 60 * 60 * 1000);
     const afterTwoHours = new Date(now.getTime() + 2 * 60 * 60 * 1000);
 
     setBookingForm((prev) => {
@@ -602,8 +613,8 @@ export default function Booking() {
         ? toDatetimeLocalValue(afterTwoHours)
         : prev.checkoutTime;
 
-      const startDate = prev.startDate || toDateInputValue(nextDay);
-      const endDate = prev.endDate || toDateInputValue(new Date(nextDay.getTime() + 24 * 60 * 60 * 1000));
+      const startDate = prev.startDate || toDateInputValue(startDateDaily);
+      const endDate = prev.endDate || toDateInputValue(endDateDaily);
 
       return {
         ...prev,
@@ -764,6 +775,10 @@ export default function Booking() {
       setSavingVehicle(false);
     }
   };
+
+  if (!isBookingRoute) {
+    return null;
+  }
 
   return (
     <section className="page-wrap">
@@ -1127,6 +1142,7 @@ export default function Booking() {
                           <input
                             className="booking-input"
                             type="date"
+                            min={toDateInputValue(getEarliestStartDate())}
                             value={bookingForm.startDate}
                             onChange={(e) => setBookingForm((prev) => ({ ...prev, startDate: e.target.value }))}
                           />
@@ -1136,6 +1152,7 @@ export default function Booking() {
                           <input
                             className="booking-input"
                             type="date"
+                            min={bookingForm.startDate || toDateInputValue(getEarliestStartDate())}
                             value={bookingForm.endDate}
                             onChange={(e) => setBookingForm((prev) => ({ ...prev, endDate: e.target.value }))}
                           />
@@ -1150,6 +1167,7 @@ export default function Booking() {
                           <input
                             className="booking-input"
                             type="date"
+                            min={toDateInputValue(getEarliestStartDate())}
                             value={bookingForm.startDate}
                             onChange={(e) => setBookingForm((prev) => ({ ...prev, startDate: e.target.value }))}
                           />

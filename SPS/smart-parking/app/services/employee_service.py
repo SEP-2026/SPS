@@ -271,6 +271,32 @@ class EmployeeService:
         )
 
     @staticmethod
+    def get_gate_booking(db: Session, employee: User, booking_id: int) -> dict:
+        parking_lot_id = EmployeeService._employee_parking_lot_id(employee)
+        booking = db.query(Booking).filter(Booking.id == booking_id).first()
+        if not booking:
+            raise HTTPException(status_code=404, detail="Không tìm thấy booking")
+        if int(booking.parking_lot_id or 0) != int(parking_lot_id):
+            raise HTTPException(status_code=403, detail="Booking không thuộc bãi được phân công")
+        
+        user = booking.user if booking.user else None
+        return {
+            "booking_id": booking.id,
+            "booking_code": f"BK-{booking.id}",
+            "booking_status": booking.status,
+            "booking_mode": booking.booking_mode,
+            "user_name": user.name if user else None,
+            "user_phone": user.phone if user else None,
+            "vehicle_plate": user.vehicle_plate if user else None,
+            "slot_code": booking.slot.code if booking.slot else None,
+            "zone": booking.slot.zone if booking.slot else None,
+            "start_time": booking.start_time,
+            "expire_time": booking.expire_time,
+            "parking_lot_id": booking.parking_lot_id,
+            "total_amount": booking.total_amount,
+        }
+
+    @staticmethod
     def _parse_qr_data(qr_data: str) -> dict[str, Any]:
         raw = (qr_data or "").strip()
         if not raw:

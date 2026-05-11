@@ -70,13 +70,18 @@ body {
   background: linear-gradient(180deg, rgba(20, 56, 84, 0.88), rgba(16, 47, 72, 0.82));
   position: sticky;
   top: 0;
-  z-index: 2000;
+  z-index: 20000;
+  isolation: isolate;
+  pointer-events: auto;
 }
 
 .app-nav-links {
   display: flex;
   gap: 10px;
   flex-wrap: wrap;
+  position: relative;
+  z-index: 1;
+  pointer-events: auto;
 }
 
 .app-nav-user {
@@ -87,6 +92,8 @@ body {
   font-size: 13px;
   font-weight: 500;
   position: relative;
+  z-index: 1;
+  pointer-events: auto;
 }
 
 .app-logout-btn {
@@ -332,6 +339,8 @@ body {
 }
 
 .page-transition {
+  position: relative;
+  z-index: 0;
   animation: page-fade-in 0.35s ease-out;
 }
 

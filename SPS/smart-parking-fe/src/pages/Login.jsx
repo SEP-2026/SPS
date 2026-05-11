@@ -53,8 +53,7 @@ export default function Login({ onLogin }) {
         token: res.data.token,
         user: res.data.user,
       };
-      saveAuth(authPayload);
-      onLogin(authPayload);
+      onLogin(saveAuth(authPayload));
     } catch (err) {
       setError(err?.response?.data?.detail || "Đăng nhập thất bại");
     } finally {

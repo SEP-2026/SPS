@@ -6,8 +6,58 @@ const API = axios.create({
 
 const AUTH_KEY = "smart_parking_auth";
 
+const AUTH_USER_FIELDS = [
+  "id",
+  "email",
+  "username",
+  "role",
+  "owner_id",
+  "parking_id",
+  "status",
+  "name",
+  "full_name",
+  "phone",
+  "vehicle_plate",
+  "vehicle_color",
+  "managed_district_id",
+  "managed_district",
+];
+
+const normalizeUser = (user) => {
+  if (!user || typeof user !== "object") {
+    return null;
+  }
+
+  return AUTH_USER_FIELDS.reduce((result, key) => {
+    if (Object.prototype.hasOwnProperty.call(user, key)) {
+      result[key] = user[key];
+    }
+    return result;
+  }, {});
+};
+
+const normalizeAuthPayload = (payload) => {
+  if (!payload || typeof payload !== "object" || !payload.token) {
+    return null;
+  }
+
+  return {
+    token: String(payload.token),
+    token_type: payload.token_type || "bearer",
+    expires_in: payload.expires_in,
+    user: normalizeUser(payload.user),
+  };
+};
+
 export const saveAuth = (payload) => {
-  localStorage.setItem(AUTH_KEY, JSON.stringify(payload));
+  const normalized = normalizeAuthPayload(payload);
+  if (!normalized) {
+    clearAuth();
+    return null;
+  }
+
+  localStorage.setItem(AUTH_KEY, JSON.stringify(normalized));
+  return normalized;
 };
 
 export const clearAuth = () => {
@@ -21,7 +71,17 @@ export const getAuth = () => {
   }
 
   try {
-    return JSON.parse(raw);
+    const normalized = normalizeAuthPayload(JSON.parse(raw));
+    if (!normalized) {
+      clearAuth();
+      return null;
+    }
+
+    const normalizedRaw = JSON.stringify(normalized);
+    if (normalizedRaw !== raw) {
+      localStorage.setItem(AUTH_KEY, normalizedRaw);
+    }
+    return normalized;
   } catch {
     clearAuth();
     return null;

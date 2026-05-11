@@ -12,8 +12,8 @@ from starlette.types import ASGIApp
 class SecurityGatewayMiddleware(BaseHTTPMiddleware):
     def __init__(self, app: ASGIApp) -> None:
         super().__init__(app)
-        self.rate_limit_per_minute = int(os.getenv("GATEWAY_RATE_LIMIT_PER_MINUTE", "180"))
-        self.login_rate_limit_per_minute = int(os.getenv("GATEWAY_LOGIN_RATE_LIMIT_PER_MINUTE", "10"))
+        self.rate_limit_per_minute = int(os.getenv("GATEWAY_RATE_LIMIT_PER_MINUTE", "600"))
+        self.login_rate_limit_per_minute = int(os.getenv("GATEWAY_LOGIN_RATE_LIMIT_PER_MINUTE", "30"))
         self.max_request_bytes = int(os.getenv("GATEWAY_MAX_REQUEST_BYTES", str(2 * 1024 * 1024)))
         self._request_buckets: dict[str, deque[float]] = defaultdict(deque)
         self._login_buckets: dict[str, deque[float]] = defaultdict(deque)

@@ -6,18 +6,9 @@ import { useOwnerContext } from "../../owner/useOwnerContext";
 export default function OwnerBookings() {
   const { ownerData, actions, isSyncing } = useOwnerContext();
   const [statusFilter, setStatusFilter] = useState("all");
-  const [rowsPerPage, setRowsPerPage] = useState(10);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [viewMode, setViewMode] = useState("row");
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
-
-  const rowLimitOptions = [5, 10, 25];
-  const viewOptions = [
-    { value: "row", label: "Hiện ngang" },
-    { value: "card", label: "Từng ô" },
-  ];
 
   const filteredBookings = useMemo(() => ownerData.bookings.filter((booking) => (
     statusFilter === "all" ? true : booking.status === statusFilter
@@ -112,7 +103,7 @@ export default function OwnerBookings() {
                     </div>
                   </td>
                 </tr>
-              )}
+              ))}
             </tbody>
           </table>
         </div>

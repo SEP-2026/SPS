@@ -49,7 +49,6 @@ export default function ParkingMap({ lotId, lotName, onSelectSlot }) {
     if (!selectedSlot) {
       return;
     }
-    console.log("ParkingMap: booking slot", selectedSlot);
     // Navigate to booking page with pre-filled slot information
     navigate(`/booking?lotId=${lotId}&slotId=${selectedSlot.id}&slotName=${selectedSlot.code || selectedSlot.slot_number}`);
   };

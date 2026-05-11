@@ -5,6 +5,7 @@ from app.controllers.employee_controller import (
     create_employee_controller,
     employee_check_in_controller,
     employee_check_out_controller,
+    employee_gate_booking_controller,
     employee_history_controller,
     employee_login_controller,
     employee_parking_lot_controller,
@@ -220,3 +221,12 @@ def get_history(
 @router.get("/me", response_model=EmployeePublicInfo)
 def me(employee: User = Depends(authorize("employee"))):
     return _serialize_employee(employee)
+
+
+@router.get("/bookings/{booking_id}")
+def get_booking(
+    booking_id: int,
+    db: Session = Depends(get_db),
+    employee: User = Depends(authorize("employee")),
+):
+    return employee_gate_booking_controller(db=db, employee=employee, booking_id=booking_id)

@@ -188,6 +188,60 @@ def seed_default_user(district_map: dict[str, int]):
     print("Seeded default users!")
 
 
+def seed_employees():
+    """Seed employee accounts assigned to parking lots"""
+    owner = db.query(User).filter(User.email == "owner1@gmail.com", User.role == "owner").first()
+    first_lot = db.query(ParkingLot).order_by(ParkingLot.id.asc()).first()
+
+    if not owner or not first_lot:
+        print("Cannot seed employees: missing owner or parking lot")
+        return
+
+    employees = [
+        {
+            "name": "Nhân viên 1",
+            "email": "employee1@gmail.com",
+            "phone": "0901000001",
+            "password": "123456",
+        },
+        {
+            "name": "Nhân viên 2",
+            "email": "employee2@gmail.com",
+            "phone": "0901000002",
+            "password": "123456",
+        },
+    ]
+
+    for item in employees:
+        employee = db.query(User).filter(User.email == item["email"], User.role == "employee").first()
+        if not employee:
+            employee = User(
+                name=item["name"],
+                email=item["email"],
+                phone=item["phone"],
+                owner_id=owner.id,
+                parking_id=first_lot.id,
+                role="employee",
+                status="active",
+                is_active=1,
+            )
+            db.add(employee)
+
+        employee.name = item["name"]
+        employee.email = item["email"]
+        employee.phone = item["phone"]
+        employee.owner_id = owner.id
+        employee.parking_id = first_lot.id
+        employee.role = "employee"
+        employee.status = "active"
+        employee.is_active = 1
+        employee.password_hash = generate_password_hash(item["password"])
+        employee.password = "__legacy_disabled__"
+
+    db.commit()
+    print("Seeded employees!")
+
+
 def sync_legacy_owner_districts(district_map: dict[str, int]):
     legacy_owner_districts = {
         "quan1@gmail.com": "Quận 1",
@@ -460,6 +514,7 @@ if __name__ == "__main__":
     seed_parking_lots_and_prices(district_map)
     seed_slots()
     seed_default_user(district_map)
+    seed_employees()
     sync_legacy_owner_districts(district_map)
     seed_owner_parking_assignments()
     sync_slot_statuses_from_real_bookings()

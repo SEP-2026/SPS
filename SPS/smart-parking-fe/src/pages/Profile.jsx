@@ -229,9 +229,9 @@ export default function Profile({ onAuthUpdated }) {
               ...me,
             },
           };
-          saveAuth(nextAuth);
+          const savedAuth = saveAuth(nextAuth) || nextAuth;
           if (onAuthUpdated) {
-            onAuthUpdated(nextAuth);
+            onAuthUpdated(savedAuth);
           }
         }
       } catch (err) {
@@ -297,9 +297,9 @@ export default function Profile({ onAuthUpdated }) {
             ...updatedUser,
           },
         };
-        saveAuth(nextAuth);
+        const savedAuth = saveAuth(nextAuth) || nextAuth;
         if (onAuthUpdated) {
-          onAuthUpdated(nextAuth);
+          onAuthUpdated(savedAuth);
         }
       }
 
@@ -369,9 +369,9 @@ export default function Profile({ onAuthUpdated }) {
             vehicle_color: vehicle.vehicle_color || currentAuth.user?.vehicle_color || null,
           },
         };
-        saveAuth(nextAuth);
+        const savedAuth = saveAuth(nextAuth) || nextAuth;
         if (onAuthUpdated) {
-          onAuthUpdated(nextAuth);
+          onAuthUpdated(savedAuth);
         }
       }
 

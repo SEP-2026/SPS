@@ -44,3 +44,7 @@ def employee_revenue_controller(db: Session, employee: User):
 
 def employee_history_controller(db: Session, employee: User):
     return EmployeeService.get_history(db=db, employee=employee)
+
+
+def employee_gate_booking_controller(db: Session, employee: User, booking_id: int):
+    return EmployeeService.get_gate_booking(db=db, employee=employee, booking_id=booking_id)
