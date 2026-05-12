@@ -59,14 +59,14 @@
 
 .scan-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1.1fr) minmax(330px, 0.9fr);
+  grid-template-columns: 1fr 1fr;
   gap: 20px;
 }
 
 .scan-panel {
   display: grid;
-  gap: 18px;
-  padding: 20px;
+  gap: 6px;
+  padding: 8px;
   border: 1px solid rgba(20, 57, 93, 0.12);
   border-radius: 22px;
   background: rgba(255, 255, 255, 0.82);
@@ -74,15 +74,15 @@
 }
 
 .scan-panel--primary {
-  gap: 16px;
+  gap: 4px;
 }
 
 .scan-frame {
   position: relative;
-  min-height: 260px;
+  min-height: 100px;
   display: grid;
   place-items: center;
-  padding: 22px;
+  padding: 8px;
   border-radius: 28px;
   background:
     radial-gradient(circle at 20% 20%, rgba(82, 175, 255, 0.14), transparent 28%),
@@ -99,17 +99,17 @@
 
 .scan-frame-corners {
   position: absolute;
-  inset: 18px;
+  inset: 4px;
   border: 1px dashed rgba(178, 244, 236, 0.5);
   border-radius: 22px;
 }
 
 .scan-line {
   position: absolute;
-  left: 28px;
-  right: 28px;
-  top: 48px;
-  height: 4px;
+  left: 20px;
+  right: 20px;
+  top: 30px;
+  height: 3px;
   border-radius: 999px;
   background: linear-gradient(90deg, rgba(85, 255, 232, 0), rgba(85, 255, 232, 0.95), rgba(85, 255, 232, 0));
   box-shadow: 0 0 18px rgba(85, 255, 232, 0.65);
@@ -122,7 +122,7 @@
     opacity: 0.9;
   }
   50% {
-    transform: translateY(138px);
+    transform: translateY(80px);
     opacity: 1;
   }
   100% {
@@ -135,38 +135,39 @@
   position: relative;
   z-index: 1;
   display: grid;
-  gap: 8px;
+  gap: 2px;
   max-width: 420px;
   text-align: center;
 }
 
 .scan-frame-content strong {
   color: #f4fbff;
-  font-size: 26px;
+  font-size: 18px;
   font-weight: 800;
 }
 
 .scan-frame-content span {
   color: rgba(234, 247, 251, 0.88);
-  line-height: 1.6;
+  font-size: 12px;
+  line-height: 1.4;
 }
 
 .scan-mode-tabs {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 10px;
+  gap: 4px;
+  margin-top: 4px;
   justify-content: center;
 }
 
 .scan-tab-btn {
   border: 1px solid rgba(145, 208, 220, 0.5);
-  border-radius: 8px;
-  padding: 8px 16px;
+  border-radius: 6px;
+  padding: 4px 10px;
   color: #e8f6ff;
   background: rgba(17, 64, 84, 0.65);
   font: inherit;
-  font-size: 14px;
+  font-size: 11px;
   font-weight: 700;
   cursor: pointer;
 }
@@ -189,28 +190,34 @@
 
 .scan-form-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
+  grid-template-columns: auto 1fr;
+  gap: 4px;
+  width: fit-content;
+  max-width: 500px;
+  justify-self: start;
 }
 
 .scan-field {
   display: grid;
-  gap: 8px;
+  gap: 2px;
 }
 
 .scan-field span {
   color: #244665;
-  font-size: 14px;
+  font-size: 11px;
   font-weight: 700;
+  line-height: 1.2;
 }
 
 .scan-input {
   width: 100%;
+  min-width: 180px;
   border: 1px solid rgba(20, 57, 93, 0.16);
-  border-radius: 16px;
-  padding: 14px 16px;
+  border-radius: 10px;
+  padding: 4px 8px;
   color: #14395d;
   font: inherit;
+  font-size: 12px;
   outline: none;
   background: rgba(255, 255, 255, 0.96);
   transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
@@ -223,20 +230,20 @@
 }
 
 .scan-textarea {
-  min-height: 138px;
+  min-height: 25px;
   resize: vertical;
 }
 
 .scan-inline {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  gap: 10px;
+  gap: 2px;
 }
 
 .scan-actions {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 12px;
+  gap: 4px;
 }
 
 .scan-actions--single {
@@ -248,11 +255,12 @@
 .btn-checkin,
 .btn-checkout {
   border: 0;
-  border-radius: 16px;
-  padding: 14px;
+  border-radius: 10px;
+  padding: 3px 6px;
   color: #fff;
   font: inherit;
   font-weight: 800;
+  font-size: 11px;
   cursor: pointer;
   transition: transform 0.2s ease, filter 0.2s ease, opacity 0.2s ease;
 }
@@ -475,10 +483,15 @@
   color: #9a3140;
 }
 
+@media (max-width: 1200px) {
+  .scan-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (max-width: 980px) {
   .scan-hero,
-  .scan-grid,
-  .scan-form-grid {
+  .scan-grid {
     grid-template-columns: 1fr;
     display: grid;
   }

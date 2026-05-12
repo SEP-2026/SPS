@@ -10,8 +10,8 @@
   position: relative;
   overflow: hidden;
   border: 1px solid var(--employee-scan-line);
-  border-radius: 30px;
-  padding: clamp(18px, 2vw, 28px);
+  border-radius: 22px;
+  padding: clamp(10px, 1.2vw, 16px);
   background:
     radial-gradient(circle at 4% 8%, rgba(84, 178, 255, 0.2), rgba(84, 178, 255, 0)),
     radial-gradient(circle at 92% 2%, rgba(54, 215, 192, 0.18), rgba(54, 215, 192, 0)),
@@ -42,8 +42,8 @@
 }
 
 .employee-scan-page .scan-title {
-  margin-bottom: 10px;
-  font-size: clamp(32px, 2.6vw, 44px);
+  margin-bottom: 6px;
+  font-size: clamp(22px, 2vw, 32px);
   color: #0f3655;
   letter-spacing: -0.02em;
 }
@@ -51,13 +51,13 @@
 .employee-scan-page .scan-subtitle {
   color: #3d6485;
   max-width: 760px;
-  font-size: 22px;
+  font-size: 16px;
 }
 
 .employee-scan-page .scan-eyebrow {
   display: inline-block;
-  margin-bottom: 12px;
-  padding: 6px 12px;
+  margin-bottom: 6px;
+  padding: 4px 10px;
   border-radius: 999px;
   border: 1px solid rgba(23, 101, 161, 0.2);
   background: rgba(255, 255, 255, 0.78);
@@ -67,10 +67,10 @@
 }
 
 .employee-scan-page .scan-hero-badge {
-  min-width: 280px;
+  min-width: 240px;
   border: 1px solid rgba(24, 92, 145, 0.25);
-  border-radius: 22px;
-  padding: 18px;
+  border-radius: 16px;
+  padding: 12px;
   background:
     radial-gradient(circle at 90% 8%, rgba(72, 166, 239, 0.24), rgba(72, 166, 239, 0)),
     linear-gradient(170deg, rgba(255, 255, 255, 0.94), rgba(224, 241, 255, 0.88));
@@ -89,11 +89,11 @@
 }
 
 .employee-scan-page .scan-grid {
-  gap: 24px;
+  gap: 14px;
 }
 
 .employee-scan-page .scan-panel {
-  border-radius: 26px;
+  border-radius: 18px;
   border: 1px solid rgba(14, 69, 108, 0.18);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(232, 244, 255, 0.92));
@@ -119,12 +119,12 @@
 }
 
 .employee-scan-page .scan-mode-tabs {
-  margin-top: 14px;
+  margin-top: 8px;
 }
 
 .employee-scan-page .scan-tab-btn {
-  border-radius: 12px;
-  padding: 10px 14px;
+  border-radius: 10px;
+  padding: 6px 10px;
   border-color: rgba(151, 224, 244, 0.55);
 }
 
@@ -200,18 +200,18 @@
 
 .employee-scan-page .scan-summary h2,
 .employee-scan-page .scan-payment-panel h3 {
-  font-size: 29px;
+  font-size: 20px;
   color: #11395a;
   letter-spacing: -0.01em;
 }
 
 .employee-scan-page .scan-summary-list {
-  gap: 10px;
+  gap: 6px;
 }
 
 .employee-scan-page .scan-summary-list div {
-  padding: 12px 14px;
-  border-radius: 14px;
+  padding: 8px 10px;
+  border-radius: 10px;
   border: 1px solid rgba(18, 76, 120, 0.14);
   background:
     linear-gradient(160deg, rgba(255, 255, 255, 0.95), rgba(234, 246, 255, 0.9));

@@ -9,20 +9,20 @@
 .parking-board {
   max-width: 1040px;
   margin: 0 auto;
-  padding: 22px 22px 30px;
+  padding: 12px 12px 16px;
 }
 
 .parking-lot-list {
   display: grid;
-  gap: 18px;
+  gap: 10px;
 }
 
 .parking-lot-card {
-  padding: 16px;
-  border-radius: 18px;
+  padding: 12px;
+  border-radius: 14px;
   border: 1px solid rgba(33, 56, 83, 0.14);
   background: rgba(255, 255, 255, 0.66);
-  box-shadow: 0 12px 24px rgba(12, 34, 54, 0.06);
+  box-shadow: 0 8px 16px rgba(12, 34, 54, 0.05);
   transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
 }
 
@@ -45,14 +45,14 @@
   text-align: left;
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  margin-bottom: 12px;
+  gap: 8px;
+  margin-bottom: 6px;
 }
 
 .parking-lot-info {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
 }
 
 .parking-lot-head:focus-visible {
@@ -63,7 +63,7 @@
 
 .parking-lot-name {
   margin: 0;
-  font-size: clamp(22px, 2.8vw, 34px);
+  font-size: clamp(18px, 2.2vw, 26px);
   color: #143554;
 }
 
