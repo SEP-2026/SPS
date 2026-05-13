@@ -561,7 +561,7 @@ def _serialize_bootstrap(db: Session) -> dict:
             # legacy single-string field for backward compatibility (first lot name or placeholder)
             "parkingLot": (lot_by_owner.get(int(owner.id))[0]["name"] if int(owner.id) in lot_by_owner and lot_by_owner.get(int(owner.id)) else "Chưa gán trong CSDL"),
             "status": "active" if _to_status_label(owner) == "active" else "suspended",
-            "performance": f"{owner_booking_counts.get(int(owner.id), 0)} booking • {owner_avg_occupancy.get(int(owner.id), 0)}% occupancy",
+            "performance": f"{owner_booking_counts.get(int(owner.id), 0)} lượt đặt chỗ • {owner_avg_occupancy.get(int(owner.id), 0)}% lấp đầy",
             "passwordHint": "Có thể reset từ admin",
         }
         for owner in owners
@@ -794,11 +794,11 @@ def create_owner(
         "parkingLots": assigned,
         "parkingLot": assigned[0]["name"] if assigned else "Chưa gán trong CSDL",
         "status": payload.status,
-        "performance": "0 booking",
+        "performance": "0 lượt đặt chỗ • 0% lấp đầy",
         "passwordHint": "Có thể reset từ admin",
     }
 
-    return {"message": "Tạo tài khoản chủ bãi thành công", "default_password": temporary_password, "owner": owner_info}
+    return {"message": "Tạo tài khoản chủ khu vực thành công", "default_password": temporary_password, "owner": owner_info}
 
 
 @router.patch("/owners/{owner_id}")
@@ -853,12 +853,12 @@ def update_owner_status(
 ):
     owner = db.query(User).filter(User.id == owner_id, User.role == "owner").first()
     if not owner:
-        raise HTTPException(status_code=404, detail="Không tìm thấy chủ bãi")
+        raise HTTPException(status_code=404, detail="Không tìm thấy chủ khu vực")
 
     owner.status = "active" if payload.status == "active" else "banned"
     owner.is_active = 1 if payload.status == "active" else 0
     db.commit()
-    return {"message": "Cập nhật trạng thái chủ bãi thành công"}
+    return {"message": "Cập nhật trạng thái chủ khu vực thành công"}
 
 
 @router.post("/owners/{owner_id}/reset-password")
@@ -869,13 +869,13 @@ def reset_owner_password(
 ):
     owner = db.query(User).filter(User.id == owner_id, User.role == "owner").first()
     if not owner:
-        raise HTTPException(status_code=404, detail="Không tìm thấy chủ bãi")
+        raise HTTPException(status_code=404, detail="Không tìm thấy chủ khu vực")
 
     temp_password = _generate_strong_password()
     owner.password = "__legacy_disabled__"
     owner.password_hash = generate_password_hash(temp_password)
     db.commit()
-    return {"message": "Đã đặt lại mật khẩu chủ bãi", "temporary_password": temp_password}
+    return {"message": "Đã đặt lại mật khẩu chủ khu vực", "temporary_password": temp_password}
 
 
 @router.delete("/owners/{owner_id}")
@@ -886,7 +886,7 @@ def delete_owner(
 ):
     owner = db.query(User).filter(User.id == owner_id, User.role == "owner").first()
     if not owner:
-        raise HTTPException(status_code=404, detail="Không tìm thấy chủ bãi")
+        raise HTTPException(status_code=404, detail="Không tìm thấy chủ khu vực")
 
     # Xóa đồng bộ dữ liệu liên quan owner để tránh vướng khóa ngoại.
     # 1) Xóa phân công bãi của owner.
@@ -914,7 +914,7 @@ def delete_owner(
     db.delete(owner)
     db.commit()
     return {
-        "message": "Đã xóa chủ bãi và đồng bộ dữ liệu liên quan",
+        "message": "Đã xóa chủ khu vực và đồng bộ dữ liệu liên quan",
         "deletedEmployees": len(employee_ids),
     }
 
@@ -967,7 +967,7 @@ def create_parking_lot(
 ):
     owner = _find_owner_by_reference(db, payload.owner)
     if payload.owner and not owner:
-        raise HTTPException(status_code=404, detail="Không tìm thấy chủ bãi")
+        raise HTTPException(status_code=404, detail="Không tìm thấy chủ khu vực")
     duplicate_name = db.query(ParkingLot.id).filter(ParkingLot.name == payload.name.strip()).first()
     if duplicate_name:
         raise HTTPException(status_code=409, detail="Ten bai do da ton tai")

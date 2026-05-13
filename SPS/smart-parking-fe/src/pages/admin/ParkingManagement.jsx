@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { SectionCard, StatusBadge } from "../../owner/OwnerUI";
 import { useAdminContext } from "../../admin/useAdminContext";
 
@@ -16,7 +16,6 @@ export default function ParkingManagement() {
       <SectionCard
         title="Danh sách bãi đỗ"
         subtitle="Thêm, sửa, duyệt hoặc khóa bãi trong toàn hệ thống."
-        actions={<button type="button" className="btn-primary owner-btn" onClick={() => setIsCreateModalOpen(true)}>Thêm bãi đỗ</button>}
       >
         <div className="owner-table-shell">
           <table className="owner-table">
@@ -25,7 +24,7 @@ export default function ParkingManagement() {
                 <th>Tên bãi</th>
                 <th>Địa chỉ</th>
                 <th>Số điện thoại</th>
-                <th>Chủ bãi</th>
+                <th>Chủ khu vực</th>
                 <th>Số chỗ</th>
                 <th>Trạng thái</th>
                 <th>Công suất</th>
@@ -88,7 +87,7 @@ export default function ParkingManagement() {
               setCreateForm(EMPTY_LOT);
             }}>
               <label>Tên bãi<input className="owner-input" value={createForm.name} onChange={(e) => setCreateForm((p) => ({ ...p, name: e.target.value }))} /></label>
-              <label>Chủ bãi<input className="owner-input" value={createForm.owner} onChange={(e) => setCreateForm((p) => ({ ...p, owner: e.target.value }))} /></label>
+              <label>Chủ khu vực<input className="owner-input" value={createForm.owner} onChange={(e) => setCreateForm((p) => ({ ...p, owner: e.target.value }))} /></label>
               <label>Số điện thoại<input className="owner-input" value={createForm.phone} onChange={(e) => setCreateForm((p) => ({ ...p, phone: e.target.value }))} /></label>
               <label>Số chỗ<input className="owner-input" value={createForm.slotCount} onChange={(e) => setCreateForm((p) => ({ ...p, slotCount: e.target.value }))} /></label>
               <label className="owner-form-span">Địa chỉ<input className="owner-input" value={createForm.address} onChange={(e) => setCreateForm((p) => ({ ...p, address: e.target.value }))} /></label>
@@ -112,7 +111,7 @@ export default function ParkingManagement() {
         <div className="owner-modal-backdrop" onClick={() => setEditingLot(null)}>
           <div className="owner-modal" onClick={(e) => e.stopPropagation()}>
             <div className="owner-modal-head">
-              <div><h2>Sửa thông tin bãi</h2><p>Cập nhật tên bãi, địa chỉ, chủ bãi và trạng thái.</p></div>
+              <div><h2>Sửa thông tin bãi</h2><p>Cập nhật tên bãi, địa chỉ, chủ khu vực và trạng thái.</p></div>
               <button type="button" className="owner-modal-close" onClick={() => setEditingLot(null)}>×</button>
             </div>
             <form className="owner-form-grid" onSubmit={async (e) => {
@@ -121,7 +120,7 @@ export default function ParkingManagement() {
               setEditingLot(null);
             }}>
               <label>Tên bãi<input className="owner-input" value={editForm.name} onChange={(e) => setEditForm((p) => ({ ...p, name: e.target.value }))} /></label>
-              <label>Chủ bãi<input className="owner-input" value={editForm.owner} onChange={(e) => setEditForm((p) => ({ ...p, owner: e.target.value }))} /></label>
+              <label>Chủ khu vực<input className="owner-input" value={editForm.owner} onChange={(e) => setEditForm((p) => ({ ...p, owner: e.target.value }))} /></label>
               <label>Số điện thoại<input className="owner-input" value={editForm.phone} onChange={(e) => setEditForm((p) => ({ ...p, phone: e.target.value }))} /></label>
               <label className="owner-form-span">Địa chỉ<input className="owner-input" value={editForm.address} onChange={(e) => setEditForm((p) => ({ ...p, address: e.target.value }))} /></label>
               <label>Trạng thái

@@ -25,9 +25,13 @@ export default function AdminLayout({ auth, onLogout }) {
     try {
       const res = await API.get("/admin/bootstrap");
       setAdminData(res.data);
-      setSyncNote("Đồng bộ từ CSDL");
+      if (!silent) {
+        setSyncNote("Đồng bộ từ CSDL");
+      }
     } catch {
-      setSyncNote("Không tải được dữ liệu admin");
+      if (!silent) {
+        setSyncNote("Không tải được dữ liệu admin");
+      }
       if (!adminData) {
         setAdminData(null);
       }
@@ -95,7 +99,7 @@ export default function AdminLayout({ auth, onLogout }) {
       await actions.execWithRefresh(() => API.patch(`/admin/owners/${id}/status`, { status }));
     },
     async updateOwner(id, payload) {
-      await actions.execWithRefresh(() => API.patch(`/admin/owners/${id}`, payload));
+      return actions.execWithRefresh(() => API.patch(`/admin/owners/${id}`, payload));
     },
     async resetOwnerPassword(id) {
       await actions.execWithRefresh(async () => {
@@ -108,7 +112,7 @@ export default function AdminLayout({ auth, onLogout }) {
     },
     async addOwner(payload) {
       const res = await API.post("/admin/owners", payload);
-      window.alert(`Đã tạo owner. Mật khẩu mặc định: ${res.data.default_password}`);
+      window.alert(`Đã tạo chủ khu vực. Mật khẩu mặc định: ${res.data.default_password}`);
       if (res.data && res.data.owner) {
         setAdminData((prev) => ({
           ...prev,
@@ -122,7 +126,7 @@ export default function AdminLayout({ auth, onLogout }) {
           parkingLots: payload.parkingLot ? [{ id: null, name: payload.parkingLot }] : [],
           parkingLot: payload.parkingLot || "Chưa gán trong CSDL",
           status: "active",
-          performance: "0 booking",
+          performance: "0 lượt đặt chỗ • 0% lấp đầy",
           passwordHint: res.data?.default_password ? `Mật khẩu: ${res.data.default_password}` : "Có thể reset từ admin",
         };
         setAdminData((prev) => ({
@@ -193,11 +197,6 @@ export default function AdminLayout({ auth, onLogout }) {
               </NavLink>
             ))}
           </nav>
-        </div>
-
-        <div className="admin-sidebar-panel admin-sidebar-panel--compact">
-          <p className="admin-sidebar-title">Liên kết nhanh</p>
-          <Link to="/" className="admin-shortcut">Trang bãi xe</Link>
         </div>
 
         <button type="button" className="admin-logout" onClick={onLogout}>

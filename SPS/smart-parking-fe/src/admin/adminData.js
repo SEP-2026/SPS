@@ -12,7 +12,7 @@ export const ADMIN_NAV_ITEMS = [
 export const ADMIN_ROUTE_META = {
   "/admin": {
     title: "Bảng điều khiển hệ thống",
-    description: "Theo dõi tổng quan người dùng, chủ bãi, bãi đỗ, đặt chỗ và doanh thu toàn hệ thống.",
+    description: "Theo dõi tổng quan người dùng, chủ khu vực, bãi đỗ, đặt chỗ và doanh thu toàn hệ thống.",
   },
   "/admin/users": {
     title: "Quản lý người dùng",
@@ -20,7 +20,7 @@ export const ADMIN_ROUTE_META = {
   },
   "/admin/owners": {
     title: "Quản lý khu vực",
-    description: "Quản trị tài khoản chủ bãi, khu vực đang phụ trách và hiệu suất vận hành.",
+    description: "Quản trị tài khoản chủ khu vực, khu vực đang phụ trách và hiệu suất vận hành.",
   },
   "/admin/parking-lots": {
     title: "Quản lý bãi đỗ",
@@ -55,9 +55,9 @@ export const createAdminSeedData = () => ({
     { id: "u-6", name: "Do Bao Anh", email: "anh@gmail.com", status: "active", bookingCount: 17, lastActive: "2026-04-15T12:18:00", phone: "0945 880 220" },
   ],
   owners: [
-    { id: "o-1", name: "Tran Minh Khang", email: "owner.khang@smartparking.vn", parkingLot: "Smart Parking Tân Phú", status: "active", performance: "88% fill rate", passwordHint: "Reset lần cuối 03/04" },
-    { id: "o-2", name: "Nguyen Quoc Vinh", email: "owner.vinh@smartparking.vn", parkingLot: "Smart Parking Bình Tân", status: "active", performance: "81% fill rate", passwordHint: "Reset lần cuối 09/04" },
-    { id: "o-3", name: "Le Tuan Duy", email: "owner.duy@smartparking.vn", parkingLot: "Smart Parking Quận 7", status: "suspended", performance: "72% fill rate", passwordHint: "Chưa reset 30 ngày" },
+    { id: "o-1", name: "Tran Minh Khang", email: "owner.khang@smartparking.vn", parkingLot: "Smart Parking Tân Phú", status: "active", performance: "88% lấp đầy", passwordHint: "Reset lần cuối 03/04" },
+    { id: "o-2", name: "Nguyen Quoc Vinh", email: "owner.vinh@smartparking.vn", parkingLot: "Smart Parking Bình Tân", status: "active", performance: "81% lấp đầy", passwordHint: "Reset lần cuối 09/04" },
+    { id: "o-3", name: "Le Tuan Duy", email: "owner.duy@smartparking.vn", parkingLot: "Smart Parking Quận 7", status: "suspended", performance: "72% lấp đầy", passwordHint: "Chưa reset 30 ngày" },
   ],
   parkingLots: [
     { id: "p-1", name: "Smart Parking Tân Phú", address: "12 Tân Kỳ Tân Quý, Tân Phú", owner: "Tran Minh Khang", slotCount: 120, status: "active", occupancy: 86 },

@@ -52,7 +52,7 @@ export default function AdminDashboard() {
     <div className="owner-page-grid">
       <div className="owner-stats-grid owner-stats-grid--wide">
         <StatCard title="Tổng người dùng" value={stats.totalUsers} note="Người dùng toàn hệ thống" trend={`${adminData.users.filter((u) => u.status === "active").length} đang hoạt động`} icon="users" />
-        <StatCard title="Tổng chủ bãi" value={stats.totalOwners} note="Tài khoản đối tác" trend={`${adminData.owners.filter((o) => o.status === "active").length} hoạt động`} icon="owners" />
+        <StatCard title="Tổng chủ khu vực" value={stats.totalOwners} note="Tài khoản đối tác" trend={`${adminData.owners.filter((o) => o.status === "active").length} hoạt động`} icon="owners" />
         <StatCard title="Tổng bãi đỗ" value={stats.totalParkingLots} note="Bãi đang được quản lý" trend={`${adminData.parkingLots.filter((p) => p.status === "pending").length} chờ duyệt`} icon="parking" />
         <StatCard title="Tổng đặt chỗ" value={stats.totalBookings} note="Đặt chỗ toàn hệ thống" trend={`${adminData.bookings.filter((b) => b.status === "in_progress").length} đang diễn ra`} icon="booking" />
         <StatCard title="Doanh thu hệ thống" value={formatCurrency(stats.totalRevenue)} note="Doanh thu gộp" trend={formatCurrency(stats.totalCommission)} icon="revenue" />

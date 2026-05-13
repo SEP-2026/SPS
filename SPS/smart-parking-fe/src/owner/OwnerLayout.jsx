@@ -52,9 +52,11 @@ export default function OwnerLayout({ auth, onLogout }) {
   const [syncNote, setSyncNote] = useState("Đang tải dữ liệu bãi");
   const [isSyncing, setIsSyncing] = useState(true);
 
-  const refreshOwnerData = useCallback(async () => {
+  const refreshOwnerData = useCallback(async ({ silent = false } = {}) => {
     try {
-      setIsSyncing(true);
+      if (!silent) {
+        setIsSyncing(true);
+      }
       const res = await API.get("/owner/bootstrap");
       if (res.data?.parkingLot) {
         const managedParkingCount = Array.isArray(res.data.parkingLots) ? res.data.parkingLots.length : 0;
@@ -70,7 +72,9 @@ export default function OwnerLayout({ auth, onLogout }) {
           reviews: Array.isArray(res.data.reviews) ? res.data.reviews : prev.reviews,
           settings: res.data.settings ? { ...prev.settings, ...res.data.settings } : prev.settings,
         }));
-        setSyncNote(`Quản lý ${managedParkingCount} bãi đỗ`);
+        if (!silent) {
+          setSyncNote(`Quản lý ${managedParkingCount} bãi đỗ`);
+        }
         return;
       }
       setOwnerData({
@@ -81,33 +85,35 @@ export default function OwnerLayout({ auth, onLogout }) {
           slotCapacity: "0",
         },
       });
-      setSyncNote("Owner chưa được gán bãi trong CSDL");
+      if (!silent) {
+        setSyncNote("Owner chưa được gán bãi trong CSDL");
+      }
     } catch {
       setOwnerData(EMPTY_OWNER_DATA);
-      setSyncNote("Không tải được dữ liệu owner từ CSDL");
+      if (!silent) {
+        setSyncNote("Không tải được dữ liệu owner từ CSDL");
+      }
     } finally {
-      setIsSyncing(false);
+      if (!silent) {
+        setIsSyncing(false);
+      }
     }
   }, []);
 
-  useRealtimeRefresh(refreshOwnerData, { enabled: Boolean(auth?.token), minRefreshIntervalMs: 2000 });
+  useRealtimeRefresh(() => refreshOwnerData({ silent: true }), { enabled: Boolean(auth?.token), minRefreshIntervalMs: 3500 });
 
   useEffect(() => {
-    refreshOwnerData();
+    refreshOwnerData({ silent: false });
   }, [refreshOwnerData]);
 
   useEffect(() => {
-    const intervalId = window.setInterval(() => {
-      refreshOwnerData();
-    }, 10000);
-
     const handleFocus = () => {
-      refreshOwnerData();
+      refreshOwnerData({ silent: true });
     };
 
     const handleVisibilityChange = () => {
       if (document.visibilityState === "visible") {
-        refreshOwnerData();
+        refreshOwnerData({ silent: true });
       }
     };
 
@@ -115,7 +121,6 @@ export default function OwnerLayout({ auth, onLogout }) {
     document.addEventListener("visibilitychange", handleVisibilityChange);
 
     return () => {
-      window.clearInterval(intervalId);
       window.removeEventListener("focus", handleFocus);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
@@ -362,13 +367,6 @@ export default function OwnerLayout({ auth, onLogout }) {
               </NavLink>
             ))}
           </nav>
-        </div>
-
-        <div className="owner-sidebar-panel owner-sidebar-panel--compact">
-          <p className="owner-sidebar-title">Lối tắt</p>
-          <Link to="/" className="owner-shortcut">Trang bãi xe</Link>
-          <Link to="/owner/booking-owner" className="owner-shortcut">Đặt chỗ</Link>
-          <Link to="/scan" className="owner-shortcut" data-discover="true">Quét QR</Link>
         </div>
 
         <button type="button" className="owner-logout" onClick={onLogout}>
