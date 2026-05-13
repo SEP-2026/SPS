@@ -284,6 +284,61 @@
 .owner-content {
   display: grid;
   gap: 16px;
+  position: relative;
+}
+
+.owner-content-layer {
+  transition: opacity 0.2s ease;
+}
+
+.owner-shell.is-locked .owner-content-layer {
+  opacity: 0.5;
+  pointer-events: none;
+  user-select: none;
+}
+
+.owner-shell.is-locked .owner-menu-link {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.owner-shell.is-locked .owner-menu-link.active {
+  box-shadow: none;
+}
+
+.owner-locked-overlay {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  z-index: 5;
+}
+
+.owner-locked-card {
+  max-width: 520px;
+  border-radius: 18px;
+  border: 1px solid rgba(196, 62, 78, 0.35);
+  background: linear-gradient(180deg, rgba(255, 246, 248, 0.97), rgba(255, 237, 240, 0.94));
+  box-shadow: 0 18px 36px rgba(122, 22, 38, 0.18);
+  padding: 20px 22px;
+  display: grid;
+  gap: 8px;
+}
+
+.owner-content > .owner-locked-card {
+  max-width: none;
+  width: 100%;
+  margin-bottom: 8px;
+}
+
+.owner-locked-card strong {
+  color: #8c1f2f;
+  font-size: 20px;
+}
+
+.owner-locked-card span {
+  color: #7a3945;
 }
 
 .owner-page-grid,

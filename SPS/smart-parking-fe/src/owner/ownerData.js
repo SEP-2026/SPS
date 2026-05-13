@@ -1,8 +1,7 @@
-export const OWNER_NAV_ITEMS = [
+﻿export const OWNER_NAV_ITEMS = [
   { to: "/owner", label: "Tổng quan", icon: "dashboard" },
   { to: "/owner/parking", label: "Quản lý bãi đỗ", icon: "parking" },
   { to: "/owner/bookings", label: "Quản lý đặt chỗ", icon: "booking" },
-  { to: "/owner/booking-owner", label: "Đặt chỗ giúp khách", icon: "booking" },
   { to: "/owner/customers", label: "Quản lý khách hàng", icon: "customer" },
   { to: "/owner/revenue", label: "Doanh thu", icon: "revenue" },
   { to: "/owner/reviews", label: "Đánh giá tổng quan", icon: "reviews" },
@@ -18,10 +17,6 @@ export const OWNER_ROUTE_META = {
   "/owner/parking": {
     title: "Quản lý bãi đỗ",
     description: "Quản trị trạng thái từng chỗ đỗ, khu vực và năng lực vận hành.",
-  },
-  "/owner/booking-owner": {
-    title: "Đặt chỗ giúp khách hàng",
-    description: "Tạo booking cho khách hàng với xác nhận từ họ.",
   },
   "/owner/customers": {
     title: "Quản lý khách hàng",

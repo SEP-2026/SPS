@@ -1,5 +1,9 @@
-﻿from fastapi import APIRouter, Depends, HTTPException, Query, status
+﻿from datetime import datetime
+from math import ceil
+
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 from werkzeug.security import check_password_hash, generate_password_hash
 
@@ -21,7 +25,7 @@ from app.controllers.employee_controller import (
     update_owner_employee_controller,
 )
 from app.database import get_db
-from app.models.models import RevokedToken, User
+from app.models.models import Booking, ParkingPrice, ParkingSlot, RevokedToken, User
 from app.routes.auth import decode_access_token, get_current_user
 from app.security.password_policy import ensure_strong_password
 from app.schemas.employee import (
@@ -48,6 +52,18 @@ from app.schemas.employee import (
 router = APIRouter(prefix="/api/employee", tags=["employee"])
 owner_employee_router = APIRouter(prefix="/api/owner", tags=["owner-employee"])
 security = HTTPBearer(auto_error=False)
+class EmployeeAssistBookingRequest(BaseModel):
+    user_id: int = Field(gt=0)
+    slot_id: int = Field(gt=0)
+    start_time: datetime
+    expire_time: datetime
+    booking_mode: str = Field(default="hourly", pattern="^(hourly|daily|monthly)$")
+
+
+class EmployeeAssistBookingResponse(BaseModel):
+    message: str
+    booking_id: int
+    total_amount: float
 
 
 def _serialize_employee_info(payload: dict) -> EmployeeInfo:
@@ -293,3 +309,132 @@ def employee_gate_booking(
     db: Session = Depends(get_db),
 ):
     return employee_gate_booking_controller(current_employee, booking_id, db)
+
+
+
+@router.get("/customers-list")
+def employee_customers_list(
+    current_employee: User = Depends(get_current_employee),
+    db: Session = Depends(get_db),
+):
+    if not current_employee.parking_id:
+        raise HTTPException(status_code=400, detail="Nhân viên chưa được gán bãi")
+
+    rows = (
+        db.query(User)
+        .filter(User.role == "user", User.is_active == 1)
+        .order_by(User.name.asc())
+        .limit(500)
+        .all()
+    )
+    return [
+        {
+            "id": int(user.id),
+            "name": user.name,
+            "email": user.email,
+            "phone": user.phone,
+            "vehicle_plate": user.vehicle_plate,
+        }
+        for user in rows
+    ]
+
+
+@router.post("/booking-assist", response_model=EmployeeAssistBookingResponse)
+def employee_booking_assist(
+    payload: EmployeeAssistBookingRequest,
+    current_employee: User = Depends(get_current_employee),
+    db: Session = Depends(get_db),
+):
+    if not current_employee.parking_id:
+        raise HTTPException(status_code=400, detail="Nhân viên chưa được gán bãi")
+
+    parking_id = int(current_employee.parking_id)
+    start_time = payload.start_time
+    expire_time = payload.expire_time
+    if expire_time <= start_time:
+        raise HTTPException(status_code=400, detail="Thời gian kết thúc phải sau thời gian bắt đầu")
+
+    customer = (
+        db.query(User)
+        .filter(User.id == payload.user_id, User.role == "user", User.is_active == 1)
+        .with_for_update()
+        .first()
+    )
+    if not customer:
+        raise HTTPException(status_code=404, detail="Không tìm thấy khách hàng")
+
+    slot = (
+        db.query(ParkingSlot)
+        .filter(ParkingSlot.id == payload.slot_id, ParkingSlot.parking_id == parking_id)
+        .with_for_update()
+        .first()
+    )
+    if not slot:
+        raise HTTPException(status_code=404, detail="Không tìm thấy chỗ đỗ trong bãi được phân công")
+    if slot.status != "available":
+        raise HTTPException(status_code=400, detail="Chỗ đỗ không còn trống")
+
+    overlapping_slot = (
+        db.query(Booking.id)
+        .filter(
+            Booking.slot_id == slot.id,
+            Booking.status.in_(["pending", "booked", "checked_in"]),
+            Booking.start_time < expire_time,
+            Booking.expire_time > start_time,
+        )
+        .first()
+    )
+    if overlapping_slot:
+        raise HTTPException(status_code=400, detail="Chỗ đỗ đã có booking trong khung giờ này")
+
+    overlapping_customer = (
+        db.query(Booking.id)
+        .filter(
+            Booking.user_id == customer.id,
+            Booking.status.in_(["pending", "booked", "checked_in"]),
+            Booking.start_time < expire_time,
+            Booking.expire_time > start_time,
+        )
+        .first()
+    )
+    if overlapping_customer:
+        raise HTTPException(status_code=400, detail="Khách hàng đã có booking trùng thời gian")
+
+    parking_price = db.query(ParkingPrice).filter(ParkingPrice.parking_id == parking_id).first()
+    if not parking_price:
+        raise HTTPException(status_code=400, detail="Bãi chưa cấu hình bảng giá")
+
+    duration_hours = max((expire_time - start_time).total_seconds() / 3600, 0)
+    if payload.booking_mode == "monthly":
+        billed_units = max(ceil(duration_hours / (24 * 30)), 1)
+        total_amount = float(parking_price.price_per_month or 0) * billed_units
+    elif payload.booking_mode == "daily":
+        billed_units = max(ceil(duration_hours / 24), 1)
+        total_amount = float(parking_price.price_per_day or 0) * billed_units
+    else:
+        billed_units = max(round(duration_hours, 2), 1)
+        total_amount = float(parking_price.price_per_hour or 0) * billed_units
+
+    booking = Booking(
+        user_id=customer.id,
+        slot_id=slot.id,
+        parking_id=parking_id,
+        start_time=start_time,
+        expire_time=expire_time,
+        booking_mode=payload.booking_mode,
+        billed_units=billed_units,
+        total_amount=round(total_amount, 2),
+        status="pending",
+        qr_code="",
+    )
+    db.add(booking)
+    slot.status = "reserved"
+    db.commit()
+    db.refresh(booking)
+
+    return EmployeeAssistBookingResponse(
+        message="Đã tạo đặt chỗ giúp khách hàng thành công",
+        booking_id=int(booking.id),
+        total_amount=float(booking.total_amount or 0),
+    )
+

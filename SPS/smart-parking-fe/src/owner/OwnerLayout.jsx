@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+﻿import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
 import API from "../services/api";
 import useRealtimeRefresh from "../services/useRealtimeRefresh";
@@ -71,6 +71,8 @@ export default function OwnerLayout({ auth, onLogout }) {
           activities: Array.isArray(res.data.activities) ? res.data.activities : prev.activities,
           reviews: Array.isArray(res.data.reviews) ? res.data.reviews : prev.reviews,
           settings: res.data.settings ? { ...prev.settings, ...res.data.settings } : prev.settings,
+          isLocked: Boolean(res.data.isLocked),
+          lockMessage: res.data.lockMessage || "",
         }));
         if (!silent) {
           setSyncNote(`Quản lý ${managedParkingCount} bãi đỗ`);
@@ -204,6 +206,8 @@ export default function OwnerLayout({ auth, onLogout }) {
   }, [ownerData, storageVersion]);
   
   const ownerDisplayName = auth?.user?.full_name || auth?.user?.name || auth?.user?.email || "Owner";
+  const isOwnerLocked = Boolean(ownerData?.isLocked);
+  const ownerLockMessage = ownerData?.lockMessage || "Bãi xe của bạn đã bị khóa, vui lòng liên hệ admin.";
 
   const actions = {
     async addSlot(payload) {
@@ -341,7 +345,7 @@ export default function OwnerLayout({ auth, onLogout }) {
   };
 
   return (
-    <div className={`owner-shell${sidebarOpen ? " sidebar-open" : ""}`}>
+    <div className={`owner-shell${sidebarOpen ? " sidebar-open" : ""}${isOwnerLocked ? " is-locked" : ""}`}>
       <aside className="owner-sidebar">
         <div className="owner-brand">
           <div className="owner-brand-mark">SP</div>
@@ -393,7 +397,7 @@ export default function OwnerLayout({ auth, onLogout }) {
               <OwnerIcon name="bell" className="owner-menu-icon" />
               {unreadNotificationsCount > 0 && <span className="owner-notify-badge">{unreadNotificationsCount}</span>}
             </Link>
-            <div className="owner-role-pill">Tài khoản vận hành</div>
+            <div className="owner-role-pill">{isOwnerLocked ? "Tài khoản bị khóa" : "Tài khoản vận hành"}</div>
             <div className="owner-avatar" title={syncNote}>
               <div className="owner-avatar-mark">{ownerDisplayName.slice(0, 1).toUpperCase()}</div>
               <div>
@@ -405,9 +409,19 @@ export default function OwnerLayout({ auth, onLogout }) {
         </header>
 
         <main className="owner-content">
-          <Outlet context={{ auth, ownerData, stats, actions, isSyncing }} />
+          {isOwnerLocked ? (
+            <div className="owner-locked-card" role="alert" aria-live="polite">
+              <strong>Tài khoản đang bị khóa</strong>
+              <span>{ownerLockMessage || "Bãi xe của bạn đã bị khóa, vui lòng liên hệ admin."}</span>
+            </div>
+          ) : null}
+          <div className="owner-content-layer">
+            <Outlet context={{ auth, ownerData, stats, actions, isSyncing }} />
+          </div>
         </main>
       </div>
     </div>
   );
 }
+
+

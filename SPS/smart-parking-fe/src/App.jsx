@@ -32,6 +32,7 @@ import AdminLayout from "./admin/AdminLayout";
 import EmployeeLayout from "./employee/EmployeeLayout";
 import OwnerLayout from "./owner/OwnerLayout";
 import EmployeeDashboard from "./pages/employee/EmployeeDashboard";
+import EmployeeBookingAssist from "./pages/employee/EmployeeBookingAssist";
 import EmployeeHistory from "./pages/employee/EmployeeHistory";
 import EmployeeProfile from "./pages/employee/EmployeeProfile";
 import EmployeeQrScanner from "./pages/employee/EmployeeQrScanner";
@@ -294,6 +295,7 @@ function AppBody({ auth, role, onLogin, onLogout }) {
           element={auth && role === "employee" ? <EmployeeLayout auth={auth} onLogout={onLogout} /> : <Navigate to={auth ? "/" : "/login"} replace />}
         >
           <Route index element={<EmployeeDashboard />} />
+          <Route path="booking-assist" element={<EmployeeBookingAssist />} />
           <Route path="scanner" element={<EmployeeQrScanner />} />
           <Route path="vehicles" element={<EmployeeVehicles />} />
           <Route path="revenue" element={<EmployeeRevenue />} />

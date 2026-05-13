@@ -77,7 +77,7 @@ def _get_primary_owner_parking(owner_id: int, db: Session) -> ParkingLot | None:
     return db.query(ParkingLot).filter(ParkingLot.id == assignment.parking_id).first()
 
 
-def _get_owner_parking_lots(owner_id: int, db: Session) -> list[ParkingLot]:
+def _get_owner_parking_lots(owner_id: int, db: Session, include_locked: bool = False) -> list[ParkingLot]:
     assignments = (
         db.query(OwnerParking)
         .filter(OwnerParking.owner_id == owner_id)
@@ -87,12 +87,10 @@ def _get_owner_parking_lots(owner_id: int, db: Session) -> list[ParkingLot]:
     parking_ids = [assignment.parking_id for assignment in assignments]
     if not parking_ids:
         return []
-    return (
-        db.query(ParkingLot)
-        .filter(ParkingLot.id.in_(parking_ids), ParkingLot.is_active == 1)
-        .order_by(ParkingLot.id.asc())
-        .all()
-    )
+    query = db.query(ParkingLot).filter(ParkingLot.id.in_(parking_ids))
+    if not include_locked:
+        query = query.filter(ParkingLot.is_active == 1)
+    return query.order_by(ParkingLot.id.asc()).all()
 
 
 def _get_owner_parking_assignment(owner_id: int, parking_id: int | None, db: Session) -> OwnerParking | None:
@@ -254,6 +252,10 @@ def _serialize_slots_overview(parking_lots: list[ParkingLot], db: Session) -> li
 
 
 def _serialize_owner_bootstrap(current_user: User, parking_lots: list[ParkingLot], db: Session) -> dict:
+    locked_parking_lots = [lot for lot in parking_lots if int(lot.is_active or 0) != 1]
+    is_locked = len(locked_parking_lots) > 0
+    lock_message = "Bãi xe của bạn đã bị khóa, vui lòng liên hệ admin." if is_locked else None
+
     if not parking_lots:
         return {
             "parkingLot": None,
@@ -264,6 +266,8 @@ def _serialize_owner_bootstrap(current_user: User, parking_lots: list[ParkingLot
             "activities": [],
             "settings": None,
             "reviews": [],
+            "isLocked": False,
+            "lockMessage": None,
         }
 
     primary_parking_lot = parking_lots[0]
@@ -454,6 +458,7 @@ def _serialize_owner_bootstrap(current_user: User, parking_lots: list[ParkingLot
                 "name": lot.name,
                 "address": lot.address,
                 "district": lot.district.name if lot.district else None,
+                "status": "active" if int(lot.is_active or 0) == 1 else "locked",
             }
             for lot in parking_lots
         ],
@@ -483,11 +488,14 @@ def _serialize_owner_bootstrap(current_user: User, parking_lots: list[ParkingLot
                     "pricePerHour": str(int(float(prices_by_parking_id.get(int(lot.id)).price_per_hour))) if prices_by_parking_id.get(int(lot.id)) and prices_by_parking_id.get(int(lot.id)).price_per_hour is not None else "0",
                     "pricePerDay": str(int(float(prices_by_parking_id.get(int(lot.id)).price_per_day))) if prices_by_parking_id.get(int(lot.id)) and prices_by_parking_id.get(int(lot.id)).price_per_day is not None else "0",
                     "pricePerMonth": str(int(float(prices_by_parking_id.get(int(lot.id)).price_per_month))) if prices_by_parking_id.get(int(lot.id)) and prices_by_parking_id.get(int(lot.id)).price_per_month is not None else "0",
+                    "status": "active" if int(lot.is_active or 0) == 1 else "locked",
                 }
                 for lot in parking_lots
             ],
         },
         "reviews": review_rows,
+        "isLocked": is_locked,
+        "lockMessage": lock_message,
     }
 
 
@@ -629,7 +637,7 @@ def owner_bootstrap(
     current_user: User = Depends(require_owner),
     db: Session = Depends(get_db),
 ):
-    parking_lots = _get_owner_parking_lots(current_user.id, db)
+    parking_lots = _get_owner_parking_lots(current_user.id, db, include_locked=True)
     return _serialize_owner_bootstrap(current_user, parking_lots, db)
 
 

@@ -8,6 +8,7 @@ import "./employee.css";
 
 const NAV_ITEMS = [
   { to: "/employee", label: "Bảng điều khiển", icon: "dashboard" },
+  { to: "/employee/booking-assist", label: "Đặt chỗ giúp khách", icon: "booking" },
   { to: "/employee/scanner", label: "Quét mã QR", icon: "scan" },
   { to: "/employee/vehicles", label: "Xe trong bãi", icon: "parking" },
   { to: "/employee/revenue", label: "Doanh thu", icon: "revenue" },
@@ -17,6 +18,7 @@ const NAV_ITEMS = [
 
 const ROUTE_HINT = {
   "/employee": "Tổng quan luồng xe và trạng thái bãi theo thời gian thực.",
+  "/employee/booking-assist": "Nhân viên tạo đặt chỗ giúp khách hàng tại bãi được phân công.",
   "/employee/scanner": "Xử lý check-in/check-out bằng mã QR tại cổng.",
   "/employee/vehicles": "Theo dõi xe trong bãi và vị trí đỗ trực quan theo ô.",
   "/employee/revenue": "Theo dõi doanh thu theo ngày và theo tháng.",
