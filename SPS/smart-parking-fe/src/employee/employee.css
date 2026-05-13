@@ -1268,3 +1268,109 @@
 .employee-empty-state p {
   margin: 8px 0 0;
 }
+.employee-booking-assist .employee-assist-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+  gap: 16px;
+}
+
+.employee-booking-assist .employee-assist-map-wrap {
+  border: 1px solid rgba(33, 95, 163, 0.2);
+  border-radius: 16px;
+  background: linear-gradient(180deg, rgba(245, 252, 255, 0.92), rgba(234, 246, 255, 0.82));
+  padding: 14px;
+}
+
+.employee-booking-assist .employee-assist-map-head h3 {
+  margin: 0;
+  color: #14395d;
+}
+
+.employee-booking-assist .employee-assist-map-head p {
+  margin: 6px 0 0;
+  color: #5a7d98;
+}
+
+.employee-booking-assist .employee-assist-legend {
+  margin: 12px 0;
+}
+
+.employee-booking-assist .employee-assist-map-grid {
+  margin-bottom: 0;
+  grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+}
+
+.employee-booking-assist .parking-slot {
+  border: 2px solid rgba(17, 67, 102, 0.24);
+}
+
+.employee-booking-assist .parking-slot.is-clickable {
+  cursor: pointer;
+}
+
+.employee-booking-assist .parking-slot.is-locked {
+  cursor: not-allowed;
+  opacity: 0.92;
+}
+
+.employee-booking-assist .employee-assist-form {
+  align-content: start;
+}
+
+.employee-booking-assist .employee-form-span {
+  grid-column: 1 / -1;
+}
+
+.employee-booking-assist .employee-assist-mode-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.employee-booking-assist .employee-assist-mode-row .employee-chip {
+  cursor: pointer;
+}
+
+.employee-booking-assist .employee-assist-mode-row .employee-chip.is-active {
+  border-color: rgba(24, 114, 191, 0.5);
+  color: #0e3e6a;
+  background: linear-gradient(160deg, rgba(56, 136, 232, 0.18), rgba(20, 162, 155, 0.14));
+}
+
+.employee-booking-assist .employee-assist-summary {
+  border: 1px dashed rgba(33, 95, 163, 0.28);
+  border-radius: 14px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.74);
+  display: grid;
+  gap: 4px;
+}
+
+.employee-booking-assist .employee-assist-summary p {
+  margin: 0;
+  color: #2a4f6f;
+}
+
+.employee-booking-assist .employee-assist-slot-actions {
+  margin-top: 12px;
+  border-top: 1px solid rgba(33, 95, 163, 0.18);
+  padding-top: 10px;
+  display: grid;
+  gap: 8px;
+}
+
+.employee-booking-assist .employee-assist-slot-actions p {
+  margin: 0;
+  color: #2a4f6f;
+}
+
+.employee-booking-assist .employee-assist-error {
+  color: #9a3340 !important;
+  font-weight: 700;
+}
+
+@media (max-width: 1100px) {
+  .employee-booking-assist .employee-assist-layout {
+    grid-template-columns: 1fr;
+  }
+}

@@ -4,6 +4,7 @@ from math import ceil
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel, Field
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 from werkzeug.security import check_password_hash, generate_password_hash
 
@@ -25,7 +26,7 @@ from app.controllers.employee_controller import (
     update_owner_employee_controller,
 )
 from app.database import get_db
-from app.models.models import Booking, ParkingPrice, ParkingSlot, RevokedToken, User
+from app.models.models import Booking, ParkingPrice, ParkingSlot, RevokedToken, User, UserVehicle
 from app.routes.auth import decode_access_token, get_current_user
 from app.security.password_policy import ensure_strong_password
 from app.schemas.employee import (
@@ -53,7 +54,14 @@ router = APIRouter(prefix="/api/employee", tags=["employee"])
 owner_employee_router = APIRouter(prefix="/api/owner", tags=["owner-employee"])
 security = HTTPBearer(auto_error=False)
 class EmployeeAssistBookingRequest(BaseModel):
-    user_id: int = Field(gt=0)
+    customer_name: str = Field(min_length=1, max_length=255)
+    customer_phone: str = Field(min_length=3, max_length=30)
+    customer_email: str | None = Field(default=None, max_length=255)
+    vehicle_plate: str = Field(min_length=2, max_length=30)
+    vehicle_color: str | None = Field(default=None, max_length=50)
+    vehicle_brand: str | None = Field(default=None, max_length=100)
+    vehicle_model: str | None = Field(default=None, max_length=100)
+    vehicle_seat_count: int | None = Field(default=None, ge=1, le=100)
     slot_id: int = Field(gt=0)
     start_time: datetime
     expire_time: datetime
@@ -64,6 +72,11 @@ class EmployeeAssistBookingResponse(BaseModel):
     message: str
     booking_id: int
     total_amount: float
+
+
+class EmployeeSlotStatusUpdateRequest(BaseModel):
+    status: str = Field(pattern="^(available|maintenance)$")
+    force_release: bool = False
 
 
 def _serialize_employee_info(payload: dict) -> EmployeeInfo:
@@ -354,14 +367,46 @@ def employee_booking_assist(
     if expire_time <= start_time:
         raise HTTPException(status_code=400, detail="Thời gian kết thúc phải sau thời gian bắt đầu")
 
-    customer = (
-        db.query(User)
-        .filter(User.id == payload.user_id, User.role == "user", User.is_active == 1)
-        .with_for_update()
-        .first()
-    )
+    normalized_phone = (payload.customer_phone or "").strip()
+    normalized_name = (payload.customer_name or "").strip()
+    normalized_email = (payload.customer_email or "").strip().lower() or None
+    normalized_plate = (payload.vehicle_plate or "").strip().upper()
+    if not normalized_name:
+        raise HTTPException(status_code=400, detail="Vui lòng nhập tên khách hàng")
+    if not normalized_phone:
+        raise HTTPException(status_code=400, detail="Vui lòng nhập số điện thoại khách hàng")
+    if not normalized_plate:
+        raise HTTPException(status_code=400, detail="Vui lòng nhập biển số xe")
+
+    customer_query = db.query(User).filter(User.role == "user", User.is_active == 1)
+    if normalized_email:
+        customer = customer_query.filter(User.email == normalized_email).with_for_update().first()
+    else:
+        customer = customer_query.filter(User.phone == normalized_phone).with_for_update().first()
     if not customer:
-        raise HTTPException(status_code=404, detail="Không tìm thấy khách hàng")
+        if not normalized_email:
+            normalized_email = f"guest_{normalized_phone}@smartparking.local"
+        customer = User(
+            name=normalized_name,
+            email=normalized_email,
+            phone=normalized_phone,
+            vehicle_plate=normalized_plate,
+            vehicle_color=(payload.vehicle_color or "").strip() or None,
+            role="user",
+            status="active",
+            is_active=1,
+            password="__employee_assist__",
+            password_hash=None,
+        )
+        db.add(customer)
+        db.flush()
+    else:
+        customer.name = normalized_name
+        customer.phone = normalized_phone
+        if normalized_email:
+            customer.email = normalized_email
+        customer.vehicle_plate = normalized_plate
+        customer.vehicle_color = (payload.vehicle_color or "").strip() or customer.vehicle_color
 
     slot = (
         db.query(ParkingSlot)
@@ -400,11 +445,50 @@ def employee_booking_assist(
     if overlapping_customer:
         raise HTTPException(status_code=400, detail="Khách hàng đã có booking trùng thời gian")
 
+    overlapping_vehicle_booking = (
+        db.query(Booking.id)
+        .join(User, User.id == Booking.user_id)
+        .filter(
+            Booking.user_id != customer.id,
+            Booking.status.in_(["pending", "booked", "checked_in"]),
+            Booking.start_time < expire_time,
+            Booking.expire_time > start_time,
+            User.vehicle_plate.isnot(None),
+            func.upper(func.trim(User.vehicle_plate)) == normalized_plate,
+        )
+        .first()
+    )
+    if overlapping_vehicle_booking:
+        raise HTTPException(
+            status_code=400,
+            detail="Biển số xe này đã có booking hoạt động trong khung giờ đã chọn",
+        )
+
+    vehicle_profile = db.query(UserVehicle).filter(UserVehicle.user_id == customer.id).with_for_update().first()
+    if vehicle_profile:
+        vehicle_profile.license_plate = normalized_plate
+        vehicle_profile.brand = (payload.vehicle_brand or "").strip() or vehicle_profile.brand
+        vehicle_profile.vehicle_model = (payload.vehicle_model or "").strip() or vehicle_profile.vehicle_model
+        vehicle_profile.vehicle_color = (payload.vehicle_color or "").strip() or vehicle_profile.vehicle_color
+        if payload.vehicle_seat_count:
+            vehicle_profile.seat_count = payload.vehicle_seat_count
+    else:
+        vehicle_profile = UserVehicle(
+            user_id=customer.id,
+            license_plate=normalized_plate,
+            brand=(payload.vehicle_brand or "").strip() or None,
+            vehicle_model=(payload.vehicle_model or "").strip() or None,
+            vehicle_color=(payload.vehicle_color or "").strip() or None,
+            seat_count=payload.vehicle_seat_count,
+        )
+        db.add(vehicle_profile)
+
     parking_price = db.query(ParkingPrice).filter(ParkingPrice.parking_id == parking_id).first()
     if not parking_price:
         raise HTTPException(status_code=400, detail="Bãi chưa cấu hình bảng giá")
 
     duration_hours = max((expire_time - start_time).total_seconds() / 3600, 0)
+    resolved_mode = payload.booking_mode
     if payload.booking_mode == "monthly":
         billed_units = max(ceil(duration_hours / (24 * 30)), 1)
         total_amount = float(parking_price.price_per_month or 0) * billed_units
@@ -412,8 +496,13 @@ def employee_booking_assist(
         billed_units = max(ceil(duration_hours / 24), 1)
         total_amount = float(parking_price.price_per_day or 0) * billed_units
     else:
-        billed_units = max(round(duration_hours, 2), 1)
-        total_amount = float(parking_price.price_per_hour or 0) * billed_units
+        if duration_hours > 12:
+            resolved_mode = "daily"
+            billed_units = 1
+            total_amount = float(parking_price.price_per_day or 0) * billed_units
+        else:
+            billed_units = max(ceil(duration_hours), 1)
+            total_amount = float(parking_price.price_per_hour or 0) * billed_units
 
     booking = Booking(
         user_id=customer.id,
@@ -421,7 +510,7 @@ def employee_booking_assist(
         parking_id=parking_id,
         start_time=start_time,
         expire_time=expire_time,
-        booking_mode=payload.booking_mode,
+        booking_mode=resolved_mode,
         billed_units=billed_units,
         total_amount=round(total_amount, 2),
         status="pending",
@@ -436,5 +525,66 @@ def employee_booking_assist(
         message="Đã tạo đặt chỗ giúp khách hàng thành công",
         booking_id=int(booking.id),
         total_amount=float(booking.total_amount or 0),
+    )
+
+
+@router.patch("/slots/{slot_id}/status")
+def employee_update_slot_status(
+    slot_id: int,
+    payload: EmployeeSlotStatusUpdateRequest,
+    current_employee: User = Depends(get_current_employee),
+    db: Session = Depends(get_db),
+):
+    if not current_employee.parking_id:
+        raise HTTPException(status_code=400, detail="Nhân viên chưa được gán bãi")
+
+    parking_id = int(current_employee.parking_id)
+    slot = (
+        db.query(ParkingSlot)
+        .filter(ParkingSlot.id == slot_id, ParkingSlot.parking_id == parking_id)
+        .with_for_update()
+        .first()
+    )
+    if not slot:
+        raise HTTPException(status_code=404, detail="Không tìm thấy chỗ đỗ trong bãi được phân công")
+
+    current_status = str(slot.status or "").lower()
+
+    target_status = payload.status
+    if target_status == current_status:
+        return {"message": "Trạng thái không thay đổi"}
+
+    if current_status in {"available", "maintenance"}:
+        slot.status = target_status
+        db.commit()
+        return {"message": "Cập nhật trạng thái ô đỗ thành công"}
+
+    # Allow employee to release an occupied/reserved slot early.
+    if target_status == "available" and payload.force_release:
+        active_booking = (
+            db.query(Booking)
+            .filter(
+                Booking.slot_id == slot.id,
+                Booking.parking_id == parking_id,
+                Booking.status.in_(["pending", "booked", "checked_in", "in_progress"]),
+            )
+            .order_by(Booking.created_at.desc(), Booking.id.desc())
+            .with_for_update()
+            .first()
+        )
+        if active_booking:
+            now = datetime.utcnow()
+            if active_booking.actual_checkin is None:
+                active_booking.actual_checkin = active_booking.start_time or now
+            active_booking.actual_checkout = now
+            active_booking.status = "completed"
+
+        slot.status = "available"
+        db.commit()
+        return {"message": "Đã chuyển ô về trống (xe ra sớm)"}
+
+    raise HTTPException(
+        status_code=409,
+        detail="Ô đang có xe/booking hoạt động. Dùng thao tác giải phóng ô để chuyển về trống.",
     )
 
