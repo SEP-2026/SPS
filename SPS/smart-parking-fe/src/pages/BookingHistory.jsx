@@ -44,13 +44,101 @@ const formatDuration = (start, end) => {
 const statusText = (status) => {
   const map = {
     pending: "Chờ thanh toán",
-    booked: "Đã đặt",
+    booked: "Chưa check-in",
     checked_in: "Đang gửi xe",
     checked_out: "Đã check-out",
     completed: "Hoàn tất",
     cancelled: "Đã hủy",
   };
   return map[status] || status || "N/A";
+};
+
+const lifecycleStatus = (item) => {
+  const rawStatus = `${item?.checkin_status || item?.status || ""}`.toLowerCase();
+  if (rawStatus === "completed") return "checked_out";
+  if (rawStatus === "confirmed") return "booked";
+  if (rawStatus === "in_progress") return "checked_in";
+  if (rawStatus === "not_checked_in") return "booked";
+  return rawStatus;
+};
+
+const isCheckedOutBooking = (item) => {
+  const status = lifecycleStatus(item);
+  return status === "checked_out" || item?.status === "completed";
+};
+
+const renderBookingStateDetails = (item) => {
+  const status = lifecycleStatus(item);
+  if (isCheckedOutBooking(item) || status === "cancelled") {
+    return null;
+  }
+
+  const config = {
+    pending: {
+      className: "is-pending",
+      title: "Chờ thanh toán",
+      description: "Booking đã tạo nhưng chưa thanh toán giữ chỗ.",
+      firstLabel: "Check-in dự kiến",
+      firstValue: fmtDateTime(item.checkin_time),
+      secondLabel: "Check-out dự kiến",
+      secondValue: fmtDateTime(item.checkout_time),
+      thirdLabel: "Cần thanh toán",
+      thirdValue: `${Number(item.total_amount || 0).toLocaleString("vi-VN")}đ`,
+    },
+    booked: {
+      className: "is-booked",
+      title: "Chưa check-in",
+      description: "Booking đã được giữ chỗ, xe chưa vào bãi.",
+      firstLabel: "Check-in dự kiến",
+      firstValue: fmtDateTime(item.checkin_time),
+      secondLabel: "Check-out dự kiến",
+      secondValue: fmtDateTime(item.checkout_time),
+      thirdLabel: "Phí gốc",
+      thirdValue: `${Number(item.total_amount || 0).toLocaleString("vi-VN")}đ`,
+    },
+    checked_in: {
+      className: "is-checked-in",
+      title: "Đang check-in",
+      description: "Xe đang ở trong bãi, trạng thái sẽ tự cập nhật khi check-out.",
+      firstLabel: "Check-in thực tế",
+      firstValue: fmtDateTime(item.actual_checkin || item.checkin_time),
+      secondLabel: "Check-out dự kiến",
+      secondValue: fmtDateTime(item.checkout_time),
+      thirdLabel: "Thời gian dự kiến",
+      thirdValue: formatDuration(item.actual_checkin || item.checkin_time, item.checkout_time),
+    },
+  }[status];
+
+  if (!config) {
+    return null;
+  }
+
+  return (
+    <div className={`booking-state-details ${config.className}`}>
+      <div className="booking-state-header">
+        <svg className="booking-state-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+          <polyline points="22 4 12 14.01 9 11.01" />
+        </svg>
+        <span>{config.title}</span>
+      </div>
+      <p>{config.description}</p>
+      <div className="booking-state-grid">
+        <div className="booking-state-item">
+          <span className="booking-state-label">{config.firstLabel}</span>
+          <span className="booking-state-value">{config.firstValue}</span>
+        </div>
+        <div className="booking-state-item">
+          <span className="booking-state-label">{config.secondLabel}</span>
+          <span className="booking-state-value">{config.secondValue}</span>
+        </div>
+        <div className="booking-state-item total">
+          <span className="booking-state-label">{config.thirdLabel}</span>
+          <span className="booking-state-value">{config.thirdValue}</span>
+        </div>
+      </div>
+    </div>
+  );
 };
 
 const statusClass = (status) => {
@@ -216,7 +304,7 @@ export default function BookingHistory() {
   }, [conflictingBooking?.parking_id, conflictingBooking?.slot_id, editMode]);
 
   useEffect(() => {
-    const checkedIn = bookings.filter((item) => (item.checkin_status || item.status) === "checked_in");
+    const checkedIn = bookings.filter((item) => lifecycleStatus(item) === "checked_in");
     if (!checkedIn.length) return undefined;
     const timer = window.setInterval(async () => {
       try {
@@ -253,18 +341,16 @@ export default function BookingHistory() {
   );
 
   const filteredBookings = useMemo(() => {
-    const normalizedStatus = (item) => `${item.checkin_status || item.status || ""}`.toLowerCase();
     let filtered = activeBookings;
     
     if (activeTab === "all") filtered = activeBookings;
     else if (activeTab === "not_checked_in") {
-      filtered = activeBookings.filter((item) => ["pending", "booked"].includes(normalizedStatus(item)));
+      filtered = activeBookings.filter((item) => ["pending", "booked"].includes(lifecycleStatus(item)));
     } else if (activeTab === "checked_in") {
-      filtered = activeBookings.filter((item) => normalizedStatus(item) === "checked_in");
+      filtered = activeBookings.filter((item) => lifecycleStatus(item) === "checked_in");
     } else if (activeTab === "checked_out" || activeTab === "review") {
       filtered = activeBookings.filter((item) => {
-        const status = normalizedStatus(item);
-        const isCheckedOut = status === "checked_out" || status === "completed";
+        const isCheckedOut = isCheckedOutBooking(item);
         if (activeTab === "review") {
           return isCheckedOut && Boolean(item.has_review);
         }
@@ -695,7 +781,7 @@ export default function BookingHistory() {
                 <header>
                   <div className="booking-header-left">
                     <h3>#{item.booking_id}</h3>
-                    <span className={`status-chip ${statusClass(item.status)}`}>{statusText(item.status)}</span>
+                    <span className={`status-chip ${statusClass(lifecycleStatus(item))}`}>{statusText(lifecycleStatus(item))}</span>
                   </div>
                   <div className="booking-price">
                     {Number(item.total_amount || 0).toLocaleString("vi-VN")}đ
@@ -742,7 +828,8 @@ export default function BookingHistory() {
                     <span>{fmtDateTime(item.checkin_time)} - {fmtDateTime(item.checkout_time)}</span>
                   </div>
                 </div>
-                {((item.checkin_status || item.status) === "checked_out" || item.status === "completed") && (
+                {renderBookingStateDetails(item)}
+                {isCheckedOutBooking(item) && (
                   <div className="checkout-details">
                     <div className="checkout-header">
                       <svg className="checkout-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -839,7 +926,7 @@ export default function BookingHistory() {
                       </svg>
                       <span>Bản đồ</span>
                     </a>
-                    {((item.checkin_status || item.status) === "checked_out" || item.status === "completed") && (
+                    {isCheckedOutBooking(item) && (
                       item.is_reviewed ? (
                         <button type="button" className="btn-review" onClick={() => openReviewModal(item, "view")}>
                           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -944,4 +1031,3 @@ export default function BookingHistory() {
     </section>
   );
 }
-

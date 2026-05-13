@@ -3,6 +3,7 @@ from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, Field
 from sqlalchemy import func
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -70,9 +71,19 @@ def create_review(
     )
     db.add(review)
     booking.is_reviewed = 1
-    db.flush()
-    update_parking_avg_rating(db, booking.parking_id)
-    db.commit()
+    try:
+        db.flush()
+        update_parking_avg_rating(db, booking.parking_id)
+        db.commit()
+    except IntegrityError as exc:
+        db.rollback()
+        message = str(getattr(exc, "orig", exc))
+        if "unique_user_parking_review" in message:
+            raise HTTPException(
+                status_code=409,
+                detail="Database vẫn còn ràng buộc cũ chỉ cho đánh giá một lần mỗi bãi. Vui lòng khởi động lại backend để chạy migration mới.",
+            ) from exc
+        raise
     db.refresh(review)
 
     return {

@@ -8,6 +8,18 @@ import "./PaymentSuccess.css";
 
 const formatMoney = (value) => Number(value || 0).toLocaleString("vi-VN");
 const BACKEND_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+const bookingStatusLabel = (status) => {
+  const normalized = String(status || "").toLowerCase();
+  const map = {
+    pending: "Chờ thanh toán",
+    booked: "Chưa check-in",
+    checked_in: "Đang gửi xe",
+    checked_out: "Đã check-out",
+    completed: "Hoàn tất",
+    cancelled: "Đã hủy",
+  };
+  return map[normalized] || status || "N/A";
+};
 
 export default function PaymentSuccess() {
   const { bookingId } = useParams();
@@ -192,7 +204,7 @@ export default function PaymentSuccess() {
               <p className="payment-success-note">✅ Đã check-out thành công</p>
             ) : null}
             <p><strong>Booking ID:</strong> {booking.booking_id}</p>
-            <p><strong>Trạng thái:</strong> {booking.booking_status}</p>
+            <p><strong>Trạng thái:</strong> {bookingStatusLabel(currentCheckinStatus || booking.booking_status)}</p>
             <p><strong>Bãi xe:</strong> {booking.parking?.name}</p>
             <p><strong>Slot:</strong> {booking.slot?.code || booking.slot?.id}</p>
             <p><strong>Chủ xe:</strong> {booking.vehicle?.owner_name}</p>
@@ -234,7 +246,7 @@ export default function PaymentSuccess() {
               <button type="button" className="payment-success-btn secondary" onClick={handleShareZalo}>
                 Gửi qua Zalo
               </button>
-              <button type="button" className="btn-primary" onClick={() => navigate("/booking", { replace: true })}>
+              <button type="button" className="btn-primary" onClick={() => navigate("/booking-history", { replace: true })}>
                 Xem chi tiết booking
               </button>
             </div>

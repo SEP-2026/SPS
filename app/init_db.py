@@ -1,7 +1,7 @@
 import time
 
 from sqlalchemy import inspect, text
-from sqlalchemy.exc import OperationalError
+from sqlalchemy.exc import OperationalError, SQLAlchemyError
 
 from app.database import Base, SessionLocal, engine
 from app.models import models
@@ -13,7 +13,7 @@ def _run_ddl_with_retry(statement: str, retries: int = 3, delay_seconds: float =
             with engine.begin() as conn:
                 conn.execute(text(statement))
             return True
-        except OperationalError as exc:
+        except SQLAlchemyError as exc:
             error_code = getattr(exc.orig, "args", [None])[0] if getattr(exc, "orig", None) else None
             if error_code in {1213, 1205} and attempt < retries - 1:
                 time.sleep(delay_seconds)
@@ -405,10 +405,18 @@ def migrate_reviews_columns():
     _run_ddl_with_retry("ALTER TABLE reviews MODIFY COLUMN owner_reply TEXT NULL")
     _run_ddl_with_retry("ALTER TABLE reviews MODIFY COLUMN rating TINYINT NOT NULL")
 
+    indexes = {index["name"] for index in inspector.get_indexes("reviews")}
+    if "unique_user_parking_review" in indexes:
+        if "idx_reviews_user_id" not in indexes:
+            _run_ddl_with_retry("CREATE INDEX idx_reviews_user_id ON reviews (user_id)")
+        _run_ddl_with_retry("DROP INDEX unique_user_parking_review ON reviews")
+
     with engine.begin() as conn:
         conn.execute(text("UPDATE reviews SET booking_id = id WHERE booking_id IS NULL"))
 
-    _run_ddl_with_retry("CREATE UNIQUE INDEX uq_reviews_booking_id ON reviews (booking_id)")
+    indexes = {index["name"] for index in inspect(engine).get_indexes("reviews")}
+    if "uq_reviews_booking_id" not in indexes:
+        _run_ddl_with_retry("CREATE UNIQUE INDEX uq_reviews_booking_id ON reviews (booking_id)")
     _run_ddl_with_retry(
         """
         ALTER TABLE reviews
