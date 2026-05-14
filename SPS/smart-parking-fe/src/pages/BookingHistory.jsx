@@ -956,18 +956,18 @@ export default function BookingHistory() {
 
       {/* QR Code Modal */}
       {qrModal.isOpen && ReactDOM.createPortal(
-        <div className="qr-modal-overlay" onClick={closeQrModal}>
-          <div className="qr-modal" onClick={(e) => e.stopPropagation()}>
-            <button className="qr-modal-close" onClick={closeQrModal}>×</button>
+        <div className="history-qr-modal-overlay" onClick={closeQrModal}>
+          <div className="history-qr-modal" onClick={(e) => e.stopPropagation()}>
+            <button className="history-qr-modal-close" onClick={closeQrModal}>×</button>
             <h2>Mã QR - Booking #{qrModal.bookingId}</h2>
             {qrModal.loading && <p>Đang tải mã QR...</p>}
-            {qrModal.error && <p className="qr-modal-error">{qrModal.error}</p>}
+            {qrModal.error && <p className="history-qr-modal-error">{qrModal.error}</p>}
             {qrModal.qrUrl && (
               <>
-                <div className="qr-modal-image">
+                <div className="history-qr-modal-image">
                   <img src={qrModal.qrUrl} alt="QR Code" />
                 </div>
-                <button className="qr-modal-download" onClick={handleDownloadQr}>
+                <button className="history-qr-modal-download" onClick={handleDownloadQr}>
                   Tải QR
                 </button>
               </>
@@ -977,11 +977,11 @@ export default function BookingHistory() {
         document.body
       )}
       {reviewModal.isOpen && ReactDOM.createPortal(
-        <div className="qr-modal-overlay" onClick={closeReviewModal}>
-          <div className="qr-modal" onClick={(e) => e.stopPropagation()}>
-            <button className="qr-modal-close" onClick={closeReviewModal}>×</button>
+        <div className="history-qr-modal-overlay" onClick={closeReviewModal}>
+          <div className="history-qr-modal" onClick={(e) => e.stopPropagation()}>
+            <button className="history-qr-modal-close" onClick={closeReviewModal}>×</button>
             {reviewModal.loading ? <p>Đang tải đánh giá...</p> : null}
-            {reviewModal.error ? <p className="qr-modal-error">{reviewModal.error}</p> : null}
+            {reviewModal.error ? <p className="history-qr-modal-error">{reviewModal.error}</p> : null}
 
             {!reviewModal.loading && !reviewModal.review && reviewModal.booking && !reviewModal.booking.is_reviewed ? (
               <ReviewForm

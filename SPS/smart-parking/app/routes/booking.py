@@ -4,6 +4,7 @@ from datetime import datetime, timezone
 import os
 import unicodedata
 import logging
+from uuid import uuid4
 from urllib.parse import quote_plus
 from urllib.request import urlopen
 import json
@@ -682,7 +683,8 @@ def create_booking(
             billed_units=billing["billed_units"],
             total_amount=billing["total_amount"],
             status="pending",
-            qr_code="",
+            # Keep a unique placeholder before QR image is generated to satisfy DB unique constraint.
+            qr_code=f"pending://{uuid4()}",
         )
 
         db.add(booking)

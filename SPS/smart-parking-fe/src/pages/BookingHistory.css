@@ -743,8 +743,8 @@
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-/* QR Modal Styles */
-.qr-modal-overlay {
+/* QR Modal Styles (history page only, isolated to avoid style conflicts) */
+.history-qr-modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
@@ -758,7 +758,7 @@
   padding: 16px;
 }
 
-.qr-modal {
+.history-qr-modal {
   background: white;
   border-radius: 16px;
   padding: 24px;
@@ -769,7 +769,7 @@
   text-align: center;
 }
 
-.qr-modal-close {
+.history-qr-modal-close {
   position: absolute;
   top: 12px;
   right: 12px;
@@ -787,35 +787,35 @@
   transition: color 0.2s ease;
 }
 
-.qr-modal-close:hover {
+.history-qr-modal-close:hover {
   color: #333;
 }
 
-.qr-modal h2 {
+.history-qr-modal h2 {
   margin: 0 0 20px;
   color: #1b4b67;
   font-size: 18px;
 }
 
-.qr-modal-image {
+.history-qr-modal-image {
   margin: 20px 0;
   display: flex;
   justify-content: center;
 }
 
-.qr-modal-image img {
+.history-qr-modal-image img {
   max-width: 280px;
   border: 2px solid #e0e0e0;
   border-radius: 8px;
 }
 
-.qr-modal-error {
+.history-qr-modal-error {
   color: #b23242;
   font-size: 14px;
   margin: 16px 0;
 }
 
-.qr-modal-download {
+.history-qr-modal-download {
   background: linear-gradient(135deg, #2084c7 0%, #145f96 100%);
   color: white;
   border: none;
@@ -828,7 +828,7 @@
   margin-top: 16px;
 }
 
-.qr-modal-download:hover {
+.history-qr-modal-download:hover {
   transform: translateY(-2px);
   box-shadow: 0 6px 16px rgba(32, 132, 199, 0.3);
 }
