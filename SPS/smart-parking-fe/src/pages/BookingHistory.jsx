@@ -1012,16 +1012,27 @@ export default function BookingHistory() {
 
             {reviewModal.review ? (
               <div className="booking-review-result">
-                <h3>✅ Đánh giá của bạn</h3>
-                <p className="owner-review-rating">{"★".repeat(reviewModal.review.rating)}{"☆".repeat(5 - reviewModal.review.rating)} ({reviewModal.review.rating}/5)</p>
-                <p>"{reviewModal.review.comment || "Không có nhận xét."}"</p>
-                <p>Gửi lúc: {fmtDateTime(reviewModal.review.created_at)}</p>
-                <p><strong>Phản hồi từ chủ bãi:</strong></p>
-                {reviewModal.review.owner_reply ? (
-                  <p>💬 "{reviewModal.review.owner_reply}"</p>
-                ) : (
-                  <p>⏳ Chưa có phản hồi từ chủ bãi</p>
-                )}
+                <div className="review-result-head">
+                  <h3>Đánh giá của bạn</h3>
+                  <span className="review-result-score">{reviewModal.review.rating}/5</span>
+                </div>
+                <p className="owner-review-rating">
+                  {"★".repeat(reviewModal.review.rating)}
+                  {"☆".repeat(5 - reviewModal.review.rating)}
+                </p>
+                <blockquote className="review-result-comment">
+                  {reviewModal.review.comment || "Không có nhận xét."}
+                </blockquote>
+                <p className="review-result-time">Gửi lúc: {fmtDateTime(reviewModal.review.created_at)}</p>
+
+                <div className="review-result-reply">
+                  <p className="reply-title">Phản hồi từ chủ bãi</p>
+                  {reviewModal.review.owner_reply ? (
+                    <p className="reply-content">“{reviewModal.review.owner_reply}”</p>
+                  ) : (
+                    <p className="reply-empty">Chưa có phản hồi từ chủ bãi</p>
+                  )}
+                </div>
               </div>
             ) : null}
           </div>

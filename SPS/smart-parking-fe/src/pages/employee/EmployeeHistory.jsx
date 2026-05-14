@@ -16,6 +16,36 @@ function formatCurrency(value) {
   return `${Number(value || 0).toLocaleString("vi-VN")}đ`;
 }
 
+function resolveCheckoutAmount(item) {
+  const numericCandidates = [
+    item?.amount,
+    item?.total_actual_fee,
+    item?.total_amount,
+    item?.fee_amount,
+    item?.payment_amount,
+    item?.paid_amount,
+    item?.remaining_due,
+  ];
+
+  for (const candidate of numericCandidates) {
+    const value = Number(candidate);
+    if (Number.isFinite(value) && value > 0) {
+      return value;
+    }
+  }
+
+  const detail = `${item?.detail || ""}`;
+  const match = detail.match(/(\d{1,3}(?:[.,]\d{3})+|\d+)\s*(?:đ|vnd)/i);
+  if (match?.[1]) {
+    const parsed = Number(match[1].replace(/[.,\s]/g, ""));
+    if (Number.isFinite(parsed) && parsed > 0) {
+      return parsed;
+    }
+  }
+
+  return 0;
+}
+
 function decodeMojibake(value) {
   if (!value || typeof value !== "string") {
     return value || "";
@@ -77,6 +107,7 @@ export default function EmployeeHistory() {
 
         {data.history.map((item) => {
           const showAmount = MONEY_RELATED_ACTIONS.has(item.action);
+          const checkoutAmount = resolveCheckoutAmount(item);
           return (
             <article key={item.id} className="employee-history-item employee-history-item--timeline">
               <div>
@@ -85,7 +116,7 @@ export default function EmployeeHistory() {
               </div>
               <div className="employee-history-meta">
                 <p>{new Date(item.created_at).toLocaleString("vi-VN")}</p>
-                {showAmount ? <span className="employee-status-pill">{formatCurrency(item.amount)}</span> : null}
+                {showAmount ? <span className="employee-status-pill">{formatCurrency(checkoutAmount)}</span> : null}
               </div>
             </article>
           );

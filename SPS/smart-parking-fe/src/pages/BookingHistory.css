@@ -759,14 +759,17 @@
 }
 
 .history-qr-modal {
-  background: white;
-  border-radius: 16px;
+  background:
+    radial-gradient(circle at top right, rgba(63, 157, 229, 0.16), transparent 46%),
+    linear-gradient(180deg, #ffffff 0%, #f8fcff 100%);
+  border: 1px solid rgba(26, 89, 140, 0.14);
+  border-radius: 20px;
   padding: 24px;
-  max-width: 400px;
+  max-width: 420px;
   width: 100%;
   position: relative;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
-  text-align: center;
+  box-shadow: 0 20px 50px rgba(0, 22, 40, 0.3);
+  text-align: left;
 }
 
 .history-qr-modal-close {
@@ -792,9 +795,11 @@
 }
 
 .history-qr-modal h2 {
-  margin: 0 0 20px;
-  color: #1b4b67;
-  font-size: 18px;
+  margin: 0 0 16px;
+  color: #123b59;
+  font-size: 30px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
 }
 
 .history-qr-modal-image {
@@ -836,10 +841,84 @@
 .booking-review-result {
   text-align: left;
   margin-top: 8px;
+  border: 1px solid rgba(22, 93, 156, 0.18);
+  border-radius: 16px;
+  padding: 14px;
+  background: linear-gradient(180deg, #ffffff 0%, #f2f9ff 100%);
+}
+
+.review-result-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
 }
 
 .booking-review-result h3 {
-  margin: 0 0 8px;
+  margin: 0;
+  color: #143a57;
+  font-size: 1.45rem;
+}
+
+.review-result-score {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  padding: 4px 10px;
+  background: linear-gradient(135deg, #f6bd37 0%, #f2a72d 100%);
+  color: #fff;
+  font-weight: 800;
+  font-size: 0.9rem;
+}
+
+.owner-review-rating {
+  margin: 0 0 10px;
+  color: #de9100;
+  font-size: 1.35rem;
+  letter-spacing: 1px;
+}
+
+.review-result-comment {
+  margin: 0;
+  padding: 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(39, 115, 176, 0.15);
+  background: #fafdff;
+  color: #20445f;
+  font-style: italic;
+}
+
+.review-result-time {
+  margin: 10px 0 0;
+  color: #3d6784;
+  font-size: 0.92rem;
+}
+
+.review-result-reply {
+  margin-top: 12px;
+  padding: 12px;
+  border-radius: 12px;
+  background: linear-gradient(180deg, #f3f9ff 0%, #e9f4ff 100%);
+  border: 1px solid rgba(45, 124, 190, 0.2);
+}
+
+.reply-title {
+  margin: 0 0 6px;
+  color: #1f5378;
+  font-weight: 800;
+}
+
+.reply-content {
+  margin: 0;
+  color: #1f415c;
+}
+
+.reply-empty {
+  margin: 0;
+  color: #567b98;
+  font-weight: 600;
 }
 
 /* QR Button in History */

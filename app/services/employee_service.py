@@ -760,7 +760,15 @@ def employee_check_out(employee: User, qr_data: str, payment_method: str, db: Se
         actor=employee,
         db=db,
     )
-    amount = float(detail.get("pricing_preview", {}).get("remaining_due") or 0)
+    pricing_preview = detail.get("pricing_preview") or {}
+    # Prefer the actual checkout charge; fallback to remaining due for legacy cases.
+    amount = float(
+        pricing_preview.get("total_charge")
+        or pricing_preview.get("remaining_due")
+        or detail.get("total_actual_fee")
+        or detail.get("total_amount")
+        or 0
+    )
     _log_activity(
         employee,
         parking_lot.id,
@@ -795,12 +803,45 @@ def get_employee_history(
         .limit(safe_limit)
         .all()
     )
+    # Backfill amount for legacy check-out logs where amount was saved as 0.
+    checkout_booking_ids: set[int] = set()
+    checkout_amount_by_booking_id: dict[int, float] = {}
+    for row in rows:
+        if row.action != "check_out" or float(row.amount or 0) > 0:
+            continue
+        detail_text = str(row.detail or "")
+        match = re.search(r"BK-(\d+)", detail_text, re.IGNORECASE)
+        if match:
+            checkout_booking_ids.add(int(match.group(1)))
+
+    if checkout_booking_ids:
+        booking_rows = (
+            db.query(Booking.id, Booking.total_actual_fee, Booking.total_amount)
+            .filter(Booking.id.in_(checkout_booking_ids))
+            .all()
+        )
+        checkout_amount_by_booking_id = {
+            int(booking_id): float(total_actual_fee or total_amount or 0)
+            for booking_id, total_actual_fee, total_amount in booking_rows
+        }
+
     history = [
         {
             "id": row.id,
             "action": row.action,
             "detail": row.detail,
-            "amount": float(row.amount or 0),
+            "amount": (
+                float(row.amount or 0)
+                if not (
+                    row.action == "check_out"
+                    and float(row.amount or 0) <= 0
+                    and re.search(r"BK-(\d+)", str(row.detail or ""), re.IGNORECASE)
+                )
+                else checkout_amount_by_booking_id.get(
+                    int(re.search(r"BK-(\d+)", str(row.detail or ""), re.IGNORECASE).group(1)),
+                    float(row.amount or 0),
+                )
+            ),
             "created_at": row.created_at,
         }
         for row in rows

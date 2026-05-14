@@ -4,6 +4,11 @@
   --employee-scan-ice: #edf6ff;
   --employee-scan-line: rgba(17, 67, 104, 0.2);
   --employee-scan-shadow: 0 22px 48px rgba(7, 32, 56, 0.2);
+  font-family: "Be Vietnam Pro", "Noto Sans", "Segoe UI", Roboto, Arial, sans-serif;
+  font-variant-ligatures: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 .employee-scan-page .scan-page {
@@ -52,6 +57,8 @@
   color: #3d6485;
   max-width: 760px;
   font-size: 16px;
+  line-height: 1.55;
+  font-weight: 500;
 }
 
 .employee-scan-page .scan-eyebrow {
@@ -80,6 +87,7 @@
 .employee-scan-page .scan-hero-badge strong {
   color: #164667;
   font-size: 18px;
+  font-family: "Space Grotesk", "Be Vietnam Pro", "Noto Sans", sans-serif;
 }
 
 .employee-scan-page .scan-hero-badge span {
@@ -137,11 +145,16 @@
 .employee-scan-page .scan-field span {
   color: #184f78;
   font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
 }
 
 .employee-scan-page .scan-input {
   border-radius: 14px;
   border-color: rgba(17, 75, 120, 0.18);
+  font-family: "Be Vietnam Pro", "Noto Sans", "Segoe UI", sans-serif;
+  font-size: 15px;
+  line-height: 1.45;
 }
 
 .employee-scan-page .scan-input:focus {
@@ -153,22 +166,32 @@
   border-radius: 14px;
   background: linear-gradient(145deg, #0f8da3, #2e72d7);
   box-shadow: 0 12px 22px rgba(13, 64, 108, 0.28);
+  font-family: "Be Vietnam Pro", "Noto Sans", "Segoe UI", sans-serif;
+  font-weight: 700;
 }
 
 .employee-scan-page .scan-secondary-btn {
   border: 1px solid rgba(16, 78, 125, 0.2);
   border-radius: 14px;
   background: linear-gradient(170deg, rgba(255, 255, 255, 0.96), rgba(227, 241, 253, 0.88));
+  font-family: "Be Vietnam Pro", "Noto Sans", "Segoe UI", sans-serif;
+  font-weight: 700;
 }
 
 .employee-scan-page .btn-checkin {
   border-radius: 14px;
   background: linear-gradient(145deg, #1a9a62, #38bf80);
+  font-family: "Be Vietnam Pro", "Noto Sans", "Segoe UI", sans-serif;
+  font-weight: 800;
+  letter-spacing: 0.01em;
 }
 
 .employee-scan-page .btn-checkout {
   border-radius: 14px;
   background: linear-gradient(145deg, #d06b3f, #ed8a5a);
+  font-family: "Be Vietnam Pro", "Noto Sans", "Segoe UI", sans-serif;
+  font-weight: 800;
+  letter-spacing: 0.01em;
 }
 
 .employee-scan-page .camera-container {
@@ -203,6 +226,7 @@
   font-size: 20px;
   color: #11395a;
   letter-spacing: -0.01em;
+  font-family: "Space Grotesk", "Be Vietnam Pro", "Noto Sans", sans-serif;
 }
 
 .employee-scan-page .scan-summary-list {
@@ -221,16 +245,33 @@
   color: #4f7090;
   font-size: 12px;
   letter-spacing: 0.08em;
+  font-weight: 700;
 }
 
 .employee-scan-page .scan-summary-list strong {
   color: #123d5f;
   font-size: 15px;
+  font-weight: 700;
+  line-height: 1.4;
+  font-family: "Be Vietnam Pro", "Noto Sans", "Segoe UI", sans-serif;
 }
 
 .employee-scan-page .scan-feedback {
   border-radius: 16px;
   border-width: 2px;
+  font-family: "Be Vietnam Pro", "Noto Sans", "Segoe UI", sans-serif;
+}
+
+.employee-scan-page .scan-feedback h4,
+.employee-scan-page .scan-feedback strong {
+  font-family: "Space Grotesk", "Be Vietnam Pro", "Noto Sans", sans-serif;
+  letter-spacing: -0.01em;
+}
+
+.employee-scan-page .scan-feedback p,
+.employee-scan-page .scan-feedback span {
+  line-height: 1.55;
+  font-size: 15px;
 }
 
 .employee-scan-page .scan-feedback--neutral {
