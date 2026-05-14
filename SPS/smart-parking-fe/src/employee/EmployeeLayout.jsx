@@ -1,4 +1,4 @@
-﻿import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
 
 import { OwnerIcon } from "../owner/OwnerIcons";
@@ -42,9 +42,14 @@ export default function EmployeeLayout({ auth, onLogout }) {
   });
   const [loading, setLoading] = useState(true);
   const [syncNote, setSyncNote] = useState("Đang đồng bộ...");
+  const hasLoadedOnceRef = useRef(false);
 
   const refreshEmployee = useCallback(async () => {
-    setLoading(true);
+    const isInitialLoad = !hasLoadedOnceRef.current;
+    if (isInitialLoad) {
+      setLoading(true);
+    }
+
     const [parkingLotRes, profileRes, revenueRes, slotsOverviewRes] = await Promise.allSettled([
       getEmployeeParkingLot(),
       getEmployeeProfile(),
@@ -59,7 +64,11 @@ export default function EmployeeLayout({ auth, onLogout }) {
 
     const failedCount = [parkingLotRes, profileRes, revenueRes, slotsOverviewRes].filter((item) => item.status === "rejected").length;
     setSyncNote(failedCount > 0 ? `Đồng bộ thiếu ${failedCount} mục dữ liệu` : "Đồng bộ thành công");
-    setLoading(false);
+
+    if (isInitialLoad) {
+      hasLoadedOnceRef.current = true;
+      setLoading(false);
+    }
   }, []);
 
   useRealtimeRefresh(refreshEmployee, { enabled: Boolean(auth?.token), minRefreshIntervalMs: 2000 });
