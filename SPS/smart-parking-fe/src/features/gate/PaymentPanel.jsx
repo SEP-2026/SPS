@@ -2,6 +2,8 @@ import { formatCurrency } from "./gateFormatters";
 import { getPaymentStatusLabel } from "./statusLabel";
 
 export default function PaymentPanel({ booking, paymentMethod, setPaymentMethod }) {
+  void paymentMethod;
+  void setPaymentMethod;
   const pricing = booking?.pricing_preview;
   const payment = booking?.payment;
   const remainingDue = Number(pricing?.remaining_due || payment?.remaining_amount || 0);

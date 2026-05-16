@@ -12,10 +12,39 @@ import { useEmployeeContext } from "../../employee/useEmployeeContext";
 import "../Scan.css";
 import "./EmployeeQrScanner.css";
 
+function normalizeViText(value) {
+  if (!value || typeof value !== "string") return "";
+
+  let text = value.trim();
+
+  if (/[ÃÂ]/.test(text)) {
+    try {
+      text = decodeURIComponent(escape(text));
+    } catch {
+      // keep original text when decoding fails
+    }
+  }
+
+  const replacements = [
+    [/không tìm th\?y booking/gi, "Không tìm thấy booking"],
+    [/kh\?ng tìm th\?y booking/gi, "Không tìm thấy booking"],
+    [/kh\?ng th\? th\?ng tin booking/gi, "Không thể thông tin booking"],
+    [/kh\?ng th\? kết nối/gi, "Không thể kết nối"],
+  ];
+
+  replacements.forEach(([pattern, nextValue]) => {
+    text = text.replace(pattern, nextValue);
+  });
+
+  return text;
+}
+
 function buildBannerFromError(error, fallbackTitle) {
+  const detailRaw = error?.response?.data?.detail || "";
+  const detailNormalized = normalizeViText(detailRaw);
   return {
     title: fallbackTitle,
-    message: error?.response?.data?.detail || "Không thể kết nối tới hệ thống cổng.",
+    message: detailNormalized || "Không thể kết nối tới hệ thống cổng.",
   };
 }
 

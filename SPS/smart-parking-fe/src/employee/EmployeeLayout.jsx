@@ -1,54 +1,89 @@
-import { useCallback, useEffect, useRef, useState } from "react";
-import { NavLink, Outlet, useLocation } from "react-router-dom";
+﻿import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { NavLink, Outlet } from "react-router-dom";
 
 import { OwnerIcon } from "../owner/OwnerIcons";
 import { getEmployeeParkingLot, getEmployeeProfile, getEmployeeRevenue, getEmployeeSlotsOverview } from "./employeeService";
 import useRealtimeRefresh from "../services/useRealtimeRefresh";
 import "./employee.css";
+import "./employee-reference.css";
+import "./employee-layout-fix.css";
 
-const NAV_ITEMS = [
-  { to: "/employee", label: "Bảng điều khiển", icon: "dashboard" },
-  { to: "/employee/booking-assist", label: "Đặt chỗ giúp khách", icon: "booking" },
-  { to: "/employee/scanner", label: "Quét mã QR", icon: "scan" },
-  { to: "/employee/vehicles", label: "Xe trong bãi", icon: "parking" },
-  { to: "/employee/revenue", label: "Doanh thu", icon: "revenue" },
-  { to: "/employee/history", label: "Lịch sử", icon: "reviews" },
-  { to: "/employee/profile", label: "Hồ sơ bãi", icon: "settings" },
+const NAV_GROUPS = [
+  {
+    title: "TỔNG QUAN",
+    items: [{ to: "/employee", label: "Tổng quan", icon: "dashboard", end: true }],
+  },
+  {
+    title: "THAO TÁC",
+    items: [
+      { to: "/employee/scanner", label: "Quét QR", icon: "booking" },
+      { to: "/employee/vehicles", label: "Xe trong bãi", icon: "parking" },
+      { to: "/employee/booking-assist", label: "Đặt chỗ giúp khách", icon: "customer" },
+      { to: "/employee/history", label: "Lịch sử giao dịch", icon: "reviews" },
+    ],
+  },
+  {
+    title: "THÔNG TIN BÃI XE",
+    items: [
+      { to: "/employee/profile", label: "Hồ sơ nhân viên", icon: "analytics" },
+      { to: "/employee/revenue", label: "Thông tin bãi", icon: "settings" },
+    ],
+  },
 ];
 
 const ROUTE_HINT = {
-  "/employee": "Tổng quan luồng xe và trạng thái bãi theo thời gian thực.",
-  "/employee/booking-assist": "Nhân viên tạo đặt chỗ giúp khách hàng tại bãi được phân công.",
-  "/employee/scanner": "Xử lý check-in/check-out bằng mã QR tại cổng.",
-  "/employee/vehicles": "Theo dõi xe trong bãi và vị trí đỗ trực quan theo ô.",
-  "/employee/revenue": "Theo dõi doanh thu theo ngày và theo tháng.",
-  "/employee/history": "Nhật ký thao tác gần nhất của nhân viên.",
-  "/employee/profile": "Thông tin bãi đỗ đang được phân công vận hành.",
+  "/employee": "Tổng quan vận hành theo thời gian thực.",
+  "/employee/scanner": "Quét mã QR để check-in/check-out.",
+  "/employee/vehicles": "Theo dõi xe trong bãi theo từng ô đỗ.",
+  "/employee/booking-assist": "Hỗ trợ tạo booking cho khách tại bãi.",
+  "/employee/history": "Nhật ký thao tác gần đây của nhân viên.",
+  "/employee/profile": "Thông tin bãi xe được phân công.",
+  "/employee/revenue": "Theo dõi doanh thu và lưu lượng bãi.",
 };
 
+function formatDate(value) {
+  if (!value) return "--";
+  return new Intl.DateTimeFormat("vi-VN", {
+    weekday: "long",
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  }).format(value);
+}
+
+function formatTime(value) {
+  if (!value) return "--:--:--";
+  return new Intl.DateTimeFormat("vi-VN", {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  }).format(value);
+}
+
+function resolveStatusLabel(status) {
+  if (status === "open") return "Hoạt động tốt";
+  if (status === "full") return "Đang đầy";
+  if (status === "closed") return "Tạm đóng";
+  if (status === "locked") return "Bị khóa";
+  return "Đang vận hành";
+}
+
 export default function EmployeeLayout({ auth, onLogout }) {
-  const location = useLocation();
+  const [pathName, setPathName] = useState(() => window.location.pathname);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [parkingLot, setParkingLot] = useState(null);
   const [profile, setProfile] = useState(null);
   const [revenue, setRevenue] = useState({ revenueToday: 0, revenueMonth: 0 });
-  const [slotsOverview, setSlotsOverview] = useState({
-    total_slots: 0,
-    available_slots: 0,
-    reserved_slots: 0,
-    in_use_slots: 0,
-    maintenance_slots: 0,
-    slots: [],
-  });
+  const [slotsOverview, setSlotsOverview] = useState({ total_slots: 0, available_slots: 0, reserved_slots: 0, in_use_slots: 0, maintenance_slots: 0, slots: [] });
   const [loading, setLoading] = useState(true);
   const [syncNote, setSyncNote] = useState("Đang đồng bộ...");
+  const [now, setNow] = useState(() => new Date());
   const hasLoadedOnceRef = useRef(false);
 
   const refreshEmployee = useCallback(async () => {
     const isInitialLoad = !hasLoadedOnceRef.current;
-    if (isInitialLoad) {
-      setLoading(true);
-    }
+    if (isInitialLoad) setLoading(true);
 
     const [parkingLotRes, profileRes, revenueRes, slotsOverviewRes] = await Promise.allSettled([
       getEmployeeParkingLot(),
@@ -63,7 +98,7 @@ export default function EmployeeLayout({ auth, onLogout }) {
     if (slotsOverviewRes.status === "fulfilled") setSlotsOverview(slotsOverviewRes.value);
 
     const failedCount = [parkingLotRes, profileRes, revenueRes, slotsOverviewRes].filter((item) => item.status === "rejected").length;
-    setSyncNote(failedCount > 0 ? `Đồng bộ thiếu ${failedCount} mục dữ liệu` : "Đồng bộ thành công");
+    setSyncNote(failedCount > 0 ? `Đồng bộ thiếu ${failedCount} mục` : "Đồng bộ thành công");
 
     if (isInitialLoad) {
       hasLoadedOnceRef.current = true;
@@ -74,71 +109,76 @@ export default function EmployeeLayout({ auth, onLogout }) {
   useRealtimeRefresh(refreshEmployee, { enabled: Boolean(auth?.token), minRefreshIntervalMs: 2000 });
 
   useEffect(() => {
-    refreshEmployee();
-
-    const intervalId = window.setInterval(() => {
+    const initialLoadId = window.setTimeout(() => {
       refreshEmployee();
-    }, 10000);
+    }, 0);
+    const intervalId = window.setInterval(refreshEmployee, 10000);
 
-    const handleFocus = () => refreshEmployee();
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === "visible") {
-        refreshEmployee();
-      }
-    };
-
-    window.addEventListener("focus", handleFocus);
-    document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("focus", refreshEmployee);
+    document.addEventListener("visibilitychange", refreshEmployee);
 
     return () => {
+      window.clearTimeout(initialLoadId);
       window.clearInterval(intervalId);
-      window.removeEventListener("focus", handleFocus);
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("focus", refreshEmployee);
+      document.removeEventListener("visibilitychange", refreshEmployee);
     };
   }, [refreshEmployee]);
 
   useEffect(() => {
-    setSidebarOpen(false);
-  }, [location.pathname]);
+    const timer = window.setInterval(() => setNow(new Date()), 1000);
+    return () => window.clearInterval(timer);
+  }, []);
 
-  const displayName = auth?.user?.username || "nhân viên";
-  const routeHint = ROUTE_HINT[location.pathname] || "Không gian vận hành dành cho tài khoản nhân viên.";
-  const notificationsCount = Math.max(0, Number(parkingLot?.occupiedSlots || 0));
+  useEffect(() => {
+    const onPopState = () => setPathName(window.location.pathname);
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, []);
+
+  const displayName = auth?.user?.full_name || auth?.user?.name || auth?.user?.username || "Nhân viên";
   const isParkingLocked = parkingLot?.status === "locked";
+  const pageTitle = useMemo(() => parkingLot?.parking_name || "Bãi xe Trường Chinh", [parkingLot?.parking_name]);
+  const pageAddress = parkingLot?.address || ROUTE_HINT[pathName] || "Thông tin bãi xe";
+  const isMenuItemActive = useCallback(
+    (item, isActiveFromNavLink) => {
+      if (item.suppressActive) return false;
+      return isActiveFromNavLink;
+    },
+    [],
+  );
 
   return (
-    <div className={`employee-shell${sidebarOpen ? " sidebar-open" : ""}${isParkingLocked ? " is-locked" : ""}`}>
-      <aside className="employee-sidebar">
-        <div className="employee-brand">
-          <div className="employee-brand-mark">EP</div>
+    <div className={`employee-shell emp26-shell emp26-exact employee-dashboard-page${sidebarOpen ? " sidebar-open" : ""}${isParkingLocked ? " is-locked" : ""}`}>
+      <aside className="employee-sidebar emp26-sidebar employee-sidebar-fixed">
+        <div className="employee-brand emp26-brand">
+          <div className="employee-brand-mark">SP</div>
           <div>
             <strong>Smart Parking</strong>
-            <span>Trung tâm vận hành nhân viên</span>
+            <span>Employee App</span>
           </div>
         </div>
 
-        <div className="employee-sidebar-panel">
-          <p className="employee-sidebar-title">Điều hướng vận hành</p>
-          <nav className="employee-menu">
-            {NAV_ITEMS.map((item) => (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                end={item.to === "/employee"}
-                className={({ isActive }) => `employee-menu-link${isActive ? " active" : ""}${isParkingLocked ? " disabled" : ""}`}
-                onClick={(event) => {
-                  if (isParkingLocked) {
-                    event.preventDefault();
-                    return;
-                  }
-                  setSidebarOpen(false);
-                }}
-              >
-                <OwnerIcon name={item.icon} className="owner-menu-icon" />
-                <span>{item.label}</span>
-              </NavLink>
-            ))}
-          </nav>
+        <div className="emp26-nav-wrap">
+          {NAV_GROUPS.map((group) => (
+            <section key={group.title} className="emp26-nav-section">
+              <p className="employee-sidebar-title">{group.title}</p>
+              <nav className="employee-menu">
+                {group.items.map((item) => (
+                  <NavLink
+                    key={item.label + item.to}
+                    to={item.to}
+                    end={Boolean(item.end)}
+                    className={({ isActive }) => `employee-menu-link${isMenuItemActive(item, isActive) ? " active" : ""}`}
+                    onClick={() => setSidebarOpen(false)}
+                  >
+                    <OwnerIcon name={item.icon} className="owner-menu-icon" />
+                    <span>{item.label}</span>
+                  </NavLink>
+                ))}
+              </nav>
+            </section>
+          ))}
         </div>
 
         <button type="button" className="employee-logout" onClick={onLogout}>
@@ -147,57 +187,51 @@ export default function EmployeeLayout({ auth, onLogout }) {
         </button>
       </aside>
 
-      <button
-        type="button"
-        aria-label="Đóng menu"
-        className="employee-sidebar-backdrop"
-        onClick={() => setSidebarOpen(false)}
-      />
-
-      <div className="employee-main">
-        <header className="employee-topbar">
+      <div className="employee-main emp26-main employee-main-content">
+        <header className="employee-topbar emp26-topbar employee-header-card">
           <div className="employee-topbar-main">
-            <button type="button" className="employee-menu-toggle" onClick={() => setSidebarOpen((value) => !value)}>
+            <button type="button" className="employee-menu-toggle" onClick={() => setSidebarOpen((v) => !v)}>
               <OwnerIcon name="menu" className="owner-menu-icon" />
             </button>
             <div>
-              <p className="employee-kicker">Không gian nhân viên</p>
-              <h1>{parkingLot?.parking_name || "Bảng điều khiển nhân viên"}</h1>
-              <span>{parkingLot?.address || routeHint}</span>
+              <p className="employee-kicker">Xin chào, {displayName} 👋</p>
+              <h1>{pageTitle}</h1>
+              <div className="emp26-topline">
+                <span>{pageAddress}</span>
+                <span className={`emp26-status-badge is-${String(parkingLot?.status || "open").toLowerCase()}`}>{resolveStatusLabel(parkingLot?.status)}</span>
+              </div>
             </div>
           </div>
 
-          <div className="employee-topbar-tools">
-            <div className="employee-notify-pill" title="Số xe đang sử dụng chỗ">
-              <OwnerIcon name="bell" className="owner-menu-icon" />
-              <span>{notificationsCount}</span>
+          <div className="employee-topbar-tools emp26-tools">
+            <div className="emp26-tool-card">
+              <p>Cổng vào</p>
+              <strong>{isParkingLocked ? "Tạm khóa" : "Hoạt động"}</strong>
             </div>
-            <div className="employee-role-pill">Vận hành bãi</div>
-            {isParkingLocked ? <div className="employee-lock-pill">Bãi đang bị khóa</div> : null}
-            <div className="employee-avatar">
+            <div className="emp26-tool-card">
+              <strong>{formatTime(now)}</strong>
+              <p>{formatDate(now)}</p>
+            </div>
+            <div className="emp26-icon-btn"><OwnerIcon name="booking" className="owner-menu-icon" /><b>2</b></div>
+            <div className="emp26-icon-btn"><OwnerIcon name="bell" className="owner-menu-icon" /><b>3</b></div>
+            <div className="employee-avatar emp26-avatar">
               <div className="employee-avatar-mark">{displayName.slice(0, 1).toUpperCase()}</div>
               <div>
                 <strong>{displayName}</strong>
-                <span>{loading ? "Đang đồng bộ..." : `${syncNote} · Hôm nay ${Number(revenue.revenueToday || 0).toLocaleString("vi-VN")}đ`}</span>
+                <span>{loading ? "Đang đồng bộ..." : syncNote}</span>
               </div>
             </div>
           </div>
         </header>
 
-        <main className="employee-content">
+        <main className="employee-content emp26-content employee-main-scroll">
           <div className="employee-content-layer">
             <Outlet context={{ auth, parkingLot, profile, revenue, slotsOverview, refreshEmployee, loading, syncNote, isParkingLocked }} />
           </div>
-          {isParkingLocked ? (
-            <div className="employee-locked-overlay" role="status" aria-live="polite">
-              <div className="employee-locked-card">
-                <strong>Bãi đang bị admin khóa</strong>
-                <span>Toàn bộ chức năng tạm thời bị vô hiệu hóa. Vui lòng đợi mở khóa để tiếp tục thao tác.</span>
-              </div>
-            </div>
-          ) : null}
         </main>
       </div>
     </div>
   );
 }
+
+

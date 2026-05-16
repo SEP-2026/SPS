@@ -1,180 +1,282 @@
-﻿import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
+import { getEmployeeHistory, getEmployeeVehicles } from "../../employee/employeeService";
 import { useEmployeeContext } from "../../employee/useEmployeeContext";
 
-const STATUS_LABEL = {
-  open: "Đang mở",
-  closed: "Đang đóng",
-  full: "Đã đầy",
-  locked: "Đang bị khóa",
+const ACTION_TAG = {
+  check_in: "Vào",
+  check_out: "Ra",
+  resolve_booking: "Thành công",
+  parking_status_updated: "Cập nhật",
+  employee_created: "Tạo",
 };
 
-function formatMoney(value) {
-  return `${Number(value || 0).toLocaleString("vi-VN")}đ`;
+function formatTime(value) {
+  if (!value) return "--:--";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "--:--";
+  return new Intl.DateTimeFormat("vi-VN", { hour: "2-digit", minute: "2-digit" }).format(date);
 }
 
-function RevenueTrendChart({ points }) {
-  const data = Array.isArray(points) && points.length ? points : [];
-  const maxValue = Math.max(...data.map((item) => Number(item.amount || 0)), 1);
-
-  if (!data.length) {
-    return <p className="employee-note">Chưa có dữ liệu doanh thu 7 ngày gần nhất.</p>;
-  }
-
-  const width = 640;
-  const height = 220;
-  const paddingX = 26;
-  const paddingTop = 16;
-  const paddingBottom = 44;
-  const chartHeight = height - paddingTop - paddingBottom;
-  const stepX = data.length > 1 ? (width - paddingX * 2) / (data.length - 1) : 0;
-
-  const chartPoints = data.map((item, index) => {
-    const x = paddingX + stepX * index;
-    const y = paddingTop + chartHeight - (Number(item.amount || 0) / maxValue) * chartHeight;
-    return { ...item, x, y };
-  });
-
-  const polyline = chartPoints.map((p) => `${p.x},${p.y}`).join(" ");
-  const area = `${paddingX},${height - paddingBottom} ${polyline} ${width - paddingX},${height - paddingBottom}`;
-
-  return (
-    <svg className="employee-chart-svg" viewBox={`0 0 ${width} ${height}`} role="img" aria-label="Biểu đồ doanh thu 7 ngày">
-      <defs>
-        <linearGradient id="employeeRevenueArea" x1="0" x2="0" y1="0" y2="1">
-          <stop offset="0%" stopColor="rgba(44, 126, 255, 0.35)" />
-          <stop offset="100%" stopColor="rgba(44, 126, 255, 0.02)" />
-        </linearGradient>
-      </defs>
-
-      <line x1={paddingX} y1={height - paddingBottom} x2={width - paddingX} y2={height - paddingBottom} className="employee-chart-axis" />
-
-      <polygon points={area} fill="url(#employeeRevenueArea)" />
-      <polyline points={polyline} className="employee-chart-line" />
-
-      {chartPoints.map((point) => (
-        <g key={point.label}>
-          <circle cx={point.x} cy={point.y} r="4.5" className="employee-chart-dot" />
-          <text x={point.x} y={height - 16} textAnchor="middle" className="employee-chart-label">{point.label}</text>
-        </g>
-      ))}
-    </svg>
-  );
+function formatDuration(entryTime) {
+  if (!entryTime) return "--";
+  const start = new Date(entryTime);
+  if (Number.isNaN(start.getTime())) return "--";
+  const diff = Math.max(0, Date.now() - start.getTime());
+  const hours = Math.floor(diff / (1000 * 60 * 60));
+  const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+  return `${String(hours).padStart(2, "0")}:${String(mins).padStart(2, "0")}`;
 }
 
-function TrafficBarsChart({ points }) {
-  const data = Array.isArray(points) ? points : [];
-  const maxValue = Math.max(
-    ...data.map((item) => Math.max(Number(item.check_ins || 0), Number(item.check_outs || 0))),
-    1,
-  );
-
+function Donut({ occupied, total }) {
+  const safeTotal = Math.max(Number(total || 0), 1);
+  const percent = Math.round((Number(occupied || 0) / safeTotal) * 1000) / 10;
   return (
-    <div className="employee-traffic-grid">
-      {data.map((item) => {
-        const inHeight = `${(Number(item.check_ins || 0) / maxValue) * 100}%`;
-        const outHeight = `${(Number(item.check_outs || 0) / maxValue) * 100}%`;
-        return (
-          <div key={item.label} className="employee-traffic-col">
-            <div className="employee-traffic-bars">
-              <div className="employee-traffic-bar employee-traffic-bar--in" style={{ height: inHeight }} title={`Check-in: ${item.check_ins}`} />
-              <div className="employee-traffic-bar employee-traffic-bar--out" style={{ height: outHeight }} title={`Check-out: ${item.check_outs}`} />
-            </div>
-            <span className="employee-traffic-label">{item.label}</span>
-          </div>
-        );
-      })}
+    <div className="emp26-donut" style={{ background: `conic-gradient(#22c55e 0 ${percent}%, #2563eb ${percent}% 100%)` }}>
+      <div className="emp26-donut-inner">
+        <strong>{percent}%</strong>
+        <span>Đang sử dụng</span>
+      </div>
     </div>
   );
 }
 
-function OccupancyDonut({ occupied, total }) {
-  const safeTotal = Math.max(Number(total || 0), 1);
-  const ratio = Math.min(Math.max(Number(occupied || 0) / safeTotal, 0), 1);
-  const percent = Math.round(ratio * 100);
+function KpiIcon({ tone, text }) {
+  return <span className={`emp-ref-kpi-icon employee-stat-icon is-${tone}`}>{text}</span>;
+}
+
+function DemoQr() {
+  const size = 29;
+  const cells = [];
+  const text = "SMART_PARKING_CHECKIN_CHECKOUT_DEMO";
+  const hashAt = (x, y) => {
+    const idx = (x * 17 + y * 31) % text.length;
+    return text.charCodeAt(idx);
+  };
+  const isFinder = (x, y, ox, oy) => x >= ox && x < ox + 7 && y >= oy && y < oy + 7;
+
+  for (let y = 0; y < size; y += 1) {
+    for (let x = 0; x < size; x += 1) {
+      const inTL = isFinder(x, y, 0, 0);
+      const inTR = isFinder(x, y, size - 7, 0);
+      const inBL = isFinder(x, y, 0, size - 7);
+
+      let dark = false;
+      if (inTL || inTR || inBL) {
+        const fx = inTL ? x : (inTR ? x - (size - 7) : x);
+        const fy = inTL ? y : (inTR ? y : y - (size - 7));
+        dark = fx === 0 || fx === 6 || fy === 0 || fy === 6 || ((fx >= 2 && fx <= 4) && (fy >= 2 && fy <= 4));
+      } else {
+        dark = ((hashAt(x, y) + x * 3 + y * 5) % 7) < 3;
+      }
+
+      if (dark) {
+        cells.push(<rect key={`${x}-${y}`} x={x} y={y} width="1" height="1" fill="#0b1220" />);
+      }
+    }
+  }
 
   return (
-    <div className="employee-donut-wrap">
-      <div
-        className="employee-donut"
-        style={{ background: `conic-gradient(#2c7eff 0 ${percent}%, rgba(44, 126, 255, 0.16) ${percent}% 100%)` }}
-      >
-        <div className="employee-donut-inner">
-          <strong>{percent}%</strong>
-          <span>Lấp đầy</span>
-        </div>
-      </div>
-      <p className="employee-note">{occupied}/{total} chỗ đang có xe</p>
+    <div className="employee-demo-qr" aria-hidden="true">
+      <svg viewBox={`0 0 ${size} ${size}`} role="img" aria-label="Demo QR check-in check-out">
+        <rect x="0" y="0" width={size} height={size} fill="#ffffff" />
+        {cells}
+      </svg>
     </div>
   );
 }
 
 export default function EmployeeDashboard() {
   const { parkingLot, revenue, slotsOverview, loading } = useEmployeeContext();
+  const navigate = useNavigate();
+  const [historyData, setHistoryData] = useState({ history: [], total_count: 0 });
+  const [vehiclesData, setVehiclesData] = useState({ vehicles: [] });
 
-  const cards = useMemo(
-    () => [
-      { label: "Tổng số chỗ", value: parkingLot?.totalSlots || 0 },
-      { label: "Đang có xe", value: (slotsOverview?.in_use_slots || 0) + (slotsOverview?.reserved_slots || 0) },
-      { label: "Chỗ trống", value: slotsOverview?.available_slots || 0 },
-      { label: "Trạng thái bãi", value: STATUS_LABEL[parkingLot?.status] || parkingLot?.status || "Đang mở" },
-    ],
-    [parkingLot, slotsOverview],
-  );
+  useEffect(() => {
+    let mounted = true;
+    const loadData = async () => {
+      const [historyRes, vehiclesRes] = await Promise.allSettled([
+        getEmployeeHistory({ limit: 5 }),
+        getEmployeeVehicles(),
+      ]);
+
+      if (!mounted) return;
+      setHistoryData(historyRes.status === "fulfilled" ? historyRes.value : { history: [], total_count: 0 });
+      setVehiclesData(vehiclesRes.status === "fulfilled" ? vehiclesRes.value : { vehicles: [] });
+    };
+
+    loadData();
+    const timer = window.setInterval(loadData, 20000);
+    return () => {
+      mounted = false;
+      window.clearInterval(timer);
+    };
+  }, []);
+
+  const totalSlots = Number(parkingLot?.totalSlots || 0);
+  const inUseSlots = Number(slotsOverview?.in_use_slots || 0);
+  const reservedSlots = Number(slotsOverview?.reserved_slots || 0);
+  const occupiedSlots = inUseSlots + reservedSlots;
+  const availableSlots = Number(slotsOverview?.available_slots || 0);
+  const maintenanceSlots = Number(slotsOverview?.maintenance_slots || 0);
+  const checkInToday = (revenue?.trafficByHour || []).reduce((sum, i) => sum + Number(i.check_ins || 0), 0);
+
+  const zones = useMemo(() => {
+    const grouped = new Map();
+    const slots = Array.isArray(slotsOverview?.slots) ? slotsOverview.slots : [];
+    slots.forEach((slot) => {
+      const zone = slot?.zone || "Khu";
+      if (!grouped.has(zone)) grouped.set(zone, []);
+      grouped.get(zone).push(slot);
+    });
+    return Array.from(grouped.entries()).map(([zone, items]) => ({ zone, items: items.slice(0, 6) }));
+  }, [slotsOverview]);
+
+  const parkedVehicles = useMemo(() => {
+    const list = Array.isArray(vehiclesData?.vehicles) ? vehiclesData.vehicles : [];
+    return list.slice(0, 6);
+  }, [vehiclesData]);
 
   return (
-    <>
-      <section className="employee-grid">
-        {cards.map((card) => (
-          <article key={card.label} className="employee-card employee-card--kpi">
-            <p>{card.label}</p>
-            <div className="employee-stat-value">{loading ? "..." : card.value}</div>
-          </article>
-        ))}
-      </section>
-
-      <section className="employee-grid employee-grid--charts">
-        <article className="employee-card">
-          <div className="employee-card-head">
-            <h2>Doanh thu 7 ngày gần nhất</h2>
-            <span className="employee-chip">Đã thu: {formatMoney(revenue?.revenueMonth || 0)}</span>
+    <div className="emp26-dashboard exact-dashboard employee-dashboard-content">
+      <section className="employee-grid employee-stats-grid employee-stats-grid--4">
+        <article className="employee-card emp26-kpi-card employee-stat-card">
+          <KpiIcon tone="blue" text="P" />
+          <div>
+            <div className="employee-stat-label">Tổng chỗ đỗ</div>
+            <div className="employee-stat-value">{loading ? "..." : totalSlots}</div>
+            <div className="employee-stat-sub">Sức chứa toàn bãi</div>
           </div>
-          <RevenueTrendChart points={revenue?.revenueByDay} />
         </article>
-
-        <article className="employee-card">
-          <div className="employee-card-head">
-            <h2>Lưu lượng check-in/check-out hôm nay</h2>
-            <span className="employee-chip">Vé đã thanh toán: {Number(revenue?.totalPaidBookings || 0)}</span>
+        <article className="employee-card emp26-kpi-card employee-stat-card has-sparkline">
+          <KpiIcon tone="green" text="🚗" />
+          <div>
+            <div className="employee-stat-label">Đang có xe</div>
+            <div className="employee-stat-value">{loading ? "..." : occupiedSlots}</div>
+            <div className="employee-stat-sub">{totalSlots ? `${((occupiedSlots / totalSlots) * 100).toFixed(1)}% công suất` : "0% công suất"}</div>
           </div>
-          <TrafficBarsChart points={revenue?.trafficByHour} />
+          <span className="employee-stat-sparkline is-green" />
+        </article>
+        <article className="employee-card emp26-kpi-card employee-stat-card has-sparkline">
+          <KpiIcon tone="yellow" text="🚘" />
+          <div>
+            <div className="employee-stat-label">Chỗ trống</div>
+            <div className="employee-stat-value">{loading ? "..." : availableSlots}</div>
+            <div className="employee-stat-sub">{totalSlots ? `${((availableSlots / totalSlots) * 100).toFixed(1)}% công suất` : "0% công suất"}</div>
+          </div>
+          <span className="employee-stat-sparkline is-yellow" />
+        </article>
+        <article className="employee-card emp26-kpi-card employee-stat-card has-sparkline">
+          <KpiIcon tone="purple" text="∿" />
+          <div>
+            <div className="employee-stat-label">Check-in hôm nay</div>
+            <div className="employee-stat-value">{loading ? "..." : checkInToday}</div>
+            <div className="employee-stat-sub">{Number(revenue?.totalPaidBookings || 0)} giao dịch</div>
+          </div>
+          <span className="employee-stat-sparkline is-purple" />
         </article>
       </section>
 
-      <section className="employee-grid employee-grid--detail">
-        <article className="employee-card">
-          <h2>Doanh thu hôm nay</h2>
-          <p className="employee-stat-value">{formatMoney(revenue?.revenueToday || 0)}</p>
+      <section className="employee-grid employee-middle-grid">
+        <article className="employee-card employee-panel-qr employee-qr-card">
+          <div className="employee-qr-header">
+            <h3>Quét mã QR</h3>
+            <p>Quét để kiểm tra xe vào/ra hoặc booking</p>
+          </div>
+          <div className="employee-qr-frame">
+            <span className="corner tl" />
+            <span className="corner tr" />
+            <span className="corner bl" />
+            <span className="corner br" />
+            <DemoQr />
+            <div className="employee-scan-line" />
+          </div>
+          <div className="employee-qr-helper"><div>Đưa mã QR vào khung quét</div><span>hoặc</span></div>
+          <div className="employee-qr-actions"><input placeholder="Nhập mã booking" /><button type="button" className="employee-btn" onClick={() => navigate("/employee/scanner")}>Quét thủ công</button></div>
         </article>
 
-        <article className="employee-card">
-          <h2>Doanh thu tháng</h2>
-          <p className="employee-stat-value">{formatMoney(revenue?.revenueMonth || 0)}</p>
+        <article className="employee-card employee-panel-activity">
+          <div className="employee-card-head"><h2>Hoạt động gần đây</h2><button type="button" className="employee-btn employee-btn--ghost" onClick={() => navigate("/employee/history")}>Xem tất cả</button></div>
+          <div className="emp26-activity-list">
+            {historyData.history.map((item) => (
+              <article key={item.id} className="emp26-activity-item">
+                <div className={`emp26-activity-dot ${item.action === "check_in" ? "is-in" : item.action === "check_out" ? "is-out" : "is-neutral"}`} />
+                <div className="emp26-activity-main"><strong>{item.detail || "Giao dịch"}</strong><p>{formatTime(item.created_at)}</p></div>
+                <span>{ACTION_TAG[item.action] || "--"}</span>
+              </article>
+            ))}
+            {!historyData.history.length ? <p className="employee-note">Chưa có hoạt động gần đây.</p> : null}
+          </div>
         </article>
 
-        <article className="employee-card">
-          <h2>Tỷ lệ lấp đầy bãi</h2>
-          <OccupancyDonut occupied={parkingLot?.occupiedSlots || 0} total={parkingLot?.totalSlots || 0} />
-        </article>
-
-        <article className="employee-card">
-          <h2>Thông tin bãi</h2>
-          <p><strong>{parkingLot?.parking_name || "--"}</strong></p>
-          <p>{parkingLot?.address || "--"}</p>
-          <p className="employee-note">Dữ liệu hiển thị lấy trực tiếp từ cơ sở dữ liệu theo bãi được phân công cho nhân viên.</p>
+        <article className="employee-card employee-status-card">
+          <div className="employee-card-head"><h2>Trạng thái bãi xe</h2><button type="button" className="employee-btn employee-btn--ghost" onClick={() => navigate("/employee/vehicles")}>Xem sơ đồ</button></div>
+          <div className="employee-status-body">
+            <Donut occupied={occupiedSlots} total={totalSlots} />
+            <ul className="emp26-usage-list">
+              <li><span>Đang có xe</span><strong>{occupiedSlots}</strong></li>
+              <li><span>Chỗ trống</span><strong>{availableSlots}</strong></li>
+              <li><span>Đặt trước</span><strong>{reservedSlots}</strong></li>
+              <li><span>Bảo trì</span><strong>{maintenanceSlots}</strong></li>
+            </ul>
+          </div>
+          <div className="employee-status-note">Lưu ý: Vui lòng hỗ trợ khách hàng để xe đúng vị trí quy định.</div>
         </article>
       </section>
-    </>
+
+      <section className="employee-grid employee-bottom-grid">
+        <article className="employee-card employee-vehicles-card employee-vehicle-card">
+          <div className="employee-card-head employee-card-header"><h2>Danh sách xe trong bãi</h2><button type="button" className="employee-btn employee-btn--ghost" onClick={() => navigate("/employee/vehicles")}>Xem tất cả</button></div>
+          <div className="employee-table-wrap">
+            <table className="employee-vehicle-table">
+              <thead>
+                <tr>
+                  <th>Biển số</th><th>Vị trí đỗ</th><th>Giờ vào</th><th>Loại xe</th><th>Thời gian</th><th>Trạng thái</th><th>Thao tác</th>
+                </tr>
+              </thead>
+              <tbody>
+                {parkedVehicles.length ? parkedVehicles.slice(0, 5).map((vehicle) => (
+                  <tr key={vehicle.id}>
+                    <td>{vehicle.plate_number || "--"}</td>
+                    <td>{vehicle.slot_code || "--"}</td>
+                    <td>{formatTime(vehicle.entry_time)}</td>
+                    <td>{vehicle.vehicle_type || "--"}</td>
+                    <td>{formatDuration(vehicle.entry_time)}</td>
+                    <td><span className={`emp26-slot-tag is-${vehicle.status || "available"}`}>{vehicle.status_label || vehicle.status || "--"}</span></td>
+                    <td>...</td>
+                  </tr>
+                )) : (
+                  <tr>
+                    <td colSpan={7} className="employee-table-empty">Chưa có xe trong bãi</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </article>
+
+        <article className="employee-card employee-panel-map employee-parking-map-card">
+          <div className="employee-card-head employee-card-header"><h2>Sơ đồ bãi xe</h2><button type="button" className="employee-btn employee-btn--ghost" onClick={() => navigate("/employee/vehicles")}>Xem full</button></div>
+          <div className="emp26-map-legend"><span><i className="is-available" /> Trống</span><span><i className="is-occupied" /> Đang đỗ</span><span><i className="is-reserved" /> Đặt trước</span><span><i className="is-maintenance" /> Bảo trì</span></div>
+          <div className="employee-map-content">
+            {zones.slice(0, 2).map((zone, idx) => (
+              <div key={zone.zone} className="employee-map-zone">
+                <div className="employee-zone-label">{`Cổng ${String.fromCharCode(65 + idx)}`}</div>
+                <div className="employee-slot-grid">{zone.items.map((slot) => <span key={slot.id} className={`emp26-slot-tag employee-slot is-${slot.status || "available"}`}>{slot.code}</span>)}</div>
+              </div>
+            ))}
+          </div>
+        </article>
+      </section>
+
+      <section className="employee-notice">
+        <div className="employee-notice-main">
+          <span className="employee-notice-icon">i</span>
+          <div><strong>Thông báo</strong><p>Hệ thống sẽ bảo trì lúc 23:00 hôm nay. Vui lòng lưu ý hỗ trợ khách hàng.</p></div>
+        </div>
+        <div className="employee-notice-tail"><span>10 phút trước</span><button type="button" aria-label="Đóng">×</button></div>
+      </section>
+    </div>
   );
 }
-

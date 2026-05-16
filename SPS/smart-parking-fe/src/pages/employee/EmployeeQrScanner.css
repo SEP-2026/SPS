@@ -455,3 +455,114 @@
     font-size: 27px;
   }
 }
+
+/* Final typography + theme sync for employee scanner */
+.employee-scan-page,
+.employee-scan-page * {
+  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.employee-scan-page .scan-title,
+.employee-scan-page .scan-summary h2,
+.employee-scan-page .scan-payment-panel h3 {
+  color: #0b1f44 !important;
+  letter-spacing: 0 !important;
+}
+
+.employee-scan-page .scan-subtitle,
+.employee-scan-page .scan-hint {
+  color: #64748b !important;
+}
+
+.employee-scan-page .scan-page,
+.employee-scan-page .scan-panel {
+  border-radius: 18px !important;
+  border: 1px solid #dbe8f5 !important;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.05) !important;
+}
+
+.employee-scan-page .scan-panel {
+  padding: 18px 20px !important;
+}
+
+.employee-scan-page .scan-textarea {
+  border-radius: 14px !important;
+  background: #f8fbff !important;
+  border: 1px solid #d8e6f5 !important;
+  font-size: 14px !important;
+  padding: 14px !important;
+}
+
+.employee-scan-page .scan-textarea::placeholder,
+.employee-scan-page .scan-input::placeholder {
+  color: #94a3b8 !important;
+}
+
+.employee-scan-page .scan-primary-btn {
+  height: 52px !important;
+  border-radius: 14px !important;
+  background: linear-gradient(135deg, #246bfe 0%, #8b2cff 100%) !important;
+  color: #fff !important;
+  font-weight: 700 !important;
+  box-shadow: 0 12px 24px rgba(65, 84, 255, 0.28) !important;
+}
+
+.employee-scan-page .scan-primary-btn:hover:not(:disabled) {
+  box-shadow: 0 16px 30px rgba(65, 84, 255, 0.35) !important;
+}
+
+.employee-scan-page .scan-summary-list span {
+  font-size: 11px !important;
+  letter-spacing: .08em !important;
+  color: #64748b !important;
+}
+
+.employee-scan-page .scan-summary-list strong {
+  font-size: 20px !important;
+  font-weight: 700 !important;
+  color: #0f172a !important;
+}
+
+.employee-scan-page .scan-summary-list div {
+  border-radius: 14px !important;
+  border: 1px solid #dbe8f5 !important;
+  background: #fff !important;
+}
+
+.employee-scan-page .scan-actions {
+  gap: 10px !important;
+}
+
+.employee-scan-page .btn-checkin,
+.employee-scan-page .btn-checkout {
+  height: 42px !important;
+  border-radius: 999px !important;
+  color: #fff !important;
+  font-weight: 700 !important;
+}
+
+.employee-scan-page .btn-checkin {
+  background: linear-gradient(135deg, #16a34a 0%, #22c55e 100%) !important;
+}
+
+.employee-scan-page .btn-checkout {
+  background: linear-gradient(135deg, #f97316 0%, #ef4444 100%) !important;
+}
+
+.employee-scan-page .scan-feedback--error {
+  background: #fff1f2 !important;
+  border-color: #fecdd3 !important;
+  border-width: 1px !important;
+  border-radius: 14px !important;
+  padding: 16px !important;
+}
+
+.employee-scan-page .scan-feedback--error strong {
+  color: #be123c !important;
+}
+
+.employee-scan-page .scan-feedback--error p {
+  color: #b91c1c !important;
+}

@@ -21,17 +21,9 @@ export function getPaymentStatusLabel(status) {
 }
 
 export function getBannerTone(uiState, booking) {
-  if (uiState === "error") {
-    return "error";
-  }
-  if (uiState === "success") {
-    return "success";
-  }
-  if (uiState === "processing" || uiState === "action_submitting" || uiState === "scanning") {
-    return "neutral";
-  }
-  if (booking?.booking_status === "cancelled") {
-    return "error";
-  }
+  if (uiState === "error") return "error";
+  if (uiState === "success") return "success";
+  if (uiState === "processing" || uiState === "action_submitting" || uiState === "scanning") return "neutral";
+  if (booking?.booking_status === "cancelled") return "error";
   return "neutral";
 }
