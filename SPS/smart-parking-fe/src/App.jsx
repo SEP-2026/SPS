@@ -20,7 +20,6 @@ import OwnerNotifications from "./pages/owner/OwnerNotifications";
 import OwnerOverview from "./pages/owner/OwnerOverview";
 import OwnerParking from "./pages/owner/OwnerParking";
 import OwnerRevenue from "./pages/owner/OwnerRevenue";
-import OwnerReviewReplyPage from "./pages/owner/OwnerReviewReplyPage";
 import OwnerReviews from "./pages/owner/OwnerReviews";
 import OwnerSettings from "./pages/owner/OwnerSettings";
 import Payment from "./pages/Payment";
@@ -191,7 +190,7 @@ function AppBody({ auth, role, onLogin, onLogout }) {
       owner: [
         { to: "/profile", label: "Hồ sơ" },
         { to: "/scan", label: "Quét QR vào/ra" },
-        { to: "/owner-review-replies", label: "Phản hồi đánh giá" },
+        { to: "/owner/reviews", label: "Đánh giá & phản hồi" },
         { to: "/owner/settings", label: "Tạo nhân viên" },
       ],
       employee: [
@@ -249,7 +248,7 @@ function AppBody({ auth, role, onLogin, onLogout }) {
       ) : null}
 
       <div className="page-transition">
-        <Routes location={location} key={`${location.pathname}${location.search}${location.hash}`}>
+        <Routes location={location}>
         <Route
           path="/login"
           element={auth ? <Navigate to={defaultAuthedRoute} replace /> : <Login onLogin={onLogin} />}
@@ -288,7 +287,7 @@ function AppBody({ auth, role, onLogin, onLogout }) {
         />
         <Route
           path="/owner-review-replies"
-          element={auth && role === "owner" ? <OwnerReviewReplyPage /> : <Navigate to={auth ? "/" : "/login"} replace />}
+          element={<Navigate to={auth && role === "owner" ? "/owner/reviews" : auth ? "/" : "/login"} replace />}
         />
         <Route
           path="/employee"
@@ -312,6 +311,7 @@ function AppBody({ auth, role, onLogin, onLogout }) {
           <Route path="customers" element={<OwnerCustomers />} />
           <Route path="revenue" element={<OwnerRevenue />} />
           <Route path="reviews" element={<OwnerReviews />} />
+          <Route path="review-replies" element={<Navigate to="/owner/reviews" replace />} />
           <Route path="notifications" element={<OwnerNotifications />} />
           <Route path="settings" element={<OwnerSettings />} />
         </Route>

@@ -51,7 +51,7 @@ def assign_employees():
         if candidate_normalized in lot_mapping:
             matched_lot = lot_mapping[candidate_normalized]
         else:
-            # Try partial match (substring) - skip "baixe" prefix for comparison
+            # Try partial match (substring) - skip "" prefix for comparison
             for norm_name, lot in lot_mapping.items():
                 # Remove "baixe" prefix from normalized lot name for substring match
                 lot_suffix = norm_name[5:] if norm_name.startswith("baixe") else norm_name

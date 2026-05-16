@@ -4,8 +4,7 @@
   { to: "/owner/bookings", label: "Quản lý đặt chỗ", icon: "booking" },
   { to: "/owner/customers", label: "Quản lý khách hàng", icon: "customer" },
   { to: "/owner/revenue", label: "Doanh thu", icon: "revenue" },
-  { to: "/owner/reviews", label: "Đánh giá tổng quan", icon: "reviews" },
-  { to: "/owner/review-replies", label: "Phản hồi đánh giá", icon: "reviews" },
+  { to: "/owner/reviews", label: "Đánh giá & phản hồi", icon: "reviews" },
   { to: "/owner/settings", label: "Cài đặt & nhân viên", icon: "settings" },
 ];
 
@@ -31,12 +30,12 @@ export const OWNER_ROUTE_META = {
     description: "Quản lý thông tin owner, cấu hình bãi đỗ và tạo tài khoản nhân viên.",
   },
   "/owner/reviews": {
-    title: "Đánh giá tổng quan",
-    description: "Xem tổng quan đánh giá, điểm số và phân loại đánh giá của khách hàng.",
+    title: "Đánh giá & phản hồi",
+    description: "Xem tổng quan đánh giá và phản hồi trực tiếp các nhận xét của khách hàng.",
   },
   "/owner/review-replies": {
-    title: "Phản hồi đánh giá",
-    description: "Trả lời trực tiếp các đánh giá của khách hàng cho bãi đỗ của bạn.",
+    title: "Đánh giá & phản hồi",
+    description: "Xem tổng quan đánh giá và phản hồi trực tiếp các nhận xét của khách hàng.",
   },
   "/owner/notifications": {
     title: "Thông báo & Cảnh báo",

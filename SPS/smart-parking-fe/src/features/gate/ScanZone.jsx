@@ -9,6 +9,37 @@ import {
 } from "@zxing/library";
 import jsQR from "jsqr";
 
+function GateModeIcon({ name }) {
+  const icons = {
+    camera: (
+      <>
+        <path d="M8 7h.01" />
+        <path d="M4 8.5A2.5 2.5 0 0 1 6.5 6H8l1.2-1.6A1 1 0 0 1 10 4h4a1 1 0 0 1 .8.4L16 6h1.5A2.5 2.5 0 0 1 20 8.5v8A2.5 2.5 0 0 1 17.5 19h-11A2.5 2.5 0 0 1 4 16.5v-8Z" />
+        <path d="M12 16a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z" />
+      </>
+    ),
+    upload: (
+      <>
+        <path d="M12 16V4" />
+        <path d="m7 9 5-5 5 5" />
+        <path d="M5 20h14" />
+      </>
+    ),
+    keyboard: (
+      <>
+        <rect x="3" y="6" width="18" height="12" rx="2" />
+        <path d="M7 10h.01M11 10h.01M15 10h.01M7 14h.01M11 14h6" />
+      </>
+    ),
+  };
+
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" className="scan-tab-icon">
+      {icons[name] || icons.keyboard}
+    </svg>
+  );
+}
+
 export default function ScanZone({
   scanValue,
   setScanValue,
@@ -201,9 +232,13 @@ export default function ScanZone({
     [imagePreview],
   );
 
+  const isSuccessFeedback = Boolean(scanSuccess) || uiState === "success";
+
   return (
-    <section className="scan-panel scan-panel--primary">
-      <div className={`scan-frame scan-frame--${uiState}`}>
+    <section className={`scan-panel scan-panel--primary${isSuccessFeedback ? " scan-panel--success-flash" : ""}`}>
+      <div className={`scan-frame scan-frame--${uiState}${isSuccessFeedback ? " scan-frame--success-flash" : ""}`}>
+        <div className="scan-frame-corners" />
+        <div className="scan-line" />
         <div className="scan-frame-content">
           <strong>Vùng quét QR</strong>
           <div className="scan-mode-tabs">
@@ -212,21 +247,24 @@ export default function ScanZone({
               className={`scan-tab-btn ${scanMode === "camera" ? "active" : ""}`}
               onClick={() => onSelectMode("camera")}
             >
-              📷 Camera thiết bị
+              <GateModeIcon name="camera" />
+              <span>Camera thiết bị</span>
             </button>
             <button
               type="button"
               className={`scan-tab-btn ${scanMode === "upload" ? "active" : ""}`}
               onClick={() => onSelectMode("upload")}
             >
-              🖼️ Upload ảnh QR
+              <GateModeIcon name="upload" />
+              <span>Upload ảnh QR</span>
             </button>
             <button
               type="button"
               className={`scan-tab-btn ${scanMode === "manual" ? "active" : ""}`}
               onClick={() => onSelectMode("manual")}
             >
-              ⌨️ Nhập thủ công
+              <GateModeIcon name="keyboard" />
+              <span>Nhập thủ công</span>
             </button>
           </div>
         </div>
@@ -266,11 +304,13 @@ export default function ScanZone({
       </div>
 
       {scanMode === "camera" ? (
-        <div className="camera-container">
+        <div className={`camera-container${isSuccessFeedback ? " camera-container--success" : ""}`}>
           <video ref={videoRef} className="camera-video" playsInline muted />
           <canvas ref={canvasRef} className="camera-canvas-hidden" />
           <div className="camera-overlay">
-            <div className="qr-frame" />
+            <div className={`qr-frame${isSuccessFeedback ? " qr-frame--success" : ""}`}>
+              <div className="scan-laser-line" />
+            </div>
           </div>
           <div className="scan-actions scan-actions--single">
             {cameraActive ? (

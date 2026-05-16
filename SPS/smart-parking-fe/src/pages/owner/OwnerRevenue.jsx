@@ -17,6 +17,7 @@ export default function OwnerRevenue() {
   const [range, setRange] = useState("day");
   const [transactions, setTransactions] = useState([]);
   const [parkingLots, setParkingLots] = useState([]);
+  const [commissionRate, setCommissionRate] = useState(10);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [selectedParkingLot, setSelectedParkingLot] = useState(null);
@@ -36,6 +37,7 @@ export default function OwnerRevenue() {
         const res = await API.get("/owner/revenue");
         setTransactions(res.data?.transactions || []);
         setParkingLots(res.data?.parkingLots || []);
+        setCommissionRate(Number(res.data?.commissionRate ?? 10));
       } catch (err) {
         setError(err?.response?.data?.detail || "Không tải được dữ liệu doanh thu");
         setTransactions([]);
@@ -92,6 +94,8 @@ export default function OwnerRevenue() {
         parkingLotName: lot.name,
         district: lot.district || "",
         totalRevenue: 0,
+        grossRevenue: 0,
+        commissionAmount: 0,
         paidRevenue: 0,
         pendingRevenue: 0,
         paidCount: 0,
@@ -105,18 +109,23 @@ export default function OwnerRevenue() {
         parkingLotName: key,
         district: "",
         totalRevenue: 0,
+        grossRevenue: 0,
+        commissionAmount: 0,
         paidRevenue: 0,
         pendingRevenue: 0,
         paidCount: 0,
         pendingCount: 0,
       };
-      current.totalRevenue += Number(transaction.amount || 0);
+      const ownerAmount = Number(transaction.ownerPayout ?? transaction.amount ?? 0);
+      current.totalRevenue += ownerAmount;
+      current.grossRevenue += Number(transaction.gross ?? transaction.amount ?? 0);
+      current.commissionAmount += Number(transaction.commission ?? 0);
       if (transaction.status === "paid") {
-        current.paidRevenue += Number(transaction.amount || 0);
+        current.paidRevenue += ownerAmount;
         current.paidCount += 1;
       }
       if (transaction.status === "pending") {
-        current.pendingRevenue += Number(transaction.amount || 0);
+        current.pendingRevenue += ownerAmount;
         current.pendingCount += 1;
       }
       summaryMap.set(key, current);
@@ -146,14 +155,14 @@ export default function OwnerRevenue() {
   return (
     <div className="owner-page-grid">
       <div className="owner-stats-grid">
-        <StatCard title={revenueTitle} value={formatCurrency(currentRevenue)} note={`Tổng doanh thu ${districtLabel}`} trend={CHART_RANGE_OPTIONS.find((item) => item.value === range)?.label || "Theo ngày"} icon="revenue" />
-        <StatCard title="Đã thu" value={formatCurrency(totalPaid)} note="Giao dịch hoàn tất trong kỳ" trend={`${paidCount} giao dịch`} icon="dashboard" />
-        <StatCard title="Chờ thanh toán" value={formatCurrency(pendingAmount)} note="Giao dịch pending trong kỳ" trend={`${pendingCount} giao dịch`} icon="booking" />
+        <StatCard title={revenueTitle} value={formatCurrency(currentRevenue)} note={`Owner nhận sau commission ${commissionRate}%`} trend={CHART_RANGE_OPTIONS.find((item) => item.value === range)?.label || "Theo ngày"} icon="revenue" />
+        <StatCard title="Owner đã nhận" value={formatCurrency(totalPaid)} note="Payout từ giao dịch hoàn tất" trend={`${paidCount} giao dịch`} icon="dashboard" />
+        <StatCard title="Owner chờ nhận" value={formatCurrency(pendingAmount)} note="Payout từ giao dịch pending" trend={`${pendingCount} giao dịch`} icon="booking" />
       </div>
 
       <SectionCard
         title="Báo cáo doanh thu theo bãi"
-        subtitle={`Tổng doanh thu ${districtLabel}: ${formatCurrency(totalPaid)} đã thu và ${formatCurrency(pendingAmount)} đang chờ thanh toán trong kỳ ${getRangeSummaryLabel(activeRange, dateFrom, dateTo)}.`}
+        subtitle={`Owner nhận tại ${districtLabel}: ${formatCurrency(totalPaid)} đã thu và ${formatCurrency(pendingAmount)} đang chờ sau commission ${commissionRate}% trong kỳ ${getRangeSummaryLabel(activeRange, dateFrom, dateTo)}.`}
       >
         {error ? <p className="owner-empty-cell">{error}</p> : null}
         <div className="owner-table-shell">
@@ -162,8 +171,10 @@ export default function OwnerRevenue() {
               <tr>
                 <th>Bãi đỗ</th>
                 <th>Khu vực</th>
-                <th>Đã thu</th>
-                <th>Chờ thanh toán</th>
+                <th>Gross</th>
+                <th>Hoa hồng</th>
+                <th>Owner đã nhận</th>
+                <th>Owner chờ nhận</th>
                 <th>Số giao dịch đã thu</th>
                 <th>Số giao dịch chờ</th>
                 <th>Hành động</th>
@@ -172,17 +183,19 @@ export default function OwnerRevenue() {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={7} className="owner-empty-cell">Đang tổng hợp doanh thu theo bãi...</td>
+                  <td colSpan={9} className="owner-empty-cell">Đang tổng hợp doanh thu theo bãi...</td>
                 </tr>
               ) : revenueByParkingLot.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="owner-empty-cell">Chưa có doanh thu nào trong kỳ đang chọn.</td>
+                  <td colSpan={9} className="owner-empty-cell">Chưa có doanh thu nào trong kỳ đang chọn.</td>
                 </tr>
               ) : (
                 revenueByParkingLot.map((row) => (
                   <tr key={row.parkingLotName}>
                     <td>{row.parkingLotName}</td>
                     <td>{row.district || "Chưa có khu vực"}</td>
+                    <td>{formatCurrency(row.grossRevenue)}</td>
+                    <td>{formatCurrency(row.commissionAmount)}</td>
                     <td className="table-cell-green">{formatCurrency(row.paidRevenue)}</td>
                     <td className="table-cell-orange">{formatCurrency(row.pendingRevenue)}</td>
                     <td>{row.paidCount}</td>
@@ -217,11 +230,13 @@ export default function OwnerRevenue() {
 
             <div className="owner-detail-grid">
               <div><span>Khu vực</span><strong>{selectedParkingLotSummary.district || "Chưa có khu vực"}</strong></div>
-              <div><span>Đã thu</span><strong className="text-green">{formatCurrency(selectedParkingLotSummary.paidRevenue)}</strong></div>
-              <div><span>Chờ thanh toán</span><strong className="text-orange">{formatCurrency(selectedParkingLotSummary.pendingRevenue)}</strong></div>
+              <div><span>Gross trong kỳ</span><strong>{formatCurrency(selectedParkingLotSummary.grossRevenue)}</strong></div>
+              <div><span>Hoa hồng admin</span><strong>{formatCurrency(selectedParkingLotSummary.commissionAmount)}</strong></div>
+              <div><span>Owner đã nhận</span><strong className="text-green">{formatCurrency(selectedParkingLotSummary.paidRevenue)}</strong></div>
+              <div><span>Owner chờ nhận</span><strong className="text-orange">{formatCurrency(selectedParkingLotSummary.pendingRevenue)}</strong></div>
               <div><span>Tổng giao dịch đã thu</span><strong>{selectedParkingLotSummary.paidCount}</strong></div>
               <div><span>Tổng giao dịch chờ</span><strong>{selectedParkingLotSummary.pendingCount}</strong></div>
-              <div><span>Tổng doanh thu trong kỳ</span><strong>{formatCurrency(selectedParkingLotSummary.totalRevenue)}</strong></div>
+              <div><span>Owner nhận trong kỳ</span><strong>{formatCurrency(selectedParkingLotSummary.totalRevenue)}</strong></div>
             </div>
 
             <div className="owner-section">
@@ -235,14 +250,16 @@ export default function OwnerRevenue() {
                       <th>Khách hàng</th>
                       <th>Thời gian</th>
                       <th>Phương thức</th>
-                      <th>Số tiền</th>
+                      <th>Gross</th>
+                      <th>Hoa hồng</th>
+                      <th>Owner nhận</th>
                       <th>Trạng thái</th>
                     </tr>
                   </thead>
                   <tbody>
                     {selectedParkingLotTransactions.length === 0 ? (
                       <tr>
-                        <td colSpan={7} className="owner-empty-cell">Không có giao dịch nào của bãi này trong kỳ đang chọn.</td>
+                        <td colSpan={9} className="owner-empty-cell">Không có giao dịch nào của bãi này trong kỳ đang chọn.</td>
                       </tr>
                     ) : (
                       selectedParkingLotTransactions.map((transaction) => (
@@ -252,7 +269,9 @@ export default function OwnerRevenue() {
                           <td>{transaction.payer}</td>
                           <td>{formatDateTime(transaction.time)}</td>
                           <td>{transaction.method}</td>
-                          <td>{formatCurrency(transaction.amount)}</td>
+                          <td>{formatCurrency(transaction.gross ?? transaction.amount)}</td>
+                          <td>{formatCurrency(transaction.commission)}</td>
+                          <td>{formatCurrency(transaction.ownerPayout ?? transaction.amount)}</td>
                           <td><StatusBadge status={transaction.status} /></td>
                         </tr>
                       ))
@@ -297,7 +316,7 @@ export default function OwnerRevenue() {
         </SectionCard>
       </div>
 
-      <SectionCard title="Giao dịch gần đây" subtitle="Các giao dịch phát sinh tại toàn bộ bãi owner đang phụ trách.">
+      <SectionCard title="Giao dịch gần đây" subtitle="Gross, hoa hồng admin và số tiền owner nhận sau commission.">
         {error ? <p className="owner-empty-cell">{error}</p> : null}
         <div className="owner-table-shell">
           <table className="owner-table">
@@ -308,18 +327,20 @@ export default function OwnerRevenue() {
                 <th>Khách hàng</th>
                 <th>Thời gian</th>
                 <th>Phương thức</th>
-                <th>Số tiền</th>
+                <th>Gross</th>
+                <th>Hoa hồng</th>
+                <th>Owner nhận</th>
                 <th>Trạng thái</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={7} className="owner-empty-cell">Đang tải giao dịch...</td>
+                  <td colSpan={9} className="owner-empty-cell">Đang tải giao dịch...</td>
                 </tr>
               ) : filteredTransactions.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="owner-empty-cell">Không có giao dịch nào trong kỳ đang chọn.</td>
+                  <td colSpan={9} className="owner-empty-cell">Không có giao dịch nào trong kỳ đang chọn.</td>
                 </tr>
               ) : (
                 filteredTransactions.map((transaction) => (
@@ -329,7 +350,9 @@ export default function OwnerRevenue() {
                     <td>{transaction.payer}</td>
                     <td>{formatDateTime(transaction.time)}</td>
                     <td>{transaction.method}</td>
-                    <td>{formatCurrency(transaction.amount)}</td>
+                    <td>{formatCurrency(transaction.gross ?? transaction.amount)}</td>
+                    <td>{formatCurrency(transaction.commission)}</td>
+                    <td>{formatCurrency(transaction.ownerPayout ?? transaction.amount)}</td>
                     <td><StatusBadge status={transaction.status} /></td>
                   </tr>
                 ))

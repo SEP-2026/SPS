@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { SectionCard } from "../../owner/OwnerUI";
 import { useOwnerContext } from "../../owner/useOwnerContext";
 import { isStrongPassword, PASSWORD_POLICY_TEXT } from "../../services/passwordPolicy";
@@ -19,6 +19,15 @@ function buildParkingSettingsRows(settings) {
     : [];
 }
 
+function normalizeSearchText(value) {
+  return String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
+}
+
 export default function OwnerSettings() {
   const { auth, ownerData, actions } = useOwnerContext();
   const [settingsData, setSettingsData] = useState(ownerData.settings);
@@ -35,6 +44,8 @@ export default function OwnerSettings() {
   const [ownerSaved, setOwnerSaved] = useState(false);
   const [accountSaved, setAccountSaved] = useState(false);
   const [savedParkingId, setSavedParkingId] = useState(null);
+  const [lotSearch, setLotSearch] = useState("");
+  const [selectedParkingId, setSelectedParkingId] = useState(null);
 
   useEffect(() => {
     const fetchSettings = async () => {
@@ -59,12 +70,27 @@ export default function OwnerSettings() {
     fetchSettings();
   }, [ownerData.settings]);
 
-  useEffect(() => {
-    setAccountForm((prev) => ({
-      ...prev,
-      email: auth?.user?.email || "",
-    }));
-  }, [auth?.user?.email]);
+  const filteredParkingRows = useMemo(() => {
+    const query = normalizeSearchText(lotSearch);
+    if (!query) {
+      return parkingRows;
+    }
+    return parkingRows.filter((row) => (
+      normalizeSearchText(`${row.parkingName} ${row.address} ${row.district}`).includes(query)
+    ));
+  }, [lotSearch, parkingRows]);
+
+  const effectiveSelectedParkingId = useMemo(() => {
+    if (parkingRows.some((row) => row.id === selectedParkingId)) {
+      return selectedParkingId;
+    }
+    return parkingRows[0]?.id || null;
+  }, [parkingRows, selectedParkingId]);
+
+  const selectedParking = useMemo(
+    () => parkingRows.find((row) => row.id === effectiveSelectedParkingId) || null,
+    [effectiveSelectedParkingId, parkingRows],
+  );
 
   const handleParkingChange = (parkingId, key, value) => {
     setSavedParkingId(null);
@@ -168,22 +194,53 @@ export default function OwnerSettings() {
         </form>
       </SectionCard>
 
-      <SectionCard title="Giá và cấu hình theo bãi" subtitle="Mỗi bãi owner quản lý dùng dữ liệu thật từ CSDL, không còn cấu hình giả toàn hệ thống.">
-        <div className="owner-settings-stack">
-          {parkingRows.map((row) => (
+      <SectionCard title="Giá và cấu hình theo bãi" subtitle="Tìm và chọn một bãi đang quản lý, sau đó chỉnh giá tương ứng cho đúng bãi đó.">
+        <div className="owner-parking-config-shell">
+          <aside className="owner-parking-picker">
+            <label className="owner-parking-search">
+              Tên bãi đỗ
+              <input
+                className="owner-input"
+                value={lotSearch}
+                onChange={(event) => setLotSearch(event.target.value)}
+                placeholder="Nhập tên bãi để tìm..."
+              />
+            </label>
+            <div className="owner-parking-result-list">
+              {filteredParkingRows.map((row) => (
+                <button
+                  key={row.id}
+                  type="button"
+                  className={`owner-parking-result${row.id === effectiveSelectedParkingId ? " is-active" : ""}`}
+                  onClick={() => {
+                    setSelectedParkingId(row.id);
+                    setSavedParkingId(null);
+                  }}
+                >
+                  <strong>{row.parkingName || "Chưa có tên bãi"}</strong>
+                  <span>{[row.address, row.district].filter(Boolean).join(" • ") || "Chưa có địa chỉ"}</span>
+                </button>
+              ))}
+              {filteredParkingRows.length === 0 ? (
+                <p className="owner-empty">Không tìm thấy bãi đỗ phù hợp.</p>
+              ) : null}
+            </div>
+          </aside>
+
+          <div className="owner-parking-config-detail">
+            {selectedParking ? (
             <form
-              key={row.id}
               className="owner-settings-form owner-settings-form--card"
               onSubmit={async (event) => {
                 event.preventDefault();
-                const ok = await actions.updateParkingLotSettings(row.id, {
-                  parkingName: row.parkingName,
-                  pricePerHour: row.pricePerHour,
-                  pricePerDay: row.pricePerDay,
-                  pricePerMonth: row.pricePerMonth,
+                const ok = await actions.updateParkingLotSettings(selectedParking.id, {
+                  parkingName: selectedParking.parkingName,
+                  pricePerHour: selectedParking.pricePerHour,
+                  pricePerDay: selectedParking.pricePerDay,
+                  pricePerMonth: selectedParking.pricePerMonth,
                 });
                 if (ok) {
-                  setSavedParkingId(row.id);
+                  setSavedParkingId(selectedParking.id);
                   const res = await API.get("/owner/settings");
                   const nextSettings = res.data?.settings || settingsData;
                   setSettingsData(nextSettings);
@@ -191,37 +248,44 @@ export default function OwnerSettings() {
                 }
               }}
             >
-              <label className="owner-form-span">
-                Tên bãi đỗ
-                <input className="owner-input" value={row.parkingName} onChange={(event) => handleParkingChange(row.id, "parkingName", event.target.value)} />
-              </label>
+              <div className="owner-selected-parking-head owner-form-span">
+                <div>
+                  <span>Bãi đang cấu hình</span>
+                  <strong>{selectedParking.parkingName || "Chưa có tên bãi"}</strong>
+                </div>
+                <span>{selectedParking.slotCapacity} chỗ</span>
+              </div>
               <label className="owner-form-span">
                 Địa chỉ
-                <input className="owner-input" value={[row.address, row.district].filter(Boolean).join(" • ")} disabled />
+                <input className="owner-input" value={[selectedParking.address, selectedParking.district].filter(Boolean).join(" • ")} disabled />
               </label>
               <label>
                 Số chỗ đỗ
-                <input className="owner-input" value={row.slotCapacity} disabled />
+                <input className="owner-input" value={selectedParking.slotCapacity} disabled />
               </label>
               <label>
                 Giá theo giờ (VND)
-                <input className="owner-input" value={row.pricePerHour} onChange={(event) => handleParkingChange(row.id, "pricePerHour", event.target.value)} />
+                <input className="owner-input" inputMode="numeric" value={selectedParking.pricePerHour} onChange={(event) => handleParkingChange(selectedParking.id, "pricePerHour", event.target.value)} />
               </label>
               <label>
                 Giá theo ngày (VND)
-                <input className="owner-input" value={row.pricePerDay} onChange={(event) => handleParkingChange(row.id, "pricePerDay", event.target.value)} />
+                <input className="owner-input" inputMode="numeric" value={selectedParking.pricePerDay} onChange={(event) => handleParkingChange(selectedParking.id, "pricePerDay", event.target.value)} />
               </label>
               <label>
                 Giá theo tháng (VND)
-                <input className="owner-input" value={row.pricePerMonth} onChange={(event) => handleParkingChange(row.id, "pricePerMonth", event.target.value)} />
+                <input className="owner-input" inputMode="numeric" value={selectedParking.pricePerMonth} onChange={(event) => handleParkingChange(selectedParking.id, "pricePerMonth", event.target.value)} />
               </label>
               <div className="owner-settings-actions owner-form-span">
-                {savedParkingId === row.id ? <p className="owner-save-note">Đã cập nhật cấu hình bãi.</p> : <span />}
+                {savedParkingId === selectedParking.id ? <p className="owner-save-note">Đã cập nhật cấu hình bãi.</p> : <span />}
                 <button type="submit" className="btn-primary owner-btn">Lưu cấu hình bãi</button>
               </div>
             </form>
-          ))}
-          {parkingRows.length === 0 ? <p className="owner-empty-cell">Owner hiện chưa được gán bãi đỗ nào.</p> : null}
+            ) : (
+              <div className="owner-parking-config-empty">
+                {parkingRows.length === 0 ? "Owner hiện chưa được gán bãi đỗ nào." : "Chọn một bãi đỗ để xem cấu hình."}
+              </div>
+            )}
+          </div>
         </div>
       </SectionCard>
     </div>

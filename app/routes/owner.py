@@ -1,5 +1,7 @@
 from collections import defaultdict
 from datetime import datetime
+import re
+import unicodedata
 from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -9,13 +11,21 @@ from sqlalchemy.orm import Session
 from werkzeug.security import generate_password_hash
 
 from app.database import get_db
-from app.models.models import Booking, OwnerParking, ParkingLot, ParkingPrice, ParkingSlot, Payment, Review, User
+from app.models.models import Booking, District, OwnerParking, ParkingLot, ParkingPrice, ParkingSlot, Payment, Review, User
 from app.routes.auth import get_current_user
 from app.security.password_policy import ensure_strong_password
-from app.utils import isoformat_vn
+from app.services.employee_service import create_employee_for_owner
+from app.services.revenue_settings import get_commission_rate_percent, split_revenue
+from app.utils import isoformat_vn, vn_now
 
 router = APIRouter(prefix="/owner", tags=["owner"])
 APP_TIMEZONE = ZoneInfo("Asia/Ho_Chi_Minh")
+
+
+def _normalize_unique_text(value: str | None) -> str:
+    normalized = unicodedata.normalize("NFKD", value or "")
+    ascii_text = normalized.encode("ascii", "ignore").decode("ascii")
+    return re.sub(r"\s+", " ", ascii_text).strip().casefold()
 
 
 class OwnerSlotCreateRequest(BaseModel):
@@ -53,6 +63,23 @@ class OwnerManagedParkingSettingsUpdateRequest(BaseModel):
     pricePerHour: str | None = None
     pricePerDay: str | None = None
     pricePerMonth: str | None = None
+
+
+class OwnerParkingSlotGroupRequest(BaseModel):
+    zone: str = Field(min_length=1, max_length=50)
+    level: str = Field(min_length=1, max_length=50)
+    slotCount: int = Field(default=0, ge=0, le=500)
+
+
+class OwnerParkingLotCreateRequest(BaseModel):
+    name: str = Field(min_length=1, max_length=255)
+    address: str = Field(min_length=1, max_length=255)
+    phone: str | None = Field(default=None, max_length=30)
+    district: str | None = Field(default=None, max_length=100)
+    slotCount: int = Field(default=0, ge=0, le=500)
+    defaultZone: str | None = Field(default=None, max_length=50)
+    defaultLevel: str | None = Field(default=None, max_length=50)
+    slotGroups: list[OwnerParkingSlotGroupRequest] = Field(default_factory=list)
 
 
 class OwnerReviewReplyRequest(BaseModel):
@@ -166,7 +193,7 @@ def _slot_layout_meta(slot: ParkingSlot) -> dict:
         "zone": slot.zone or "Chưa phân khu",
         "level": slot.level or "Chưa gán tầng",
         "type": slot.slot_type or None,
-        "updatedAt": (slot.updated_at or slot.created_at or datetime.utcnow()).isoformat(),
+        "updatedAt": isoformat_vn(slot.updated_at or slot.created_at, fallback_now=True),
     }
 
 
@@ -356,6 +383,7 @@ def _serialize_owner_bootstrap(current_user: User, parking_lots: list[ParkingLot
     for booking in bookings:
         payment = payments_by_booking_id.get(int(booking.id))
         overtime_fee = float(payment.overtime_fee or 0) if payment else 0
+        revenue = split_revenue(float((payment.amount if payment else booking.total_amount) or 0) + overtime_fee)
         transaction_rows.append({
             "id": f"TX-{payment.id}" if payment else f"TX-BK-{booking.id}",
             "bookingCode": f"BK-{booking.id}",
@@ -363,7 +391,10 @@ def _serialize_owner_bootstrap(current_user: User, parking_lots: list[ParkingLot
             "method": (payment.payment_method or "N/A").upper() if payment else "N/A",
             "payer": booking.user.name if booking.user else "Unknown user",
             "time": (payment.paid_at or payment.created_at or booking.created_at or datetime.utcnow()).isoformat() if payment else (booking.created_at or datetime.utcnow()).isoformat(),
-            "amount": float((payment.amount if payment else booking.total_amount) or 0) + overtime_fee,
+            "gross": revenue["gross"],
+            "commission": revenue["commission"],
+            "ownerPayout": revenue["ownerPayout"],
+            "amount": revenue["ownerPayout"],
             "status": payment.payment_status if payment else "pending",
         })
 
@@ -660,6 +691,7 @@ def owner_revenue(
     return {
         "transactions": bootstrap["transactions"],
         "parkingLots": bootstrap["parkingLots"],
+        "commissionRate": get_commission_rate_percent(),
     }
 
 
@@ -750,6 +782,119 @@ def get_owner_parking_lots_slots_overview(
 ):
     parking_lots = _get_owner_parking_lots(current_user.id, db)
     return _serialize_slots_overview(parking_lots, db)
+
+
+@router.post("/parking-lots")
+def create_owner_parking_lot(
+    payload: OwnerParkingLotCreateRequest,
+    current_user: User = Depends(require_owner),
+    db: Session = Depends(get_db),
+):
+    name = payload.name.strip()
+    address = payload.address.strip()
+    if not name or not address:
+        raise HTTPException(status_code=400, detail="Vui lòng nhập tên bãi và địa chỉ")
+
+    requested_name_key = _normalize_unique_text(name)
+    duplicate_name = any(
+        _normalize_unique_text(existing_name) == requested_name_key
+        for (existing_name,) in db.query(ParkingLot.name).all()
+    )
+    if duplicate_name:
+        raise HTTPException(status_code=409, detail="Tên bãi đỗ đã tồn tại")
+
+    district_id = current_user.managed_district_id
+    district_name = (payload.district or "").strip()
+    if district_name:
+        district = db.query(District).filter(func.lower(District.name) == district_name.lower()).first()
+        if not district:
+            district = District(name=district_name)
+            db.add(district)
+            db.flush()
+        district_id = district.id
+
+    lot = ParkingLot(
+        name=name,
+        address=address,
+        phone=payload.phone.strip() if payload.phone and payload.phone.strip() else current_user.phone,
+        district_id=district_id,
+        latitude=10.0,
+        longitude=106.0,
+        has_roof=0,
+        is_active=1,
+    )
+    db.add(lot)
+    db.flush()
+
+    db.add(ParkingPrice(
+        parking_id=lot.id,
+        price_per_hour=10000,
+        price_per_day=70000,
+        price_per_month=1500000,
+    ))
+
+    slot_groups = [
+        {
+            "zone": group.zone.strip(),
+            "level": group.level.strip(),
+            "slot_count": int(group.slotCount or 0),
+        }
+        for group in payload.slotGroups
+        if int(group.slotCount or 0) > 0
+    ]
+    if not slot_groups and payload.slotCount > 0:
+        slot_groups = [{
+            "zone": (payload.defaultZone or "").strip() or "Khu A",
+            "level": (payload.defaultLevel or "").strip() or "Tầng 1",
+            "slot_count": int(payload.slotCount or 0),
+        }]
+
+    total_slot_count = sum(group["slot_count"] for group in slot_groups)
+    if total_slot_count > 500:
+        raise HTTPException(status_code=422, detail="Tổng số chỗ ban đầu không được vượt quá 500")
+
+    now = vn_now()
+    slot_index = 1
+    for group in slot_groups:
+        for _ in range(group["slot_count"]):
+            code = f"P{lot.id}-{slot_index}"
+            db.add(ParkingSlot(
+                parking_id=lot.id,
+                slot_number=str(slot_index),
+                slot_type="normal",
+                zone=group["zone"],
+                level=group["level"],
+                code=code,
+                status="available",
+                created_at=now,
+                updated_at=now,
+            ))
+            slot_index += 1
+
+    db.add(OwnerParking(owner_id=current_user.id, parking_id=lot.id))
+    db.flush()
+    employee = create_employee_for_owner(
+        owner=current_user,
+        full_name=f"Nhân viên {lot.name}",
+        email="",
+        phone=lot.phone or current_user.phone or "0000000000",
+        password="",
+        parking_id=lot.id,
+        db=db,
+        commit=False,
+    )
+    db.commit()
+    db.refresh(lot)
+    return {
+        "message": "Đã tạo bãi đỗ",
+        "parkingLot": {
+            "id": lot.id,
+            "name": lot.name,
+            "address": lot.address,
+            "district": lot.district.name if lot.district else None,
+        },
+        "employee": employee,
+    }
 
 
 @router.get("/slots/{slot_id}/detail")
@@ -847,6 +992,7 @@ def create_owner_slot(
     if duplicate_slot_number:
         raise HTTPException(status_code=409, detail="Mã chỗ đỗ đã tồn tại trong bãi")
 
+    now = vn_now()
     slot = ParkingSlot(
         parking_id=parking_lot.id,
         slot_number=code,
@@ -855,6 +1001,8 @@ def create_owner_slot(
         level=payload.level.strip(),
         code=code,
         status=_normalize_slot_status(payload.status),
+        created_at=now,
+        updated_at=now,
     )
     db.add(slot)
     db.commit()
@@ -903,6 +1051,7 @@ def update_owner_slot(
         slot.level = payload.level.strip()
     if payload.status is not None:
         slot.status = _normalize_slot_status(payload.status)
+    slot.updated_at = vn_now()
 
     db.commit()
     return {"message": "Đã cập nhật chỗ đỗ"}

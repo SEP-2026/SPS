@@ -38,6 +38,19 @@ export function formatDateTimeVN(value, fallback = "Chưa có") {
   }).format(date);
 }
 
+export function formatTimeVN(value, fallback = "--") {
+  const date = parseVietnamDate(value);
+  if (!date) {
+    return fallback;
+  }
+
+  return new Intl.DateTimeFormat("vi-VN", {
+    timeZone: VN_TIMEZONE,
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date);
+}
+
 export function formatDateOnlyVN(value, fallback = "") {
   const date = parseVietnamDate(value);
   if (!date) {

@@ -3,6 +3,7 @@ from datetime import datetime
 from sqlalchemy import Column, DateTime, DECIMAL, Float, CheckConstraint, ForeignKey, Integer, SmallInteger, String, Text
 from sqlalchemy.orm import relationship
 from app.database import Base
+from app.utils.timezone import vn_now
 
 
 class District(Base):
@@ -110,8 +111,8 @@ class ParkingSlot(Base):
     level = Column(String(50), nullable=True)
     code = Column(String(50), unique=True)
     status = Column(String(50), default="available")
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=vn_now)
+    updated_at = Column(DateTime, default=vn_now, onupdate=vn_now)
 
 
 class Booking(Base):

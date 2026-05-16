@@ -277,9 +277,9 @@ export default function Scan() {
               type="button"
               className="scan-secondary-btn"
               style={{ marginTop: 8 }}
-              onClick={() => navigate("/owner-review-replies")}
+              onClick={() => navigate("/owner/reviews")}
             >
-              Phản hồi đánh giá
+              Đánh giá & phản hồi
             </button>
           </div>
         </div>

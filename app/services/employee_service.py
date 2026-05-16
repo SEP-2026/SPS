@@ -30,6 +30,15 @@ from app.routes.gate import (
 
 APP_TIMEZONE = ZoneInfo("Asia/Ho_Chi_Minh")
 EMPLOYEE_PASSWORD_MIN_LENGTH = 6
+PARKING_LOGIN_PREFIXES = (
+    "smart parking",
+    "bai dau xe",
+    "bai giu xe",
+    "bai do",
+    "bai xe",
+    "parking lot",
+    "parking",
+)
 
 BOOKING_STATUS_PRIORITY = {
     "checked_in": 0,
@@ -128,8 +137,39 @@ def _normalize_identity(value: str) -> str:
 
 def _parking_login_token(parking_name: str) -> str:
     normalized = unicodedata.normalize("NFKD", parking_name or "").encode("ascii", "ignore").decode("ascii").lower()
+    normalized = re.sub(r"[^a-z0-9]+", " ", normalized).strip()
+
+    for _ in range(4):
+        next_value = normalized
+        for prefix in PARKING_LOGIN_PREFIXES:
+            if next_value == prefix:
+                next_value = ""
+                break
+            if next_value.startswith(f"{prefix} "):
+                next_value = next_value[len(prefix):].strip()
+                break
+        if next_value == normalized:
+            break
+        normalized = next_value
+
     token = re.sub(r"[^a-z0-9]+", "", normalized)
     return token or "parking"
+
+
+def _build_employee_credentials(parking_lot: ParkingLot, db: Session) -> tuple[str, str]:
+    login_token = _parking_login_token(parking_lot.name)
+    password = f"{login_token}@hcm"
+    candidate_tokens = [login_token, f"{login_token}{parking_lot.id}"]
+
+    for index in range(2, 100):
+        candidate_tokens.append(f"{login_token}{parking_lot.id}{index}")
+
+    for candidate in candidate_tokens:
+        email = f"bx{candidate}@gmail.com"
+        if not db.query(User.id).filter(User.email == email).first():
+            return email, password
+
+    raise HTTPException(status_code=409, detail="Không thể tạo email employee tự động cho bãi này")
 
 
 def _serialize_parking(parking_lot: ParkingLot, db: Session) -> dict:
@@ -175,6 +215,7 @@ def create_employee_for_owner(
     parking_id: int,
     db: Session,
     username: str | None = None,
+    commit: bool = True,
 ) -> dict:
     owner_email = _normalize_identity(owner.email or "")
     owner_record = (
@@ -199,18 +240,13 @@ def create_employee_for_owner(
     if not parking_lot:
         raise HTTPException(status_code=404, detail="Không tìm thấy bãi để tạo tài khoản nhân viên")
 
-    login_token = _parking_login_token(parking_lot.name)
-    normalized_email = f"bx{login_token}@gmail.com"
-    generated_password = f"{login_token}@hcm"
+    normalized_email, generated_password = _build_employee_credentials(parking_lot, db)
     normalized_full_name = (full_name or "").strip()
     normalized_phone = (phone or "").strip()
     if not normalized_full_name:
         raise HTTPException(status_code=400, detail="Employee full name is required")
     if not normalized_phone:
         raise HTTPException(status_code=400, detail="Employee phone is required")
-    existing_user = db.query(User).filter(User.email == normalized_email).first()
-    if existing_user:
-        raise HTTPException(status_code=409, detail="Email employee đã tồn tại")
 
     user = User(
         name=normalized_full_name,
@@ -229,8 +265,9 @@ def create_employee_for_owner(
 
     _get_operational_state(parking_id, db)
     _log_activity(user, parking_id, "employee_created", f"Owner #{owner.id} created employee {normalized_email}", db)
-    db.commit()
-    db.refresh(user)
+    if commit:
+        db.commit()
+        db.refresh(user)
     return {
         **_serialize_employee(user),
         "user_id": user.id,
@@ -847,4 +884,3 @@ def get_employee_history(
         for row in rows
     ]
     return {"history": history, "total_count": len(history)}
-

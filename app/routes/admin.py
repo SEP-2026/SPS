@@ -13,16 +13,20 @@ from app.database import get_db
 from app.models.models import Booking, EmployeeActivity, OwnerParking, ParkingLot, ParkingPrice, ParkingSlot, Payment, RevokedToken, User
 from app.routes.auth import get_current_user
 from app.security.password_policy import ensure_strong_password
+from app.services.revenue_settings import ADMIN_RUNTIME_SETTINGS, get_commission_rate_percent, split_revenue
 import unicodedata
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
-ADMIN_RUNTIME_SETTINGS = {
-    "commissionRate": "10",
-    "supportEmail": "admin@smartparking.vn",
-    "maintenanceWindow": "Chủ nhật 23:00 - 01:00",
-    "alertThreshold": "85",
-}
+PARKING_LOGIN_PREFIXES = (
+    "smart parking",
+    "bai dau xe",
+    "bai giu xe",
+    "bai do",
+    "bai xe",
+    "parking lot",
+    "parking",
+)
 
 
 def _generate_strong_password(length: int = 12) -> str:
@@ -207,6 +211,21 @@ def _find_owner_by_reference(db: Session, reference: str | None) -> User | None:
 
 def _parking_login_token(parking_name: str) -> str:
     normalized = unicodedata.normalize("NFKD", parking_name or "").encode("ascii", "ignore").decode("ascii").lower()
+    normalized = re.sub(r"[^a-z0-9]+", " ", normalized).strip()
+
+    for _ in range(4):
+        next_value = normalized
+        for prefix in PARKING_LOGIN_PREFIXES:
+            if next_value == prefix:
+                next_value = ""
+                break
+            if next_value.startswith(f"{prefix} "):
+                next_value = next_value[len(prefix):].strip()
+                break
+        if next_value == normalized:
+            break
+        normalized = next_value
+
     token = re.sub(r"[^a-z0-9]+", "", normalized)
     return token or "parking"
 
@@ -602,36 +621,35 @@ def _serialize_bootstrap(db: Session) -> dict:
         })
 
     transaction_rows = []
-    commission_rate = float(ADMIN_RUNTIME_SETTINGS["commissionRate"]) / 100
     if payments:
         for payment in payments:
             booking = db.query(Booking).filter(Booking.id == payment.booking_id).first()
             user = booking.user if booking else None
             lot = booking.parking_lot if booking else None
-            gross = float(payment.amount or 0) + float(payment.overtime_fee or 0)
+            revenue = split_revenue(float(payment.amount or 0) + float(payment.overtime_fee or 0))
             transaction_rows.append({
                 "id": f"TX-{payment.id}",
                 "bookingId": f"BK-{payment.booking_id}",
                 "user": user.name if user else "Unknown user",
                 "parkingLot": lot.name if lot else "ChÆ°a cÃ³ bÃ£i",
                 "time": (payment.paid_at or payment.created_at or datetime.utcnow()).isoformat(),
-                "gross": gross,
-                "commission": round(gross * commission_rate, 2),
-                "ownerPayout": round(gross * (1 - commission_rate), 2),
+                "gross": revenue["gross"],
+                "commission": revenue["commission"],
+                "ownerPayout": revenue["ownerPayout"],
                 "status": payment.payment_status,
             })
     else:
         for booking in bookings:
-            gross = float(booking.total_amount or 0)
+            revenue = split_revenue(booking.total_amount)
             transaction_rows.append({
                 "id": f"TX-BK-{booking.id}",
                 "bookingId": f"BK-{booking.id}",
                 "user": booking.user.name if booking.user else "Unknown user",
                 "parkingLot": booking.parking_lot.name if booking.parking_lot else "ChÆ°a cÃ³ bÃ£i",
                 "time": (booking.created_at or datetime.utcnow()).isoformat(),
-                "gross": gross,
-                "commission": round(gross * commission_rate, 2),
-                "ownerPayout": round(gross * (1 - commission_rate), 2),
+                "gross": revenue["gross"],
+                "commission": revenue["commission"],
+                "ownerPayout": revenue["ownerPayout"],
                 "status": "paid" if booking.status in {"booked", "checked_in", "completed"} else booking.status,
             })
 
@@ -658,7 +676,7 @@ def _serialize_bootstrap(db: Session) -> dict:
     ]
 
     return {
-        "commissionRate": int(float(ADMIN_RUNTIME_SETTINGS["commissionRate"])),
+        "commissionRate": get_commission_rate_percent(),
         "users": user_rows,
         "owners": owner_rows,
         "parkingLots": parking_rows,
@@ -1236,4 +1254,3 @@ def auto_assign_owners(_: User = Depends(require_admin), db: Session = Depends(g
 
     db.commit()
     return {"message": "Auto-assign completed (exclusive per-district)", "assigned": assigned, "conflicts": conflicts, "unassigned_districts": unassigned}
-

@@ -45,6 +45,17 @@ function isTodayIso(value) {
     && date.getDate() === now.getDate();
 }
 
+function getApiErrorMessage(error, fallback) {
+  const detail = error?.response?.data?.detail;
+  if (typeof detail === "string" && detail.trim()) {
+    return detail;
+  }
+  if (Array.isArray(detail) && detail.length > 0) {
+    return detail.map((item) => item?.msg || item?.message || String(item)).join("\n");
+  }
+  return error?.message || fallback;
+}
+
 export default function OwnerLayout({ auth, onLogout }) {
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -79,20 +90,20 @@ export default function OwnerLayout({ auth, onLogout }) {
         }
         return;
       }
-      setOwnerData({
-        ...EMPTY_OWNER_DATA,
-        settings: {
-          ...EMPTY_OWNER_DATA.settings,
-          parkingName: "Chưa được gán bãi",
-          slotCapacity: "0",
-        },
-      });
       if (!silent) {
+        setOwnerData({
+          ...EMPTY_OWNER_DATA,
+          settings: {
+            ...EMPTY_OWNER_DATA.settings,
+            parkingName: "Chưa được gán bãi",
+            slotCapacity: "0",
+          },
+        });
         setSyncNote("Owner chưa được gán bãi trong CSDL");
       }
     } catch {
-      setOwnerData(EMPTY_OWNER_DATA);
       if (!silent) {
+        setOwnerData((prev) => (prev?.parkingLot ? prev : EMPTY_OWNER_DATA));
         setSyncNote("Không tải được dữ liệu owner từ CSDL");
       }
     } finally {
@@ -102,7 +113,10 @@ export default function OwnerLayout({ auth, onLogout }) {
     }
   }, []);
 
-  useRealtimeRefresh(() => refreshOwnerData({ silent: true }), { enabled: Boolean(auth?.token), minRefreshIntervalMs: 3500 });
+  useRealtimeRefresh(
+    () => refreshOwnerData({ silent: true }),
+    { enabled: Boolean(auth?.token), minRefreshIntervalMs: 10000, refreshImmediately: false },
+  );
 
   useEffect(() => {
     refreshOwnerData({ silent: false });
@@ -209,7 +223,7 @@ export default function OwnerLayout({ auth, onLogout }) {
   const isOwnerLocked = Boolean(ownerData?.isLocked);
   const ownerLockMessage = ownerData?.lockMessage || "Bãi xe của bạn đã bị khóa, vui lòng liên hệ admin.";
 
-  const actions = {
+  const actions = useMemo(() => ({
     async addSlot(payload) {
       try {
         await API.post("/owner/slots", payload);
@@ -270,6 +284,19 @@ export default function OwnerLayout({ auth, onLogout }) {
         return true;
       } catch (error) {
         window.alert(error?.response?.data?.detail || "Không thể cập nhật bãi đỗ");
+        return false;
+      }
+    },
+    async createParkingLot(payload) {
+      try {
+        const res = await API.post("/owner/parking-lots", payload);
+        if (res.data?.employee?.email && res.data?.employee?.default_password) {
+          window.alert(`Đã tạo bãi đỗ và tài khoản employee:\nEmail: ${res.data.employee.email}\nMật khẩu: ${res.data.employee.default_password}`);
+        }
+        await refreshOwnerData();
+        return true;
+      } catch (error) {
+        window.alert(getApiErrorMessage(error, "Không thể tạo bãi đỗ"));
         return false;
       }
     },
@@ -342,7 +369,7 @@ export default function OwnerLayout({ auth, onLogout }) {
         return false;
       }
     },
-  };
+  }), [refreshOwnerData]);
 
   return (
     <div className={`owner-shell${sidebarOpen ? " sidebar-open" : ""}${isOwnerLocked ? " is-locked" : ""}`}>
@@ -423,5 +450,3 @@ export default function OwnerLayout({ auth, onLogout }) {
     </div>
   );
 }
-
-
