@@ -575,6 +575,35 @@ export default function BookingHistory() {
     }
   };
 
+  const handleCancelBooking = async (bookingId) => {
+    if (!bookingId) {
+      return;
+    }
+
+    const confirmCancel = window.confirm("Bạn có chắc muốn hủy booking này không?");
+    if (!confirmCancel) {
+      return;
+    }
+
+    try {
+      setProcessing(true);
+      setError("");
+      setNotice("");
+      await API.post(`/booking/my/${bookingId}/cancel`);
+      await refreshBookings();
+      setNotice(`Đã hủy booking #${bookingId}.`);
+    } catch (err) {
+      const detail = err?.response?.data?.detail;
+      setError(
+        (typeof detail === "string" && detail) ||
+          detail?.message ||
+          "Không thể hủy booking",
+      );
+    } finally {
+      setProcessing(false);
+    }
+  };
+
   return (
     <section className="page-wrap booking-history-wrap">
       <div className="page-card booking-history-shell">
@@ -898,6 +927,21 @@ export default function BookingHistory() {
                           <line x1="2" y1="11" x2="22" y2="11" />
                         </svg>
                         <span>Thanh toán</span>
+                      </button>
+                    )}
+                    {["pending", "booked"].includes(lifecycleStatus(item)) && (
+                      <button
+                        type="button"
+                        className="btn-cancel-booking"
+                        onClick={() => handleCancelBooking(item.booking_id)}
+                        disabled={processing}
+                        title="Hủy booking"
+                      >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <line x1="18" y1="6" x2="6" y2="18" />
+                          <line x1="6" y1="6" x2="18" y2="18" />
+                        </svg>
+                        <span>Hủy</span>
                       </button>
                     )}
                     <a

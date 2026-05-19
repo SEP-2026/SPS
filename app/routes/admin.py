@@ -269,10 +269,11 @@ def _build_revenue_series(
     payments: list[Payment],
     bookings: list[Booking] | None = None,
     days: int = 7,
-) -> tuple[list[dict], list[dict]]:
+) -> tuple[list[dict], list[dict], list[dict]]:
     today = datetime.utcnow().date()
     revenue = []
     commission = []
+    owner_payout = []
     commission_rate = float(ADMIN_RUNTIME_SETTINGS["commissionRate"]) / 100
 
     for offset in range(days - 1, -1, -1):
@@ -295,10 +296,14 @@ def _build_revenue_series(
                 ),
                 2,
             )
-        revenue.append({"label": _format_day_label(datetime.combine(current_day, datetime.min.time())), "amount": gross})
-        commission.append({"label": _format_day_label(datetime.combine(current_day, datetime.min.time())), "amount": round(gross * commission_rate, 2)})
+        comm = round(gross * commission_rate, 2)
+        payout = round(gross - comm, 2)
+        label = _format_day_label(datetime.combine(current_day, datetime.min.time()))
+        revenue.append({"label": label, "amount": gross})
+        commission.append({"label": label, "amount": comm})
+        owner_payout.append({"label": label, "amount": payout})
 
-    return revenue, commission
+    return revenue, commission, owner_payout
 
 
 def _build_booking_series(bookings: list[Booking], days: int = 7) -> list[dict]:
@@ -342,7 +347,7 @@ def _build_monthly_revenue_series(
     payments: list[Payment],
     bookings: list[Booking] | None = None,
     months: int = 6,
-) -> tuple[list[dict], list[dict], list[dict]]:
+) -> tuple[list[dict], list[dict], list[dict], list[dict]]:
     now = datetime.utcnow()
     commission_rate = float(ADMIN_RUNTIME_SETTINGS["commissionRate"]) / 100
     target_months: list[tuple[int, int]] = []
@@ -358,6 +363,7 @@ def _build_monthly_revenue_series(
 
     revenue: list[dict] = []
     commission: list[dict] = []
+    owner_payout: list[dict] = []
     bookings_series: list[dict] = []
     for year, month in target_months:
         label = f"{month:02d}/{str(year)[-2:]}"
@@ -389,11 +395,129 @@ def _build_monthly_revenue_series(
                     2,
                 )
 
+        comm = round(gross * commission_rate, 2)
+        payout = round(gross - comm, 2)
         revenue.append({"label": label, "amount": gross})
-        commission.append({"label": label, "amount": round(gross * commission_rate, 2)})
+        commission.append({"label": label, "amount": comm})
+        owner_payout.append({"label": label, "amount": payout})
         bookings_series.append({"label": label, "amount": booking_count})
 
-    return revenue, commission, bookings_series
+    return revenue, commission, owner_payout, bookings_series
+
+
+def _calculate_period_revenue(payments: list[Payment], bookings: list[Booking], start_date: datetime, end_date: datetime) -> dict:
+    """Calculate revenue for a specific period (gross, commission, owner payout)"""
+    commission_rate = float(ADMIN_RUNTIME_SETTINGS["commissionRate"]) / 100
+    
+    period_payments = [
+        payment for payment in payments
+        if (payment.paid_at or payment.created_at) 
+        and start_date <= (payment.paid_at or payment.created_at) < end_date
+        and payment.payment_status == "paid"
+    ]
+    
+    gross = round(sum(float(payment.amount or 0) + float(payment.overtime_fee or 0) for payment in period_payments), 2)
+    
+    if gross <= 0 and bookings:
+        period_bookings = [
+            booking for booking in bookings
+            if booking.created_at and start_date <= booking.created_at < end_date
+            and booking.status in {"booked", "checked_in", "in_progress", "completed"}
+        ]
+        gross = round(sum(float(booking.total_amount or 0) for booking in period_bookings), 2)
+    
+    comm = round(gross * commission_rate, 2)
+    payout = round(gross - comm, 2)
+    
+    return {
+        "gross": gross,
+        "commission": comm,
+        "ownerPayout": payout,
+    }
+
+
+def _build_revenue_by_owner(payments: list[Payment], bookings: list[Booking], lot_by_owner: dict[int, list[dict]], db: Session) -> list[dict]:
+    """Calculate revenue breakdown by owner"""
+    commission_rate = float(ADMIN_RUNTIME_SETTINGS["commissionRate"]) / 100
+    owner_revenue: dict[int, dict] = {}
+    
+    owners = db.query(User).filter(User.role == "owner").all()
+    for owner in owners:
+        owner_lots = lot_by_owner.get(int(owner.id), [])
+        owner_lot_ids = [int(item["id"]) for item in owner_lots if item.get("id")]
+        
+        owner_payments = [
+            payment for payment in payments
+            if payment.booking_id and payment.payment_status == "paid"
+        ]
+        
+        owner_gross = 0.0
+        for payment in owner_payments:
+            booking = next((b for b in bookings if b.id == payment.booking_id), None)
+            if booking and booking.parking_id and int(booking.parking_id) in owner_lot_ids:
+                owner_gross += float(payment.amount or 0) + float(payment.overtime_fee or 0)
+        
+        for booking in bookings:
+            if booking.parking_id and int(booking.parking_id) in owner_lot_ids:
+                if booking.status in {"booked", "checked_in", "in_progress", "completed"}:
+                    owner_gross += float(booking.total_amount or 0)
+        
+        owner_gross = round(owner_gross, 2)
+        owner_comm = round(owner_gross * commission_rate, 2)
+        owner_payout = round(owner_gross - owner_comm, 2)
+        
+        owner_revenue[int(owner.id)] = {
+            "id": owner.id,
+            "name": owner.name,
+            "email": owner.email,
+            "parkingLots": [item["name"] for item in owner_lots],
+            "gross": owner_gross,
+            "commission": owner_comm,
+            "ownerPayout": owner_payout,
+        }
+    
+    return sorted(
+        [v for v in owner_revenue.values() if v["gross"] > 0],
+        key=lambda x: x["ownerPayout"],
+        reverse=True
+    )
+
+
+def _build_revenue_summary(payments: list[Payment], bookings: list[Booking]) -> dict:
+    """Build revenue summary with different time periods"""
+    now = datetime.utcnow()
+    today = now.date()
+    
+    # 3 days ago
+    three_days_ago = datetime.combine(today - timedelta(days=3), datetime.min.time())
+    three_days_revenue = _calculate_period_revenue(payments, bookings, three_days_ago, now)
+    
+    # This week (Monday to now)
+    days_since_monday = today.weekday()  # 0 = Monday, 6 = Sunday
+    monday = datetime.combine(today - timedelta(days=days_since_monday), datetime.min.time())
+    this_week_revenue = _calculate_period_revenue(payments, bookings, monday, now)
+    
+    # Last week
+    last_monday = datetime.combine(monday.date() - timedelta(days=7), datetime.min.time())
+    last_sunday = datetime.combine(monday.date(), datetime.min.time())
+    last_week_revenue = _calculate_period_revenue(payments, bookings, last_monday, last_sunday)
+    
+    # This month
+    first_day_this_month = datetime.combine(today.replace(day=1), datetime.min.time())
+    this_month_revenue = _calculate_period_revenue(payments, bookings, first_day_this_month, now)
+    
+    # Last month
+    last_month_last_day = first_day_this_month - timedelta(days=1)
+    first_day_last_month = datetime.combine(last_month_last_day.date().replace(day=1), datetime.min.time())
+    last_month_revenue = _calculate_period_revenue(payments, bookings, first_day_last_month, first_day_this_month)
+    
+    return {
+        "threeDays": three_days_revenue,
+        "thisWeek": this_week_revenue,
+        "lastWeek": last_week_revenue,
+        "thisMonth": this_month_revenue,
+        "lastMonth": last_month_revenue,
+    }
 
 
 def _evaluate_user_spam(users: list[User], bookings: list[Booking]) -> tuple[dict[int, dict], list[dict]]:
@@ -653,8 +777,10 @@ def _serialize_bootstrap(db: Session) -> dict:
                 "status": "paid" if booking.status in {"booked", "checked_in", "completed"} else booking.status,
             })
 
-    revenue_series, commission_series = _build_revenue_series(payments, bookings)
-    revenue_monthly, commission_monthly, bookings_monthly = _build_monthly_revenue_series(payments, bookings)
+    revenue_series, commission_series, owner_payout_series = _build_revenue_series(payments, bookings)
+    revenue_monthly, commission_monthly, owner_payout_monthly, bookings_monthly = _build_monthly_revenue_series(payments, bookings)
+    revenue_summary = _build_revenue_summary(payments, bookings)
+    owner_revenue_breakdown = _build_revenue_by_owner(payments, bookings, lot_by_owner, db)
     avg_occupancy = int(round(sum(item["occupancy"] for item in parking_rows) / len(parking_rows))) if parking_rows else 0
     active_parking = sum(1 for item in parking_rows if item["status"] == "active")
     top_parking = max(parking_rows, key=lambda item: item["occupancy"], default=None)
@@ -685,13 +811,17 @@ def _serialize_bootstrap(db: Session) -> dict:
         "systemRevenue": {
             "revenue": revenue_series,
             "commission": commission_series,
+            "ownerPayout": owner_payout_series,
             "revenueMonthly": revenue_monthly,
             "commissionMonthly": commission_monthly,
+            "ownerPayoutMonthly": owner_payout_monthly,
             "bookings": _build_booking_series(bookings),
             "bookingsMonthly": bookings_monthly,
             "userGrowth": _build_user_growth_series(bookings),
             "occupancy": [{"label": lot["name"], "amount": lot["occupancy"]} for lot in parking_rows[:6]],
         },
+        "revenueSummary": revenue_summary,
+        "ownerRevenueBreakdown": owner_revenue_breakdown,
         "analyticsSummary": {
             "userGrowthPercent": growth_percent,
             "averageOccupancy": avg_occupancy,

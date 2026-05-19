@@ -27,6 +27,7 @@ from app.utils.timezone import ensure_vn_local_naive, vn_now
 
 router = APIRouter()
 VN_TZ = timezone(timedelta(hours=7))
+ACTIVE_BOOKING_STATUSES = ("pending", "booked", "checked_in")
 
 
 class BookingCreateRequest(BaseModel):
@@ -556,6 +557,33 @@ def _format_vi_datetime(value: datetime | None) -> str:
     return value.strftime("%d/%m/%Y %H:%M")
 
 
+def _booking_status_label(value: str | None) -> str:
+    mapping = {
+        "pending": "chờ thanh toán",
+        "booked": "chưa check-in",
+        "checked_in": "đang check-in",
+    }
+    return mapping.get((value or "").lower(), value or "không rõ")
+
+
+def _build_active_booking_error_message(
+    license_plate: str,
+    existing_booking: Booking,
+    parking_name: str | None,
+) -> str:
+    start_text = _format_vi_datetime(existing_booking.start_time)
+    end_text = _format_vi_datetime(existing_booking.expire_time)
+    parking_text = f" tại bãi {parking_name}" if parking_name else ""
+    status_text = _booking_status_label(existing_booking.status)
+
+    return (
+        f"Xe biển số {license_plate} đang có booking #{existing_booking.id} "
+        f"({status_text}) từ {start_text} đến {end_text}{parking_text}. "
+        "Mỗi tài khoản/biển số chỉ được có 1 booking chưa checkout. "
+        "Vui lòng hủy booking hiện tại hoặc checkout xong rồi đặt bãi khác."
+    )
+
+
 def _build_overlap_error_message(
     license_plate: str,
     existing_booking: Booking,
@@ -600,10 +628,12 @@ def _build_overlap_error_detail(
     normalized_checkin_time: datetime,
     normalized_checkout_time: datetime,
     billing: dict,
+    reason: str = "overlap_booking",
+    message: str | None = None,
 ) -> dict:
     return {
-        "message": _build_overlap_error_message(license_plate, existing_booking, parking_name),
-        "reason": "overlap_booking",
+        "message": message or _build_overlap_error_message(license_plate, existing_booking, parking_name),
+        "reason": reason,
         "conflicting_booking": _serialize_conflicting_booking(existing_booking, db),
         "requested_booking": {
             "parking_id": payload.parking_id,
@@ -948,24 +978,23 @@ def update_my_booking(
         if target_slot.id != booking.slot_id and target_slot.status != "available":
             raise HTTPException(status_code=400, detail="Slot đã được đặt hoặc không còn trống")
 
-        overlapping_self = (
+        active_self_conflict = (
             db.query(Booking)
             .filter(
                 Booking.id != booking.id,
                 Booking.user_id == current_user.id,
-                Booking.status.in_(["pending", "booked", "checked_in"]),
-                Booking.start_time < normalized_checkout_time,
-                Booking.expire_time > normalized_checkin_time,
+                Booking.status.in_(ACTIVE_BOOKING_STATUSES),
             )
+            .order_by(Booking.created_at.desc(), Booking.id.desc())
             .first()
         )
-        if overlapping_self:
-            conflict_parking = db.query(ParkingLot).filter(ParkingLot.id == overlapping_self.parking_id).first()
+        if active_self_conflict:
+            conflict_parking = db.query(ParkingLot).filter(ParkingLot.id == active_self_conflict.parking_id).first()
             raise HTTPException(
                 status_code=400,
-                detail=_build_overlap_error_message(
+                detail=_build_active_booking_error_message(
                     current_user.vehicle_plate or "UNKNOWN",
-                    overlapping_self,
+                    active_self_conflict,
                     conflict_parking.name if conflict_parking else None,
                 ),
             )
@@ -1094,36 +1123,41 @@ def create_booking(
         if not normalized_license_plate:
             raise HTTPException(status_code=400, detail="Biển số xe không hợp lệ")
 
-        overlapping_vehicle_booking = (
+        active_vehicle_booking = (
             db.query(Booking)
             .join(User, User.id == Booking.user_id)
             .filter(
                 Booking.user_id != user.id,
-                Booking.status.in_(["pending", "booked", "checked_in"]),
-                Booking.start_time < normalized_checkout_time,
-                Booking.expire_time > normalized_checkin_time,
+                Booking.status.in_(ACTIVE_BOOKING_STATUSES),
                 User.vehicle_plate.isnot(None),
                 func.upper(func.trim(User.vehicle_plate)) == normalized_license_plate,
             )
+            .order_by(Booking.created_at.desc(), Booking.id.desc())
             .first()
         )
-        if overlapping_vehicle_booking:
+        if active_vehicle_booking:
             conflicting_parking = (
                 db.query(ParkingLot)
-                .filter(ParkingLot.id == overlapping_vehicle_booking.parking_id)
+                .filter(ParkingLot.id == active_vehicle_booking.parking_id)
                 .first()
             )
             raise HTTPException(
                 status_code=400,
                 detail=_build_overlap_error_detail(
                     license_plate=normalized_license_plate,
-                    existing_booking=overlapping_vehicle_booking,
+                    existing_booking=active_vehicle_booking,
                     parking_name=conflicting_parking.name if conflicting_parking else None,
                     db=db,
                     payload=payload,
                     normalized_checkin_time=normalized_checkin_time,
                     normalized_checkout_time=normalized_checkout_time,
                     billing=billing,
+                    reason="active_booking_exists",
+                    message=_build_active_booking_error_message(
+                        normalized_license_plate,
+                        active_vehicle_booking,
+                        conflicting_parking.name if conflicting_parking else None,
+                    ),
                 ),
             )
 
@@ -1148,10 +1182,9 @@ def create_booking(
             db.query(Booking)
             .filter(
                 Booking.user_id == user.id,
-                Booking.status.in_(["pending", "booked", "checked_in"]),
-                Booking.start_time < normalized_checkout_time,
-                Booking.expire_time > normalized_checkin_time,
+                Booking.status.in_(ACTIVE_BOOKING_STATUSES),
             )
+            .order_by(Booking.created_at.desc(), Booking.id.desc())
             .first()
         )
         if active_booking:
@@ -1167,6 +1200,12 @@ def create_booking(
                     normalized_checkin_time=normalized_checkin_time,
                     normalized_checkout_time=normalized_checkout_time,
                     billing=billing,
+                    reason="active_booking_exists",
+                    message=_build_active_booking_error_message(
+                        normalized_license_plate,
+                        active_booking,
+                        active_parking.name if active_parking else None,
+                    ),
                 ),
             )
 

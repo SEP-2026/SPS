@@ -13,7 +13,7 @@ import qrcode
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
-from sqlalchemy import text
+from sqlalchemy import func, text
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -29,6 +29,7 @@ from app.services.wallet_service import (
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
+ACTIVE_BOOKING_STATUSES = ("pending", "booked", "checked_in")
 
 
 class BookingCreateRequest(BaseModel):
@@ -561,6 +562,28 @@ def create_booking(
         if not user:
             raise HTTPException(status_code=404, detail="Người dùng không tồn tại")
 
+        normalized_license_plate = payload.license_plate.strip().upper()
+        if not normalized_license_plate:
+            raise HTTPException(status_code=400, detail="Biển số xe không hợp lệ")
+
+        active_vehicle_booking = (
+            db.query(Booking.id)
+            .join(User, User.id == Booking.user_id)
+            .filter(
+                Booking.user_id != user.id,
+                Booking.status.in_(ACTIVE_BOOKING_STATUSES),
+                User.vehicle_plate.isnot(None),
+                func.upper(func.trim(User.vehicle_plate)) == normalized_license_plate,
+            )
+            .order_by(Booking.created_at.desc(), Booking.id.desc())
+            .first()
+        )
+        if active_vehicle_booking:
+            raise HTTPException(
+                status_code=400,
+                detail="Biển số xe này đã có booking chưa hoàn tất. Không thể đặt thêm bãi khác trước khi booking hiện tại kết thúc.",
+            )
+
         vehicle_profile = (
             db.query(UserVehicle)
             .filter(UserVehicle.user_id == user.id)
@@ -582,53 +605,16 @@ def create_booking(
             db.query(Booking)
             .filter(
                 Booking.user_id == user.id,
-                Booking.status.in_(["pending", "booked", "checked_in"]),
-                Booking.start_time < normalized_checkout_time,
-                Booking.expire_time > normalized_checkin_time,
+                Booking.status.in_(ACTIVE_BOOKING_STATUSES),
             )
+            .order_by(Booking.created_at.desc(), Booking.id.desc())
             .first()
         )
         if active_booking:
-            if active_booking.status == "pending":
-                active_slot = db.query(ParkingSlot).filter(ParkingSlot.id == active_booking.slot_id).first()
-                if not active_slot:
-                    raise HTTPException(status_code=400, detail="Booking pending tồn tại nhưng slot không hợp lệ")
-
-                active_parking = db.query(ParkingLot).filter(ParkingLot.id == active_booking.parking_lot_id).first()
-                if not active_parking:
-                    raise HTTPException(status_code=400, detail="Booking pending tồn tại nhưng bãi xe không hợp lệ")
-
-                active_billing = {
-                    "requested_mode": active_booking.booking_mode,
-                    "resolved_mode": active_booking.booking_mode,
-                    "billed_unit": "day" if active_booking.booking_mode == "daily" else ("month" if active_booking.booking_mode == "monthly" else "hour"),
-                    "billed_units": float(active_booking.billed_units or 0),
-                    "unit_price": float(active_booking.total_amount or 0) / float(active_booking.billed_units or 1),
-                    "duration_hours": round((active_booking.expire_time - active_booking.start_time).total_seconds() / 3600, 2) if active_booking.expire_time and active_booking.start_time else 0,
-                    "auto_converted_to_daily": active_booking.booking_mode == "daily" and float(active_booking.billed_units or 0) >= 1,
-                    "total_amount": float(active_booking.total_amount or 0),
-                }
-                return _serialize_booking_response(
-                    active_booking,
-                    active_slot,
-                    active_parking,
-                    {
-                        "owner_name": user.name,
-                        "phone": user.phone,
-                        "license_plate": user.vehicle_plate,
-                        "vehicle_color": vehicle_profile.vehicle_color or user.vehicle_color,
-                        "vehicle_type": payload.vehicle_type,
-                        "brand": vehicle_profile.brand,
-                        "vehicle_model": vehicle_profile.vehicle_model,
-                        "seat_count": vehicle_profile.seat_count,
-                    },
-                    active_billing,
-                    active_booking.booking_mode,
-                    payload.month_count,
-                    existing_pending_booking=True,
-                )
-
-            raise HTTPException(status_code=400, detail="Bạn đã có booking đang hoạt động")
+            raise HTTPException(
+                status_code=400,
+                detail="Bạn đã có booking chưa hoàn tất. Vui lòng hủy booking hiện tại hoặc checkout xong rồi đặt bãi khác.",
+            )
 
         slot = (
             db.query(ParkingSlot)
@@ -658,7 +644,7 @@ def create_booking(
         if overlapping_slot_booking:
             raise HTTPException(status_code=400, detail="Slot đã được đặt trong khung giờ này")
 
-        user.vehicle_plate = payload.license_plate.strip().upper()
+        user.vehicle_plate = normalized_license_plate
         vehicle_profile.license_plate = user.vehicle_plate
         if payload.vehicle_color and payload.vehicle_color.strip():
             user.vehicle_color = payload.vehicle_color.strip()

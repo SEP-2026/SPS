@@ -1,8 +1,8 @@
 ﻿import { useCallback, useEffect, useMemo, useState } from "react";
-import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
+import { Outlet, useLocation } from "react-router-dom";
 import API from "../services/api";
 import useRealtimeRefresh from "../services/useRealtimeRefresh";
-import { OwnerIcon } from "./OwnerIcons";
+import { DashboardHeader, OwnerSidebar } from "./OwnerDashboardComponents";
 import { OWNER_NAV_ITEMS, OWNER_ROUTE_META } from "./ownerData";
 import { parseVietnamDate } from "../utils/dateTime";
 import "./owner.css";
@@ -143,7 +143,7 @@ export default function OwnerLayout({ auth, onLogout }) {
   }, [refreshOwnerData]);
 
   // Re-render when localStorage changes (from OwnerNotifications page or other tabs)
-  const [storageVersion, setStorageVersion] = useState(0);
+  const [, setStorageVersion] = useState(0);
   useEffect(() => {
     const handleStorageChange = (e) => {
       if (e.key === "owner_read_notifications") {
@@ -186,7 +186,7 @@ export default function OwnerLayout({ auth, onLogout }) {
   const meta = OWNER_ROUTE_META[location.pathname] || OWNER_ROUTE_META["/owner"];
   
   // Calculate unread notification count from stored read state
-  const unreadNotificationsCount = useMemo(() => {
+  const unreadNotificationsCount = (() => {
     try {
       const stored = localStorage.getItem("owner_read_notifications");
       const readIds = stored ? new Set(JSON.parse(stored)) : new Set();
@@ -217,9 +217,10 @@ export default function OwnerLayout({ auth, onLogout }) {
     } catch {
       return 0;
     }
-  }, [ownerData, storageVersion]);
+  })();
   
-  const ownerDisplayName = auth?.user?.full_name || auth?.user?.name || auth?.user?.email || "Owner";
+  const ownerDisplayName = auth?.user?.full_name || auth?.user?.name || "Owner One";
+  const ownerEmail = auth?.user?.email || ownerData?.settings?.contactEmail || "owner@smartparking.vn";
   const isOwnerLocked = Boolean(ownerData?.isLocked);
   const ownerLockMessage = ownerData?.lockMessage || "Bãi xe của bạn đã bị khóa, vui lòng liên hệ admin.";
 
@@ -372,68 +373,31 @@ export default function OwnerLayout({ auth, onLogout }) {
   }), [refreshOwnerData]);
 
   return (
-    <div className={`owner-shell${sidebarOpen ? " sidebar-open" : ""}${isOwnerLocked ? " is-locked" : ""}`}>
-      <aside className="owner-sidebar">
-        <div className="owner-brand">
-          <div className="owner-brand-mark">SP</div>
-          <div>
-            <strong>Smart Parking</strong>
-            <span>Owner Console</span>
-          </div>
-        </div>
+    <div className={`owner-shell min-h-screen w-full bg-[#F8FAFC] flex${sidebarOpen ? " sidebar-open" : ""}${isOwnerLocked ? " is-locked" : ""}`}>
+      <OwnerSidebar
+        navItems={OWNER_NAV_ITEMS}
+        ownerName={ownerDisplayName}
+        ownerEmail={ownerEmail}
+        onLogout={onLogout}
+        isOpen={sidebarOpen}
+        onNavigate={() => setSidebarOpen(false)}
+      />
+      <button
+        type="button"
+        className="owner-sidebar-backdrop"
+        aria-label="Đóng menu owner"
+        onClick={() => setSidebarOpen(false)}
+      />
 
-        <div className="owner-sidebar-panel">
-          <p className="owner-sidebar-title">Điều hướng vận hành</p>
-          <nav className="owner-menu">
-            {OWNER_NAV_ITEMS.map((item) => (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                end={item.to === "/owner"}
-                className={({ isActive }) => `owner-menu-link${isActive ? " active" : ""}`}
-                onClick={() => setSidebarOpen(false)}
-              >
-                <OwnerIcon name={item.icon} className="owner-menu-icon" />
-                <span>{item.label}</span>
-              </NavLink>
-            ))}
-          </nav>
-        </div>
-
-        <button type="button" className="owner-logout" onClick={onLogout}>
-          <OwnerIcon name="logout" className="owner-menu-icon" />
-          <span>Đăng xuất</span>
-        </button>
-      </aside>
-
-      <div className="owner-main">
-        <header className="owner-topbar">
-          <div className="owner-topbar-main">
-            <button type="button" className="owner-menu-toggle" onClick={() => setSidebarOpen((value) => !value)}>
-              <OwnerIcon name="menu" className="owner-menu-icon" />
-            </button>
-            <div>
-              <p className="owner-kicker">Owner Workspace</p>
-              <h1>{meta.title}</h1>
-              <span>{meta.description}</span>
-            </div>
-          </div>
-
-          <div className="owner-topbar-tools">
-            <Link to="/owner/notifications" className="owner-notify-pill">
-              <OwnerIcon name="bell" className="owner-menu-icon" />
-              {unreadNotificationsCount > 0 && <span className="owner-notify-badge">{unreadNotificationsCount}</span>}
-            </Link>
-            <div className="owner-role-pill">{isOwnerLocked ? "Tài khoản bị khóa" : "Tài khoản vận hành"}</div>
-            <div className="owner-avatar" title={syncNote}>
-              <div className="owner-avatar-mark">{ownerDisplayName.slice(0, 1).toUpperCase()}</div>
-              <div>
-                <strong>{ownerDisplayName}</strong>
-                <span>{syncNote}</span>
-              </div>
-            </div>
-          </div>
-        </header>
+      <div className="owner-main flex-1 min-w-0 w-full overflow-x-hidden">
+        <DashboardHeader
+          ownerName={ownerDisplayName}
+          ownerEmail={ownerEmail}
+          meta={meta}
+          unreadNotificationsCount={unreadNotificationsCount}
+          syncNote={syncNote}
+          onMenuToggle={() => setSidebarOpen((value) => !value)}
+        />
 
         <main className="owner-content">
           {isOwnerLocked ? (
@@ -442,7 +406,7 @@ export default function OwnerLayout({ auth, onLogout }) {
               <span>{ownerLockMessage || "Bãi xe của bạn đã bị khóa, vui lòng liên hệ admin."}</span>
             </div>
           ) : null}
-          <div className="owner-content-layer">
+          <div className="owner-content-layer w-full max-w-none px-7 py-6 space-y-6">
             <Outlet context={{ auth, ownerData, stats, actions, isSyncing }} />
           </div>
         </main>

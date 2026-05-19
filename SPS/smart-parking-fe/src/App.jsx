@@ -14,11 +14,14 @@ import OwnerManagement from "./pages/admin/OwnerManagement";
 import ParkingManagement from "./pages/admin/ParkingManagement";
 import RevenuePage from "./pages/admin/RevenuePage";
 import UserManagement from "./pages/admin/UserManagement";
+import OwnerActivityHistory from "./pages/owner/OwnerActivityHistory";
 import OwnerBookings from "./pages/owner/OwnerBookings";
 import OwnerCustomers from "./pages/owner/OwnerCustomers";
+import OwnerEmployees from "./pages/owner/OwnerEmployees";
 import OwnerNotifications from "./pages/owner/OwnerNotifications";
 import OwnerOverview from "./pages/owner/OwnerOverview";
 import OwnerParking from "./pages/owner/OwnerParking";
+import OwnerParkingMap from "./pages/owner/OwnerParkingMap";
 import OwnerRevenue from "./pages/owner/OwnerRevenue";
 import OwnerReviews from "./pages/owner/OwnerReviews";
 import OwnerSettings from "./pages/owner/OwnerSettings";
@@ -309,11 +312,15 @@ function AppBody({ auth, role, onLogin, onLogout }) {
           <Route path="parking" element={<OwnerParking />} />
           <Route path="bookings" element={<OwnerBookings />} />
           <Route path="customers" element={<OwnerCustomers />} />
+          <Route path="parking-map" element={<OwnerParkingMap />} />
+          <Route path="activity" element={<OwnerActivityHistory />} />
           <Route path="revenue" element={<OwnerRevenue />} />
           <Route path="reviews" element={<OwnerReviews />} />
           <Route path="review-replies" element={<Navigate to="/owner/reviews" replace />} />
           <Route path="notifications" element={<OwnerNotifications />} />
           <Route path="settings" element={<OwnerSettings />} />
+          <Route path="parking-accounts" element={<OwnerEmployees />} />
+          <Route path="employees" element={<OwnerEmployees />} />
         </Route>
         <Route
           path="/admin"

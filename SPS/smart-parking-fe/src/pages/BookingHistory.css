@@ -557,7 +557,8 @@
 .btn-directions,
 .btn-view-map,
 .btn-qr,
-.btn-review {
+.btn-review,
+.btn-cancel-booking {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -944,4 +945,24 @@
 .btn-review:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(240, 169, 59, 0.3);
+}
+
+.btn-cancel-booking {
+  background: #fff5f5;
+  border: 1px solid rgba(189, 48, 48, 0.32);
+  color: #a62323;
+  min-width: auto;
+  padding: 8px 14px;
+}
+
+.btn-cancel-booking:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(189, 48, 48, 0.18);
+}
+
+.btn-cancel-booking:disabled {
+  cursor: not-allowed;
+  opacity: 0.62;
+  transform: none;
+  box-shadow: none;
 }

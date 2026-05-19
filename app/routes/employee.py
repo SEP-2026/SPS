@@ -53,6 +53,9 @@ from app.schemas.employee import (
 router = APIRouter(prefix="/api/employee", tags=["employee"])
 owner_employee_router = APIRouter(prefix="/api/owner", tags=["owner-employee"])
 security = HTTPBearer(auto_error=False)
+ACTIVE_BOOKING_STATUSES = ("pending", "booked", "checked_in")
+
+
 class EmployeeAssistBookingRequest(BaseModel):
     customer_name: str = Field(min_length=1, max_length=255)
     customer_phone: str = Field(min_length=3, max_length=30)
@@ -423,7 +426,7 @@ def employee_booking_assist(
         db.query(Booking.id)
         .filter(
             Booking.slot_id == slot.id,
-            Booking.status.in_(["pending", "booked", "checked_in"]),
+            Booking.status.in_(ACTIVE_BOOKING_STATUSES),
             Booking.start_time < expire_time,
             Booking.expire_time > start_time,
         )
@@ -432,36 +435,37 @@ def employee_booking_assist(
     if overlapping_slot:
         raise HTTPException(status_code=400, detail="Chỗ đỗ đã có booking trong khung giờ này")
 
-    overlapping_customer = (
+    active_customer_booking = (
         db.query(Booking.id)
         .filter(
             Booking.user_id == customer.id,
-            Booking.status.in_(["pending", "booked", "checked_in"]),
-            Booking.start_time < expire_time,
-            Booking.expire_time > start_time,
+            Booking.status.in_(ACTIVE_BOOKING_STATUSES),
         )
+        .order_by(Booking.created_at.desc(), Booking.id.desc())
         .first()
     )
-    if overlapping_customer:
-        raise HTTPException(status_code=400, detail="Khách hàng đã có booking trùng thời gian")
+    if active_customer_booking:
+        raise HTTPException(
+            status_code=400,
+            detail="Khách hàng đã có booking chưa hoàn tất. Hãy hủy booking hiện tại hoặc checkout xong trước khi đặt bãi khác.",
+        )
 
-    overlapping_vehicle_booking = (
+    active_vehicle_booking = (
         db.query(Booking.id)
         .join(User, User.id == Booking.user_id)
         .filter(
             Booking.user_id != customer.id,
-            Booking.status.in_(["pending", "booked", "checked_in"]),
-            Booking.start_time < expire_time,
-            Booking.expire_time > start_time,
+            Booking.status.in_(ACTIVE_BOOKING_STATUSES),
             User.vehicle_plate.isnot(None),
             func.upper(func.trim(User.vehicle_plate)) == normalized_plate,
         )
+        .order_by(Booking.created_at.desc(), Booking.id.desc())
         .first()
     )
-    if overlapping_vehicle_booking:
+    if active_vehicle_booking:
         raise HTTPException(
             status_code=400,
-            detail="Biển số xe này đã có booking hoạt động trong khung giờ đã chọn",
+            detail="Biển số xe này đã có booking chưa hoàn tất. Không thể đặt thêm bãi khác trước khi booking hiện tại kết thúc.",
         )
 
     vehicle_profile = db.query(UserVehicle).filter(UserVehicle.user_id == customer.id).with_for_update().first()
@@ -587,4 +591,3 @@ def employee_update_slot_status(
         status_code=409,
         detail="Ô đang có xe/booking hoạt động. Dùng thao tác giải phóng ô để chuyển về trống.",
     )
-

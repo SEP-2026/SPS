@@ -13,11 +13,13 @@ export default function RevenuePage() {
       day: {
         revenue: adminData.systemRevenue.revenue,
         commission: adminData.systemRevenue.commission,
+        ownerPayout: adminData.systemRevenue.ownerPayout || [],
         bookings: adminData.systemRevenue.bookings,
       },
       month: {
         revenue: adminData.systemRevenue.revenueMonthly || [],
         commission: adminData.systemRevenue.commissionMonthly || [],
+        ownerPayout: adminData.systemRevenue.ownerPayoutMonthly || [],
         bookings: adminData.systemRevenue.bookingsMonthly || [],
       },
     }),
@@ -55,6 +57,7 @@ export default function RevenuePage() {
               <select className="owner-input owner-select" value={series} onChange={(e) => setSeries(e.target.value)}>
                 <option value="revenue">Doanh thu</option>
                 <option value="commission">Hoa hồng</option>
+                <option value="ownerPayout">Chi trả cho owner</option>
               </select>
             </div>
           )}
@@ -64,6 +67,74 @@ export default function RevenuePage() {
 
         <SectionCard title="Khối lượng đặt chỗ" subtitle="Khối lượng đơn theo kỳ đã chọn.">
           <BarChart data={lineSeriesMap[period]?.bookings || []} formatValue={(value) => `${value}`} />
+        </SectionCard>
+      </div>
+
+      <div className="owner-two-col">
+        <SectionCard title="Tóm tắt theo kỳ" subtitle="So sánh doanh thu các khoảng thời gian khác nhau.">
+          <div className="owner-stats-grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))" }}>
+            {adminData.revenueSummary && Object.entries(adminData.revenueSummary).map(([key, data]) => {
+              const labels = {
+                threeDays: "3 ngày qua",
+                thisWeek: "Tuần này",
+                lastWeek: "Tuần trước",
+                thisMonth: "Tháng này",
+                lastMonth: "Tháng trước",
+              };
+              return (
+                <div key={key} style={{ padding: "12px", border: "1px solid #e0e0e0", borderRadius: "8px", backgroundColor: "#f9f9f9" }}>
+                  <div style={{ fontSize: "12px", color: "#666", marginBottom: "8px" }}>{labels[key]}</div>
+                  <div style={{ fontSize: "14px", fontWeight: "600", color: "#333", marginBottom: "4px" }}>
+                    Doanh thu: {formatCurrency(data.gross || 0)}
+                  </div>
+                  <div style={{ fontSize: "12px", color: "#999", marginBottom: "4px" }}>
+                    Hoa hồng: {formatCurrency(data.commission || 0)}
+                  </div>
+                  <div style={{ fontSize: "12px", color: "#0099cc", fontWeight: "600" }}>
+                    Chi trả: {formatCurrency(data.ownerPayout || 0)}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </SectionCard>
+
+        <SectionCard title="Doanh thu theo chủ bãi" subtitle="Chi tiết doanh thu của từng owner.">
+          <div style={{ maxHeight: "400px", overflowY: "auto" }}>
+            <table className="owner-table" style={{ fontSize: "13px" }}>
+              <thead>
+                <tr>
+                  <th>Chủ bãi</th>
+                  <th>Bãi đỗ</th>
+                  <th>Doanh thu</th>
+                  <th>Hoa hồng</th>
+                  <th>Chi trả</th>
+                </tr>
+              </thead>
+              <tbody>
+                {adminData.ownerRevenueBreakdown && adminData.ownerRevenueBreakdown.length > 0 ? (
+                  adminData.ownerRevenueBreakdown.map((owner) => (
+                    <tr key={owner.id}>
+                      <td>
+                        <div style={{ fontWeight: "600" }}>{owner.name}</div>
+                        <div style={{ fontSize: "11px", color: "#999" }}>{owner.email}</div>
+                      </td>
+                      <td style={{ fontSize: "12px" }}>{owner.parkingLots.join(", ") || "Chưa gán"}</td>
+                      <td>{formatCurrency(owner.gross || 0)}</td>
+                      <td>{formatCurrency(owner.commission || 0)}</td>
+                      <td style={{ fontWeight: "600", color: "#0099cc" }}>{formatCurrency(owner.ownerPayout || 0)}</td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan="5" style={{ textAlign: "center", color: "#999", padding: "20px" }}>
+                      Chưa có dữ liệu doanh thu
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </SectionCard>
       </div>
 
