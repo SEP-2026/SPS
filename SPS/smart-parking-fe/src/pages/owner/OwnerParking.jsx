@@ -1,8 +1,23 @@
 import { useMemo, useState } from "react";
 import { createPortal } from "react-dom";
-import { SectionCard, StatusBadge } from "../../owner/OwnerUI";
+import { useNavigate } from "react-router-dom";
+import {
+  Building2,
+  Car,
+  CircleParking,
+  Grid3X3,
+  List,
+  Map as MapIcon,
+  MoreVertical,
+  Plus,
+  Search,
+  Settings,
+  SlidersHorizontal,
+  WalletCards,
+} from "lucide-react";
+import { formatCurrency, StatusBadge } from "../../owner/OwnerUI";
 import { useOwnerContext } from "../../owner/useOwnerContext";
-import { formatTimeVN } from "../../utils/dateTime";
+import { formatTimeVN, parseVietnamDate } from "../../utils/dateTime";
 
 const EMPTY_FORM = { parkingId: null, code: "", zone: "", level: "", status: "available" };
 
@@ -43,10 +58,34 @@ function buildLotSummary(slots) {
   };
 }
 
+function isToday(value) {
+  const date = parseVietnamDate(value);
+  const now = parseVietnamDate(new Date());
+  if (!date || !now) {
+    return false;
+  }
+  return date.getFullYear() === now.getFullYear()
+    && date.getMonth() === now.getMonth()
+    && date.getDate() === now.getDate();
+}
+
+function getOccupancyTone(value) {
+  if (value >= 80) {
+    return "danger";
+  }
+  if (value >= 70) {
+    return "warning";
+  }
+  return "success";
+}
+
 export default function OwnerParking() {
   const { ownerData, actions, isSyncing } = useOwnerContext();
+  const navigate = useNavigate();
   const [zoneFilter, setZoneFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [sortBy, setSortBy] = useState("name_asc");
   const [expandedLots, setExpandedLots] = useState({});
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingSlot, setEditingSlot] = useState(null);
@@ -93,15 +132,55 @@ export default function OwnerParking() {
       lotMap.get(key).slots.push(slot);
     });
 
-    return Array.from(lotMap.values())
+    const search = normalizeUniqueText(searchQuery);
+    const items = Array.from(lotMap.values())
       .filter((lot) => lot.slots.length > 0 || !zoneFilter || statusFilter === "all")
-      .sort((left, right) => left.name.localeCompare(right.name, "vi"));
-  }, [filteredSlots, ownerData.parkingLots, statusFilter, zoneFilter]);
+      .filter((lot) => {
+        if (!search) {
+          return true;
+        }
+        return normalizeUniqueText(`${lot.name} ${lot.address} ${lot.district} ${lot.id}`).includes(search);
+      });
+
+    return items.sort((left, right) => {
+      if (sortBy === "occupancy_desc") {
+        const leftSummary = buildLotSummary(left.slots);
+        const rightSummary = buildLotSummary(right.slots);
+        const leftOccupancy = leftSummary.occupied / Math.max(leftSummary.total, 1);
+        const rightOccupancy = rightSummary.occupied / Math.max(rightSummary.total, 1);
+        return rightOccupancy - leftOccupancy;
+      }
+      if (sortBy === "slots_desc") {
+        return right.slots.length - left.slots.length;
+      }
+      return left.name.localeCompare(right.name, "vi");
+    });
+  }, [filteredSlots, ownerData.parkingLots, searchQuery, sortBy, statusFilter, zoneFilter]);
 
   const slotGroupTotal = useMemo(
     () => lotForm.slotGroups.reduce((sum, group) => sum + Math.max(0, Number(group.slotCount) || 0), 0),
     [lotForm.slotGroups],
   );
+
+  const pageStats = useMemo(() => {
+    const totalLots = ownerData.parkingLots?.length || lots.length;
+    const totalSlots = ownerData.slots.length;
+    const availableSlots = ownerData.slots.filter((slot) => slot.status === "available").length;
+    const activeSlots = ownerData.slots.filter((slot) => slot.status === "reserved" || slot.status === "in_use").length;
+    const todayRevenue = ownerData.transactions
+      .filter((item) => item.status === "paid")
+      .filter((item) => isToday(item.time))
+      .reduce((sum, item) => sum + Number(item.amount || 0), 0);
+
+    return {
+      totalLots,
+      totalSlots,
+      activeSlots,
+      availableSlots,
+      todayRevenue,
+      occupancyPercent: Math.round((activeSlots / Math.max(totalSlots, 1)) * 100),
+    };
+  }, [lots.length, ownerData.parkingLots, ownerData.slots, ownerData.transactions]);
 
   const openCreate = (lot) => {
     setEditingSlot(null);
@@ -133,6 +212,26 @@ export default function OwnerParking() {
       phone: ownerData.settings?.contactPhone || "",
     }));
     setIsLotModalOpen(true);
+  };
+
+  const openManageLot = (lot) => {
+    if (lot.id) {
+      navigate(`/owner/parking/${lot.id}`);
+      return;
+    }
+    toggleLot(lot.name);
+  };
+
+  const openParkingMap = (lot) => {
+    const query = lot.id ? `?parkingId=${lot.id}` : "";
+    navigate(`/owner/parking-map${query}`);
+  };
+
+  const openLotSettings = (lot) => {
+    if (!lot.id) {
+      return;
+    }
+    navigate(`/owner/settings?parkingId=${lot.id}`);
   };
 
   const closeModal = () => {
@@ -249,65 +348,147 @@ export default function OwnerParking() {
   };
 
   return (
-    <div className="owner-page-grid">
-      <SectionCard
-        title="Danh sách chỗ đỗ"
-        subtitle="Quản lý trạng thái từng chỗ theo từng bãi bằng dữ liệu thật từ CSDL cho toàn bộ bãi owner đang phụ trách."
-        actions={
-          <div className="owner-toolbar">
-            <button type="button" className="btn-primary owner-btn" onClick={openCreateLot}>Tạo thêm bãi đỗ</button>
-            <select className="owner-input owner-select" value={zoneFilter} onChange={(event) => setZoneFilter(event.target.value)}>
-              <option value="all">Tất cả khu vực</option>
-              {zones.map((zone) => <option key={zone} value={zone}>{zone}</option>)}
-            </select>
-            <select className="owner-input owner-select" value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
-              <option value="all">Tất cả trạng thái</option>
-              <option value="available">Trống</option>
-              <option value="reserved">Đã đặt</option>
-              <option value="in_use">Đang sử dụng</option>
-              <option value="maintenance">Bảo trì</option>
-            </select>
+    <div className="owner-management-page owner-parking-page">
+      <div className="owner-management-topline">
+        <label className="owner-management-search">
+          <Search size={18} />
+          <input
+            value={searchQuery}
+            onChange={(event) => setSearchQuery(event.target.value)}
+            placeholder="Tìm bãi đỗ, mã bãi, địa chỉ..."
+          />
+        </label>
+        <select className="owner-management-select" value={zoneFilter} onChange={(event) => setZoneFilter(event.target.value)}>
+          <option value="all">Tất cả khu vực</option>
+          {zones.map((zone) => <option key={zone} value={zone}>{zone}</option>)}
+        </select>
+        <select className="owner-management-select" value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
+          <option value="all">Tất cả trạng thái</option>
+          <option value="available">Trống</option>
+          <option value="in_use">Đang sử dụng</option>
+          <option value="maintenance">Bảo trì</option>
+        </select>
+        <button type="button" className="owner-management-primary" onClick={openCreateLot}>
+          <Plus size={18} />
+          Thêm bãi đỗ
+        </button>
+      </div>
+
+      <div className="owner-management-stats">
+        <article className="owner-management-stat owner-management-stat--blue">
+          <span><CircleParking size={24} /></span>
+          <div><p>Tổng số bãi đỗ</p><strong>{pageStats.totalLots}</strong><small>Đang quản lý</small></div>
+        </article>
+        <article className="owner-management-stat owner-management-stat--sky">
+          <span><Building2 size={24} /></span>
+          <div><p>Tổng chỗ đỗ</p><strong>{pageStats.totalSlots}</strong><small>{pageStats.occupancyPercent}% công suất</small></div>
+        </article>
+        <article className="owner-management-stat owner-management-stat--green">
+          <span><Car size={24} /></span>
+          <div><p>Đang hoạt động</p><strong>{pageStats.activeSlots}</strong><small>{pageStats.occupancyPercent}% tổng chỗ đỗ</small></div>
+        </article>
+        <article className="owner-management-stat owner-management-stat--orange">
+          <span><CircleParking size={24} /></span>
+          <div><p>Chỗ trống</p><strong>{pageStats.availableSlots}</strong><small>{Math.round((pageStats.availableSlots / Math.max(pageStats.totalSlots, 1)) * 100)}% tổng chỗ đỗ</small></div>
+        </article>
+        <article className="owner-management-stat owner-management-stat--pink">
+          <span><WalletCards size={24} /></span>
+          <div><p>Doanh thu hôm nay</p><strong>{formatCurrency(pageStats.todayRevenue)}</strong><small>Từ giao dịch đã thanh toán</small></div>
+        </article>
+      </div>
+
+      <section className="owner-management-panel owner-parking-panel">
+        <div className="owner-management-panel-head">
+          <div>
+            <h2>Danh sách bãi đỗ</h2>
+            <p>Quản lý thông tin và trạng thái hoạt động của các bãi đỗ.</p>
           </div>
-        }
-      >
+          <div className="owner-management-viewtools">
+            <button type="button" className="owner-management-icon-button is-active" aria-label="Dạng lưới"><Grid3X3 size={17} /></button>
+            <button type="button" className="owner-management-icon-button" aria-label="Dạng danh sách"><List size={17} /></button>
+            <select className="owner-management-select owner-management-select--small" value={sortBy} onChange={(event) => setSortBy(event.target.value)}>
+              <option value="name_asc">Sắp xếp: Tên A-Z</option>
+              <option value="occupancy_desc">Lấp đầy cao nhất</option>
+              <option value="slots_desc">Nhiều chỗ nhất</option>
+            </select>
+            <button type="button" className="owner-management-icon-button" aria-label="Bộ lọc"><SlidersHorizontal size={17} /></button>
+          </div>
+        </div>
+
         {isSyncing ? <p className="owner-empty">Đang đồng bộ chỗ đỗ từ CSDL...</p> : null}
         {!isSyncing && lots.length === 0 ? <p className="owner-empty">Không có bãi nào khớp bộ lọc hiện tại.</p> : null}
 
-        <div className="owner-lot-list">
-          {lots.map((lot) => {
+        <div className="owner-parking-v2-list">
+          {lots.map((lot, index) => {
             const isExpanded = Boolean(expandedLots[lot.id ?? lot.name]);
             const summary = buildLotSummary(lot.slots);
             const occupancyPercent = Math.round((summary.occupied / Math.max(summary.total, 1)) * 100);
+            const occupancyTone = getOccupancyTone(occupancyPercent);
+            const lotCode = `${normalizeUniqueText(lot.name).slice(0, 3).toUpperCase() || "LOT"}-${String(lot.id || index + 1).padStart(3, "0")}`;
 
             return (
-              <article key={lot.id ?? lot.name} className="owner-lot-card">
-                <div className="owner-lot-summary">
-                  <div className="owner-lot-summary-main">
-                    <div>
-                      <h3>{lot.name}</h3>
-                      <p>{lot.address || "Chưa có địa chỉ"}{lot.district ? ` • ${lot.district}` : ""}</p>
-                    </div>
-                    <div className="owner-lot-summary-badges">
-                      <span className="owner-summary-pill owner-summary-pill--success">Trống: {summary.available}</span>
-                      <span className="owner-summary-pill owner-summary-pill--danger">Giữ/Đã có xe: {summary.occupied}</span>
-                      <span className="owner-summary-pill owner-summary-pill--neutral">Tổng: {summary.total}</span>
-                      {summary.maintenance > 0 ? <span className="owner-summary-pill owner-summary-pill--warning">Bảo trì: {summary.maintenance}</span> : null}
-                    </div>
-                    <div className="owner-lot-meter-row">
-                      <div className="owner-lot-meter" aria-label={`Công suất ${occupancyPercent}%`}>
-                        <span style={{ width: `${occupancyPercent}%` }} />
-                      </div>
-                      <strong>{occupancyPercent}% lấp đầy</strong>
-                    </div>
+              <article key={lot.id ?? lot.name} className="owner-parking-row-card">
+                <div className="owner-parking-photo" data-index={index % 6}>
+                  <span className={summary.maintenance > 0 ? "is-warning" : "is-active"}>
+                    {summary.maintenance > 0 ? "Bảo trì" : "Đang hoạt động"}
+                  </span>
+                  <b>P</b>
+                </div>
+                <div className="owner-parking-info">
+                  <div className="owner-parking-title-line">
+                    <h3>{lot.name}</h3>
+                    <span>{lotCode}</span>
                   </div>
-                  <div className="owner-lot-summary-actions">
-                    {lot.id ? <button type="button" className="btn-primary owner-btn owner-btn--small" onClick={() => openCreate(lot)}>Thêm chỗ đỗ</button> : null}
-                    <button type="button" className={`owner-lot-toggle${isExpanded ? " is-open" : ""}`} onClick={() => toggleLot(lot.id ?? lot.name)}>+</button>
+                  <p>{lot.address || "Chưa có địa chỉ"}{lot.district ? ` • ${lot.district}` : ""}</p>
+                  <div className="owner-parking-metrics">
+                    <span><Building2 size={14} /> Tổng chỗ <strong>{summary.total}</strong></span>
+                    <span className="is-success">Trống <strong>{summary.available}</strong></span>
+                    <span className="is-warning">Đang đỗ <strong>{summary.occupied}</strong></span>
+                    <span className="is-info">Bảo trì <strong>{summary.maintenance}</strong></span>
+                  </div>
+                </div>
+                <div className="owner-parking-occupancy">
+                  <small>Tỷ lệ lấp đầy</small>
+                  <strong>{occupancyPercent}%</strong>
+                  <div className={`owner-parking-occupancy-bar is-${occupancyTone}`}>
+                    <span style={{ width: `${occupancyPercent}%` }} />
+                  </div>
+                  <p>{summary.occupied} / {summary.total} chỗ</p>
+                </div>
+                <div className="owner-parking-actions-v2">
+                  <small>Hành động</small>
+                  <div>
+                    {lot.id ? (
+                      <button type="button" onClick={() => openManageLot(lot)} title="Quản lý">
+                        <Building2 size={17} />
+                        <span>Quản lý</span>
+                      </button>
+                    ) : null}
+                    <button type="button" onClick={() => openParkingMap(lot)} title="Sơ đồ">
+                      <MapIcon size={17} />
+                      <span>Sơ đồ</span>
+                    </button>
+                    <button type="button" onClick={() => openLotSettings(lot)} title="Cài đặt">
+                      <Settings size={17} />
+                      <span>Cài đặt</span>
+                    </button>
+                    <button type="button" className="owner-parking-more" onClick={() => toggleLot(lot.id ?? lot.name)} aria-label="Mở rộng">
+                      <MoreVertical size={17} />
+                    </button>
                   </div>
                 </div>
 
                 {isExpanded ? (
-                  <div className="owner-lot-detail">
+                  <div className="owner-parking-row-detail">
+                    <div className="owner-parking-detail-head">
+                      <strong>Danh sách chỗ đỗ trong bãi</strong>
+                      {lot.id ? (
+                        <button type="button" className="owner-management-primary" onClick={() => openCreate(lot)}>
+                          <Plus size={16} />
+                          Thêm chỗ đỗ
+                        </button>
+                      ) : null}
+                    </div>
                     <div className="owner-table-shell">
                       <table className="owner-table">
                         <thead>
@@ -345,7 +526,10 @@ export default function OwnerParking() {
             );
           })}
         </div>
-      </SectionCard>
+        <div className="owner-management-footnote">
+          Hiển thị 1 - {lots.length} trong tổng số {pageStats.totalLots} bãi đỗ
+        </div>
+      </section>
 
       {isLotModalOpen ? createPortal(
         <div className="owner-modal-backdrop" onClick={closeLotModal}>
@@ -444,7 +628,6 @@ export default function OwnerParking() {
                 Trạng thái
                 <select className="owner-input owner-select" value={form.status} onChange={(event) => setForm((prev) => ({ ...prev, status: event.target.value }))}>
                   <option value="available">Trống</option>
-                  <option value="reserved">Đã đặt</option>
                   <option value="in_use">Đang sử dụng</option>
                   <option value="maintenance">Bảo trì</option>
                 </select>

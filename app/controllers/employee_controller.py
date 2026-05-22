@@ -56,6 +56,7 @@ def update_owner_employee_controller(
     phone: str | None = None,
     password: str | None = None,
     parking_id: int | None = None,
+    status: str | None = None,
 ) -> dict:
     return update_owner_employee(
         owner,
@@ -66,6 +67,7 @@ def update_owner_employee_controller(
         phone=phone,
         password=password,
         parking_id=parking_id,
+        status=status,
     )
 
 
@@ -73,8 +75,15 @@ def delete_owner_employee_controller(owner: User, employee_id: int, db: Session)
     return delete_owner_employee(owner, employee_id, db)
 
 
-def employee_login_controller(username: str, password: str, db: Session) -> dict:
-    return employee_login(username, password, db)
+def employee_login_controller(
+    username: str,
+    password: str,
+    db: Session,
+    *,
+    request_ip: str | None = None,
+    user_agent: str | None = None,
+) -> dict:
+    return employee_login(username, password, db, request_ip=request_ip, user_agent=user_agent)
 
 
 def employee_dashboard_controller(employee: User, db: Session) -> dict:

@@ -57,6 +57,7 @@ const NAV_ICON_MAP = {
   reviews: Star,
   settings: Settings,
   account: Building2,
+  customers: UserRound,
 };
 
 const KPI_ICON_MAP = {
@@ -105,14 +106,25 @@ function formatCompactCurrency(value) {
   return String(Math.round(amount));
 }
 
-function todayInputValue() {
-  const now = new Date();
-  const timezoneOffset = now.getTimezoneOffset() * 60 * 1000;
-  return new Date(now.getTime() - timezoneOffset).toISOString().slice(0, 10);
-}
-
 function ownerInitial(name) {
   return (name || "Owner One").trim().slice(0, 1).toUpperCase();
+}
+
+function formatHeaderDateLabel(value) {
+  return new Intl.DateTimeFormat("vi-VN", {
+    weekday: "short",
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  }).format(value);
+}
+
+function formatHeaderTimeLabel(value) {
+  return new Intl.DateTimeFormat("vi-VN", {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  }).format(value);
 }
 
 function formatDateInputLabel(value) {
@@ -235,20 +247,12 @@ export function PromoCard() {
   return (
     <div className="owner-promo-card">
       <div className="owner-promo-visual" aria-hidden="true">
-        <div className="owner-promo-grid" />
-        <div className="owner-promo-platform" />
-        <img src="/car-top-view2.png" alt="" />
-        <div className="owner-promo-pin">
-          <CircleParking size={16} />
-        </div>
+        <img className="owner-promo-car" src="/owner-promo-car.png" alt="" />
       </div>
       <div className="owner-promo-copy">
         <strong>Quản lý bãi xe thông minh</strong>
-        <span>Theo dõi, quản lý và tối ưu doanh thu mọi lúc mọi nơi.</span>
+        <span>Theo dõi, quản lý và tối ưu doanh thu một cách hiệu quả</span>
       </div>
-      <Link to="/owner/parking" className="owner-promo-button">
-        Xem hướng dẫn <span aria-hidden="true">→</span>
-      </Link>
     </div>
   );
 }
@@ -325,7 +329,12 @@ export function DashboardHeader({
   syncNote,
   onMenuToggle,
 }) {
-  const [selectedDate, setSelectedDate] = useState(todayInputValue);
+  const [now, setNow] = useState(() => new Date());
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(new Date()), 1000);
+    return () => window.clearInterval(timer);
+  }, []);
 
   return (
     <header className="owner-dashboard-header">
@@ -341,11 +350,13 @@ export function DashboardHeader({
       </div>
 
       <div className="owner-dashboard-tools">
-        <label className="owner-date-picker">
+        <div className="owner-date-picker owner-date-picker--readonly" aria-label="Ngày giờ hiện tại">
           <CalendarDays size={18} />
-          <input type="date" value={selectedDate} onChange={(event) => setSelectedDate(event.target.value)} />
-          <ChevronDown size={16} />
-        </label>
+          <span className="owner-date-picker-text">
+            <strong>{formatHeaderDateLabel(now)}</strong>
+            <small><Clock size={13} /> {formatHeaderTimeLabel(now)}</small>
+          </span>
+        </div>
 
         <Link to="/owner/notifications" className="owner-icon-button" aria-label="Thông báo">
           <Bell size={20} />

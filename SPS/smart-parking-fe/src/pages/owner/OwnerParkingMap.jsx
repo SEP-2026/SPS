@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { EmptyState } from "../../owner/OwnerDashboardComponents";
 import { SectionCard, StatusBadge } from "../../owner/OwnerUI";
 import { useOwnerContext } from "../../owner/useOwnerContext";
@@ -42,14 +43,20 @@ function groupSlotsByParking(slots, parkingLots) {
 
 export default function OwnerParkingMap() {
   const { ownerData, isSyncing } = useOwnerContext();
+  const [searchParams] = useSearchParams();
   const [statusFilter, setStatusFilter] = useState("all");
+  const selectedParkingLotId = searchParams.get("parkingId") || searchParams.get("parkingLotId");
 
   const lots = useMemo(() => {
     const filteredSlots = (ownerData.slots || []).filter((slot) => (
-      statusFilter === "all" ? true : slot.status === statusFilter
+      (statusFilter === "all" ? true : slot.status === statusFilter)
+      && (selectedParkingLotId ? String(slot.parkingLotId) === String(selectedParkingLotId) : true)
     ));
-    return groupSlotsByParking(filteredSlots, ownerData.parkingLots || []);
-  }, [ownerData.parkingLots, ownerData.slots, statusFilter]);
+    const parkingLots = selectedParkingLotId
+      ? (ownerData.parkingLots || []).filter((lot) => String(lot.id) === String(selectedParkingLotId))
+      : ownerData.parkingLots || [];
+    return groupSlotsByParking(filteredSlots, parkingLots);
+  }, [ownerData.parkingLots, ownerData.slots, selectedParkingLotId, statusFilter]);
 
   return (
     <div className="owner-page-grid">

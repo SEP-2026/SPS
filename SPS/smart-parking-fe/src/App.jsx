@@ -21,6 +21,7 @@ import OwnerEmployees from "./pages/owner/OwnerEmployees";
 import OwnerNotifications from "./pages/owner/OwnerNotifications";
 import OwnerOverview from "./pages/owner/OwnerOverview";
 import OwnerParking from "./pages/owner/OwnerParking";
+import OwnerParkingDetail from "./pages/owner/OwnerParkingDetail";
 import OwnerParkingMap from "./pages/owner/OwnerParkingMap";
 import OwnerRevenue from "./pages/owner/OwnerRevenue";
 import OwnerReviews from "./pages/owner/OwnerReviews";
@@ -310,6 +311,7 @@ function AppBody({ auth, role, onLogin, onLogout }) {
         >
           <Route index element={<OwnerOverview />} />
           <Route path="parking" element={<OwnerParking />} />
+          <Route path="parking/:parkingId" element={<OwnerParkingDetail />} />
           <Route path="bookings" element={<OwnerBookings />} />
           <Route path="customers" element={<OwnerCustomers />} />
           <Route path="parking-map" element={<OwnerParkingMap />} />

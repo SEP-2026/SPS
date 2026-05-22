@@ -18,7 +18,7 @@ export function getStatusMeta(status) {
     available: { label: "Trống", tone: "success" },
     active: { label: "Hoạt động", tone: "success" },
     locked: { label: "Đã khóa", tone: "danger" },
-    reserved: { label: "Đã đặt", tone: "info" },
+    reserved: { label: "Đang giữ", tone: "info" },
     in_use: { label: "Đang sử dụng", tone: "warning" },
     maintenance: { label: "Bảo trì", tone: "danger" },
     banned: { label: "Bị khóa", tone: "danger" },

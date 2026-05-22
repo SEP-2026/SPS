@@ -1,10 +1,138 @@
+from collections import defaultdict
+import re
 import time
+import unicodedata
 
 from sqlalchemy import inspect, text
 from sqlalchemy.exc import OperationalError, SQLAlchemyError
 
 from app.database import Base, SessionLocal, engine
 from app.models import models
+
+
+PARKING_COORDINATE_FALLBACKS = {
+    "quan 1": [
+        (10.7734, 106.6917),
+        (10.7785, 106.7027),
+        (10.7871, 106.7044),
+        (10.7720, 106.6982),
+    ],
+    "quan 3": [
+        (10.7815, 106.6880),
+        (10.7827, 106.6840),
+        (10.7870, 106.6900),
+        (10.7755, 106.6860),
+        (10.7788, 106.6856),
+        (10.7797, 106.6809),
+        (10.7811, 106.6843),
+    ],
+    "quan 4": [
+        (10.7607, 106.7041),
+        (10.7566, 106.7092),
+        (10.7642, 106.7073),
+        (10.7528, 106.7031),
+    ],
+    "quan 5": [
+        (10.7548, 106.6662),
+        (10.7590, 106.6689),
+        (10.7505, 106.6599),
+        (10.7565, 106.6752),
+    ],
+    "quan 6": [
+        (10.7465, 106.6356),
+        (10.7488, 106.6418),
+        (10.7412, 106.6294),
+        (10.7521, 106.6459),
+    ],
+    "quan 7": [
+        (10.7292, 106.7217),
+        (10.7428, 106.7015),
+        (10.7367, 106.7139),
+        (10.7255, 106.7069),
+    ],
+    "quan 8": [
+        (10.7358, 106.6784),
+        (10.7295, 106.6679),
+        (10.7227, 106.6553),
+        (10.7402, 106.6901),
+    ],
+    "quan 10": [
+        (10.7730, 106.6673),
+        (10.7715, 106.6609),
+        (10.7792, 106.6677),
+        (10.7693, 106.6732),
+    ],
+    "quan 11": [
+        (10.7628, 106.6501),
+        (10.7562, 106.6535),
+        (10.7654, 106.6462),
+        (10.7599, 106.6410),
+    ],
+    "quan 12": [
+        (10.8565, 106.6358),
+        (10.8627, 106.6116),
+        (10.8518, 106.6210),
+        (10.8445, 106.6368),
+    ],
+    "tan phu": [
+        (10.7915, 106.6261),
+        (10.7932, 106.6250),
+        (10.7818, 106.6364),
+        (10.7864, 106.6402),
+        (10.8031, 106.6287),
+    ],
+    "thu duc": [
+        (10.8493, 106.7746),
+        (10.8460, 106.7908),
+        (10.8585, 106.7601),
+        (10.8700, 106.7780),
+    ],
+    "binh tan": [
+        (10.7420, 106.6123),
+        (10.7215, 106.5950),
+        (10.7470, 106.6267),
+        (10.7657, 106.5962),
+    ],
+}
+
+
+def _normalize_coordinate_text(value: str | None) -> str:
+    normalized = unicodedata.normalize("NFKD", (value or "").replace("Đ", "D").replace("đ", "d"))
+    ascii_text = normalized.encode("ascii", "ignore").decode("ascii")
+    return re.sub(r"\s+", " ", ascii_text).strip().casefold()
+
+
+def _parking_coordinate_key(lot: models.ParkingLot) -> str | None:
+    district_name = lot.district.name if lot.district else ""
+    text_value = _normalize_coordinate_text(f"{district_name} {lot.name} {lot.address}")
+    for key in (
+        "quan 12",
+        "quan 11",
+        "quan 10",
+        "quan 8",
+        "quan 7",
+        "quan 6",
+        "quan 5",
+        "quan 4",
+        "quan 3",
+        "quan 1",
+        "tan phu",
+        "thu duc",
+        "binh tan",
+    ):
+        if key in text_value:
+            return key
+    return None
+
+
+def _needs_coordinate_backfill(lot: models.ParkingLot) -> bool:
+    if lot.latitude is None or lot.longitude is None:
+        return True
+    lat = float(lot.latitude)
+    lng = float(lot.longitude)
+    if lat == 0 or lng == 0:
+        return True
+    return round(lat, 6) == 10.0 and round(lng, 6) == 106.0
 
 
 def _run_ddl_with_retry(statement: str, retries: int = 3, delay_seconds: float = 0.5) -> bool:
@@ -266,6 +394,49 @@ def migrate_districts_normalization():
         with engine.begin() as conn:
             for statement in drop_statements:
                 conn.execute(text(statement))
+
+
+def migrate_parking_lot_coordinates():
+    inspector = inspect(engine)
+    if "parking_lots" not in inspector.get_table_names():
+        return
+
+    columns = {column["name"] for column in inspector.get_columns("parking_lots")}
+    if "latitude" not in columns or "longitude" not in columns:
+        return
+
+    session = SessionLocal()
+    try:
+        lots = (
+            session.query(models.ParkingLot)
+            .outerjoin(models.District)
+            .order_by(models.ParkingLot.district_id.asc(), models.ParkingLot.id.asc())
+            .all()
+        )
+        positions_by_key: dict[str, int] = defaultdict(int)
+        changed = 0
+
+        for lot in lots:
+            key = _parking_coordinate_key(lot)
+            if not key:
+                continue
+            position = positions_by_key[key]
+            positions_by_key[key] += 1
+            if not _needs_coordinate_backfill(lot):
+                continue
+
+            coordinates = PARKING_COORDINATE_FALLBACKS.get(key)
+            if not coordinates:
+                continue
+            lat, lng = coordinates[position % len(coordinates)]
+            lot.latitude = lat
+            lot.longitude = lng
+            changed += 1
+
+        if changed:
+            session.commit()
+    finally:
+        session.close()
 
 
 def migrate_user_vehicles_table():
@@ -875,6 +1046,7 @@ def init_db():
     _run_migration_step("parking_lots", migrate_parking_lots_columns)
     _run_migration_step("users", migrate_users_columns)
     _run_migration_step("districts_normalization", migrate_districts_normalization)
+    _run_migration_step("parking_lot_coordinates", migrate_parking_lot_coordinates)
     _run_migration_step("user_vehicles", migrate_user_vehicles_table)
     _run_migration_step("parking_slots", migrate_parking_slots_columns)
     _run_migration_step("reviews", migrate_reviews_columns)

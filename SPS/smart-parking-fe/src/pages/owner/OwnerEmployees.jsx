@@ -1,515 +1,542 @@
-import { useEffect, useState } from "react";
-import { SectionCard } from "../../owner/OwnerUI";
-import { useOwnerContext } from "../../owner/useOwnerContext";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  Activity,
+  CalendarClock,
+  Download,
+  Eye,
+  Filter,
+  Info,
+  KeyRound,
+  Lock,
+  MapPin,
+  Monitor,
+  MoreVertical,
+  Plus,
+  Search,
+  ShieldCheck,
+  UserCog,
+  Users,
+  Wifi,
+} from "lucide-react";
 import API from "../../services/api";
+import { formatDateTime, StatusBadge } from "../../owner/OwnerUI";
+import { downloadCsv, formatNumber, getInitials } from "../../owner/ownerUtils";
+import { useOwnerContext } from "../../owner/useOwnerContext";
 
-function buildParkingSettingsRows(settings) {
-  return Array.isArray(settings?.parkingLots)
-    ? settings.parkingLots.map((lot) => ({
-      id: lot.id,
-      parkingName: lot.name || "",
-    }))
-    : [];
-}
-
-function EyeIcon({ open }) {
-  if (open) {
-    return (
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M12 5c5.2 0 9.6 3.2 11 7-1.4 3.8-5.8 7-11 7S2.4 15.8 1 12C2.4 8.2 6.8 5 12 5Zm0 2C8 7 4.5 9.3 3.1 12 4.5 14.7 8 17 12 17s7.5-2.3 8.9-5C19.5 9.3 16 7 12 7Zm0 2.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5Z" />
-      </svg>
-    );
-  }
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="m3.3 2 18.7 18.7-1.4 1.4-3-3a13.5 13.5 0 0 1-5.6 1.2c-5.2 0-9.6-3.2-11-7a12.7 12.7 0 0 1 4.2-5.2l-3.3-3.3L3.3 2Zm3.4 7.7A10.7 10.7 0 0 0 3.1 12c1.4 2.7 4.9 5 8.9 5a10.7 10.7 0 0 0 3.8-.7l-2.1-2.1a3.5 3.5 0 0 1-4.9-4.9L6.7 9.7Zm10.7 2.1-4.3-4.3A3.5 3.5 0 0 0 9 8.3L7.2 6.5A13.2 13.2 0 0 1 12 5c5.2 0 9.6 3.2 11 7a12.7 12.7 0 0 1-3.8 5l-1.8-1.8a10.6 10.6 0 0 0 3.5-3.2c-.7-1.2-1.9-2.4-3.5-3.2Z" />
-    </svg>
-  );
-}
-
-const EMPTY_EDIT_FORM = {
+const EMPTY_FORM = {
+  id: null,
   full_name: "",
   email: "",
   phone: "",
-  parking_id: "",
   password: "",
   confirmPassword: "",
+  parking_id: "",
+  status: "active",
 };
 
-const EMPTY_REQUIRED_ERRORS = {
-  full_name: "",
-  email: "",
-  phone: "",
+const STATUS_META = {
+  active: { label: "Hoạt động", badge: "active" },
+  suspended: { label: "Tạm khóa", badge: "suspended" },
+  inactive: { label: "Không hoạt động", badge: "cancelled" },
 };
 
-function validateRequiredEmployeeFields(form) {
-  const errors = { ...EMPTY_REQUIRED_ERRORS };
-  if (!form.full_name?.trim()) {
-    errors.full_name = "Vui lòng nhập tên tài khoản.";
-  }
-  if (!form.email?.trim()) {
-    errors.email = "Vui lòng nhập email đăng nhập.";
-  }
-  if (!form.phone?.trim()) {
-    errors.phone = "Vui lòng nhập số điện thoại.";
-  }
-  return errors;
+function normalizeEmployee(employee) {
+  return {
+    ...employee,
+    full_name: employee.full_name || employee.username || "Tài khoản bãi",
+    email: employee.email || employee.username || "",
+    phone: employee.phone || "",
+    status: employee.status || "active",
+    activity_count: Number(employee.activity_count || 0),
+    parking_district: employee.parking_district || "",
+    parking_code: employee.parking_code || (employee.parking_id ? `BX${String(employee.parking_id).padStart(3, "0")}` : ""),
+    last_login_at: employee.last_login_at || null,
+    login_ip: employee.login_ip || "",
+    login_device: employee.login_device || "",
+    status_detail: employee.status_detail || "",
+  };
 }
 
-function hasRequiredErrors(errors) {
-  return Boolean(errors.full_name || errors.email || errors.phone);
+function passwordValid(form, editing) {
+  if (editing && !form.password && !form.confirmPassword) {
+    return true;
+  }
+  return form.password.length >= 6 && form.password === form.confirmPassword;
 }
 
 export default function OwnerEmployees() {
-  const EMPLOYEE_PASSWORD_MIN_LENGTH = 6;
-  const EMPLOYEE_PASSWORD_NOTE = `Mật khẩu tài khoản bãi tối thiểu ${EMPLOYEE_PASSWORD_MIN_LENGTH} ký tự.`;
-
   const { ownerData, actions } = useOwnerContext();
-
-  const [parkingRows, setParkingRows] = useState(() => buildParkingSettingsRows(ownerData.settings));
   const [employees, setEmployees] = useState([]);
-  const [employeeCreated, setEmployeeCreated] = useState(false);
-  const [employeeForm, setEmployeeForm] = useState({
-    full_name: "",
-    email: "",
-    phone: "",
-    password: "",
-    confirmPassword: "",
-    parking_id: "",
-  });
-  const [employeeRequiredErrors, setEmployeeRequiredErrors] = useState(EMPTY_REQUIRED_ERRORS);
-  const [showEmployeePassword, setShowEmployeePassword] = useState(false);
-  const [showEmployeeConfirmPassword, setShowEmployeeConfirmPassword] = useState(false);
+  const [activities, setActivities] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [cityFilter, setCityFilter] = useState("all");
+  const [selectedEmployee, setSelectedEmployee] = useState(null);
+  const [selectedActivity, setSelectedActivity] = useState(null);
+  const [modalMode, setModalMode] = useState("");
+  const [form, setForm] = useState(EMPTY_FORM);
+  const [saving, setSaving] = useState(false);
+  const [page, setPage] = useState(1);
 
-  const [editingEmployeeId, setEditingEmployeeId] = useState(null);
-  const [editEmployeeForm, setEditEmployeeForm] = useState(EMPTY_EDIT_FORM);
-  const [editRequiredErrors, setEditRequiredErrors] = useState(EMPTY_REQUIRED_ERRORS);
-  const [showEditEmployeePassword, setShowEditEmployeePassword] = useState(false);
-  const [showEditEmployeeConfirmPassword, setShowEditEmployeeConfirmPassword] = useState(false);
-
-  useEffect(() => {
-    const fetchSettings = async () => {
-      try {
-        const res = await API.get("/owner/settings");
-        const nextSettings = res.data?.settings || ownerData.settings;
-        setParkingRows(buildParkingSettingsRows(nextSettings));
-      } catch {
-        setParkingRows(buildParkingSettingsRows(ownerData.settings));
-      }
-    };
-    fetchSettings();
-  }, [ownerData.settings]);
-
-  useEffect(() => {
-    setEmployeeForm((prev) => ({
-      ...prev,
-      parking_id: prev.parking_id || String(parkingRows[0]?.id || ""),
-    }));
-  }, [parkingRows]);
-
-  useEffect(() => {
-    const fetchEmployees = async () => {
-      const nextEmployees = await actions.listEmployees();
-      setEmployees(nextEmployees);
-    };
-    fetchEmployees();
+  const loadEmployees = useCallback(async () => {
+    setLoading(true);
+    const nextEmployees = await actions.listEmployees();
+    setEmployees(nextEmployees.map(normalizeEmployee));
+    setLoading(false);
   }, [actions]);
 
-  const startEditEmployee = (employee) => {
-    setEditingEmployeeId(employee.id);
-    setEditEmployeeForm({
+  useEffect(() => {
+    loadEmployees();
+  }, [loadEmployees]);
+
+  useEffect(() => {
+    const fetchActivities = async () => {
+      try {
+        const res = await API.get("/owner/activity");
+        setActivities((res.data?.activities || []).filter((item) => item.type === "employee"));
+      } catch {
+        setActivities([]);
+      }
+    };
+    fetchActivities();
+  }, []);
+
+  const parkingRows = useMemo(() => (
+    (ownerData.settings?.parkingLots || ownerData.parkingLots || []).map((lot) => ({
+      id: Number(lot.id),
+      name: lot.name,
+      district: lot.district || "",
+    }))
+  ), [ownerData.parkingLots, ownerData.settings?.parkingLots]);
+
+  const unassignedParkingRows = useMemo(() => {
+    const assigned = new Set(employees.map((employee) => Number(employee.parking_id)));
+    return parkingRows.filter((lot) => !assigned.has(Number(lot.id)));
+  }, [employees, parkingRows]);
+
+  const stats = useMemo(() => {
+    const active = employees.filter((employee) => employee.status === "active").length;
+    const suspended = employees.filter((employee) => employee.status === "suspended").length;
+    const inactive = employees.filter((employee) => employee.status === "inactive").length;
+    return {
+      total: employees.length,
+      active,
+      suspended,
+      inactive,
+      createdPercent: parkingRows.length ? Math.round((employees.length / parkingRows.length) * 100) : 0,
+      activePercent: employees.length ? Math.round((active / employees.length) * 100) : 0,
+    };
+  }, [employees, parkingRows.length]);
+
+  const cityOptions = useMemo(() => (
+    Array.from(new Set(parkingRows.map((lot) => lot.district).filter(Boolean))).sort((a, b) => a.localeCompare(b, "vi"))
+  ), [parkingRows]);
+
+  const filteredEmployees = useMemo(() => {
+    const keyword = search.trim().toLowerCase();
+    return employees.filter((employee) => {
+      const parking = parkingRows.find((lot) => Number(lot.id) === Number(employee.parking_id));
+      if (statusFilter !== "all" && employee.status !== statusFilter) {
+        return false;
+      }
+      if (cityFilter !== "all" && parking?.district !== cityFilter) {
+        return false;
+      }
+      if (!keyword) {
+        return true;
+      }
+      return [
+        employee.full_name,
+        employee.email,
+        employee.phone,
+        employee.parking_name,
+        parking?.district,
+      ].join(" ").toLowerCase().includes(keyword);
+    });
+  }, [cityFilter, employees, parkingRows, search, statusFilter]);
+
+  const pageSize = 6;
+  const totalPages = Math.max(1, Math.ceil(filteredEmployees.length / pageSize));
+  const visibleRows = filteredEmployees.slice((page - 1) * pageSize, page * pageSize);
+
+  const openCreate = () => {
+    if (unassignedParkingRows.length === 0) {
+      window.alert("Tất cả bãi xe đã có tài khoản vận hành. Mỗi bãi chỉ có 01 tài khoản.");
+      return;
+    }
+    setForm({ ...EMPTY_FORM, parking_id: String(unassignedParkingRows[0].id) });
+    setModalMode("create");
+  };
+
+  const openEdit = (employee) => {
+    setSelectedEmployee(null);
+    setForm({
+      id: employee.id,
       full_name: employee.full_name || "",
       email: employee.email || "",
       phone: employee.phone || "",
-      parking_id: String(employee.parking_id || ""),
       password: "",
       confirmPassword: "",
+      parking_id: String(employee.parking_id || ""),
+      status: employee.status || "active",
     });
-    setEditRequiredErrors(EMPTY_REQUIRED_ERRORS);
-    setShowEditEmployeePassword(false);
-    setShowEditEmployeeConfirmPassword(false);
+    setModalMode("edit");
   };
 
-  const cancelEditEmployee = () => {
-    setEditingEmployeeId(null);
-    setEditEmployeeForm(EMPTY_EDIT_FORM);
-    setEditRequiredErrors(EMPTY_REQUIRED_ERRORS);
-    setShowEditEmployeePassword(false);
-    setShowEditEmployeeConfirmPassword(false);
+  const closeModal = () => {
+    if (saving) {
+      return;
+    }
+    setModalMode("");
+    setForm(EMPTY_FORM);
   };
+
+  const saveEmployee = async (event) => {
+    event.preventDefault();
+    if (!form.full_name.trim() || !form.email.trim() || !form.phone.trim() || !form.parking_id) {
+      window.alert("Vui lòng nhập đầy đủ tên, email, số điện thoại và bãi phụ trách.");
+      return;
+    }
+    if (!passwordValid(form, modalMode === "edit")) {
+      window.alert("Mật khẩu tối thiểu 6 ký tự và xác nhận phải khớp.");
+      return;
+    }
+    setSaving(true);
+    try {
+      const payload = {
+        full_name: form.full_name.trim(),
+        email: form.email.trim().toLowerCase(),
+        phone: form.phone.trim(),
+        parking_id: Number(form.parking_id),
+      };
+      if (form.password) {
+        payload.password = form.password;
+      }
+      if (modalMode === "edit") {
+        payload.status = form.status;
+        await actions.updateEmployee(form.id, payload);
+      } else {
+        payload.password = form.password;
+        await actions.createEmployee(payload);
+      }
+      await loadEmployees();
+      setModalMode("");
+      setForm(EMPTY_FORM);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const changeStatus = async (employee, status) => {
+    const updated = await actions.updateEmployee(employee.id, {
+      full_name: employee.full_name,
+      email: employee.email,
+      phone: employee.phone,
+      parking_id: Number(employee.parking_id),
+      status,
+    });
+    if (updated) {
+      await loadEmployees();
+      setSelectedEmployee((current) => (current?.id === employee.id ? { ...current, status } : current));
+    }
+  };
+
+  const deleteEmployee = async (employee) => {
+    const ok = window.confirm(`Xóa tài khoản ${employee.email}?`);
+    if (!ok) {
+      return;
+    }
+    const deleted = await actions.deleteEmployee(employee.id);
+    if (deleted) {
+      await loadEmployees();
+      setSelectedEmployee(null);
+    }
+  };
+
+  const exportEmployees = () => {
+    downloadCsv("tai-khoan-bai-xe-owner.csv", filteredEmployees.map((employee) => ({
+      ten_tai_khoan: employee.full_name,
+      email: employee.email,
+      so_dien_thoai: employee.phone,
+      bai_phu_trach: employee.parking_name,
+      trang_thai: STATUS_META[employee.status]?.label || employee.status,
+      lan_hoat_dong: employee.activity_count,
+      tao_luc: formatDateTime(employee.created_at),
+    })));
+  };
+
+  const selectedParking = selectedEmployee
+    ? parkingRows.find((lot) => Number(lot.id) === Number(selectedEmployee.parking_id))
+    : null;
+  const selectedActivities = selectedEmployee
+    ? activities.filter((item) => (
+      item.actor === selectedEmployee.full_name
+      || item.actor === selectedEmployee.email
+      || item.object?.includes(selectedEmployee.email)
+      || item.detail?.includes(selectedEmployee.email)
+      || item.parkingLotName === selectedEmployee.parking_name
+    ))
+    : [];
+  const activeActivityDetail = selectedActivity || selectedActivities[0] || null;
+
+  useEffect(() => {
+    setSelectedActivity(null);
+  }, [selectedEmployee?.id]);
 
   return (
-    <div className="owner-page-grid">
-      <SectionCard
-        title="Quản lý tài khoản bãi"
-        subtitle="Trang riêng để tạo, sửa và xóa tài khoản đăng nhập khu vực /employee."
-      >
-        <form
-          className="owner-settings-form"
-          onSubmit={async (event) => {
-            event.preventDefault();
+    <div className="owner-designed-page owner-accounts-page">
+      <div className="owner-page-actions">
+        <button type="button" className="owner-management-secondary" onClick={exportEmployees}>
+          <Download size={17} />
+          Xuất dữ liệu
+        </button>
+        <button type="button" className="owner-management-primary" onClick={openCreate}>
+          <Plus size={18} />
+          Tạo tài khoản mới
+        </button>
+      </div>
 
-            const requiredErrors = validateRequiredEmployeeFields(employeeForm);
-            setEmployeeRequiredErrors(requiredErrors);
-            if (hasRequiredErrors(requiredErrors)) {
-              return;
-            }
+      <div className="owner-management-stats owner-designed-stats">
+        <article className="owner-management-stat owner-management-stat--blue">
+          <span><Users size={23} /></span>
+          <div><p>Tổng tài khoản bãi xe</p><strong>{formatNumber(stats.total)}</strong><small>{stats.createdPercent}% tài khoản đã tạo</small></div>
+        </article>
+        <article className="owner-management-stat owner-management-stat--green">
+          <span><ShieldCheck size={23} /></span>
+          <div><p>Đang hoạt động</p><strong>{formatNumber(stats.active)}</strong><small>{stats.activePercent}% tài khoản hoạt động</small></div>
+        </article>
+        <article className="owner-management-stat owner-management-stat--orange">
+          <span><Lock size={23} /></span>
+          <div><p>Tạm khóa</p><strong>{formatNumber(stats.suspended)}</strong><small>Tạm ngưng đăng nhập</small></div>
+        </article>
+        <article className="owner-management-stat owner-management-stat--pink">
+          <span><UserCog size={23} /></span>
+          <div><p>Không hoạt động</p><strong>{formatNumber(stats.inactive)}</strong><small>Đã ngưng vận hành</small></div>
+        </article>
+      </div>
 
-            if (!employeeForm.parking_id) {
-              window.alert("Vui lòng chọn bãi phụ trách cho tài khoản bãi");
-              return;
-            }
-            const parkingId = Number(employeeForm.parking_id);
-            const allowedParking = parkingRows.some((row) => Number(row.id) === parkingId);
-            if (!allowedParking) {
-              window.alert("Bạn chỉ có thể tạo tài khoản cho bãi xe thuộc owner hiện tại.");
-              return;
-            }
-            if ((employeeForm.password || "").length < EMPLOYEE_PASSWORD_MIN_LENGTH) {
-              window.alert(EMPLOYEE_PASSWORD_NOTE);
-              return;
-            }
-            if (employeeForm.password !== employeeForm.confirmPassword) {
-              window.alert("Mật khẩu xác nhận không khớp");
-              return;
-            }
-
-            const created = await actions.createEmployee({
-              full_name: employeeForm.full_name.trim(),
-              email: employeeForm.email.trim().toLowerCase(),
-              phone: employeeForm.phone.trim(),
-              password: employeeForm.password,
-              parking_id: parkingId,
-            });
-            if (!created) {
-              return;
-            }
-
-            setEmployeeCreated(true);
-            setEmployeeForm((prev) => ({
-              ...prev,
-              full_name: "",
-              email: "",
-              phone: "",
-              password: "",
-              confirmPassword: "",
-            }));
-            setEmployeeRequiredErrors(EMPTY_REQUIRED_ERRORS);
-            setShowEmployeePassword(false);
-            setShowEmployeeConfirmPassword(false);
-
-            const nextEmployees = await actions.listEmployees();
-            setEmployees(nextEmployees);
-          }}
-        >
-          <label>
-            Tên tài khoản
-            <input className="owner-input" value={employeeForm.full_name} onChange={(event) => {
-              setEmployeeCreated(false);
-              setEmployeeForm((prev) => ({ ...prev, full_name: event.target.value }));
-              if (employeeRequiredErrors.full_name) {
-                setEmployeeRequiredErrors((prev) => ({ ...prev, full_name: "" }));
-              }
-            }} />
-            <span className="owner-input-error-slot">{employeeRequiredErrors.full_name || ""}</span>
-          </label>
-          <label>
-            Email đăng nhập
-            <input className="owner-input" type="email" value={employeeForm.email} onChange={(event) => {
-              setEmployeeCreated(false);
-              setEmployeeForm((prev) => ({ ...prev, email: event.target.value }));
-              if (employeeRequiredErrors.email) {
-                setEmployeeRequiredErrors((prev) => ({ ...prev, email: "" }));
-              }
-            }} />
-            <span className="owner-input-error-slot">{employeeRequiredErrors.email || ""}</span>
-          </label>
-          <label>
-            Số điện thoại
-            <input className="owner-input" value={employeeForm.phone} onChange={(event) => {
-              setEmployeeCreated(false);
-              setEmployeeForm((prev) => ({ ...prev, phone: event.target.value }));
-              if (employeeRequiredErrors.phone) {
-                setEmployeeRequiredErrors((prev) => ({ ...prev, phone: "" }));
-              }
-            }} />
-            <span className="owner-input-error-slot">{employeeRequiredErrors.phone || ""}</span>
-          </label>
-          <label>
-            Bãi phụ trách
-            <select className="owner-input owner-select" value={employeeForm.parking_id} onChange={(event) => {
-              setEmployeeCreated(false);
-              setEmployeeForm((prev) => ({ ...prev, parking_id: event.target.value }));
-            }}>
-              {parkingRows.map((row) => (
-                <option key={row.id} value={row.id}>{row.parkingName}</option>
-              ))}
-            </select>
-            <span className="owner-input-error-slot">{""}</span>
-          </label>
-          <label>
-            Mật khẩu
-            <div className="owner-input-wrap owner-input-wrap--password">
-              <input className="owner-input owner-input--with-icon" type={showEmployeePassword ? "text" : "password"} minLength={EMPLOYEE_PASSWORD_MIN_LENGTH} value={employeeForm.password} onChange={(event) => {
-                setEmployeeCreated(false);
-                setEmployeeForm((prev) => ({ ...prev, password: event.target.value }));
-              }} />
-              <button
-                type="button"
-                className="owner-password-icon owner-password-icon--inside"
-                aria-label={showEmployeePassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
-                onClick={() => setShowEmployeePassword((prev) => !prev)}
-              >
-                <EyeIcon open={showEmployeePassword} />
-              </button>
-            </div>
-            <span className="owner-input-error-slot">{""}</span>
-          </label>
-          <label>
-            Nhập lại mật khẩu
-            <div className="owner-input-wrap owner-input-wrap--password">
-              <input className="owner-input owner-input--with-icon" type={showEmployeeConfirmPassword ? "text" : "password"} minLength={EMPLOYEE_PASSWORD_MIN_LENGTH} value={employeeForm.confirmPassword} onChange={(event) => {
-                setEmployeeCreated(false);
-                setEmployeeForm((prev) => ({ ...prev, confirmPassword: event.target.value }));
-              }} />
-              <button
-                type="button"
-                className="owner-password-icon owner-password-icon--inside"
-                aria-label={showEmployeeConfirmPassword ? "Ẩn xác nhận mật khẩu" : "Hiện xác nhận mật khẩu"}
-                onClick={() => setShowEmployeeConfirmPassword((prev) => !prev)}
-              >
-                <EyeIcon open={showEmployeeConfirmPassword} />
-              </button>
-            </div>
-            <span className="owner-input-error-slot">{""}</span>
-          </label>
-          <p className="owner-save-note owner-form-span">{EMPLOYEE_PASSWORD_NOTE}</p>
-          <div className="owner-settings-actions owner-form-span">
-            {employeeCreated ? <p className="owner-save-note">Đã tạo tài khoản bãi thành công.</p> : <span />}
-            <button type="submit" className="btn-primary owner-btn">Tạo tài khoản bãi</button>
+      <div className="owner-accounts-layout">
+        <section className="owner-management-panel">
+          <div className="owner-panel-heading">
+            <div><h3>Danh sách tài khoản bãi xe</h3><p>Mỗi bãi xe chỉ có 01 tài khoản vận hành.</p></div>
           </div>
-        </form>
+          <div className="owner-filterbar owner-account-filterbar">
+            <label className="owner-management-search">
+              <Search size={18} />
+              <input value={search} onChange={(event) => { setSearch(event.target.value); setPage(1); }} placeholder="Tìm theo bãi xe, email, tỉnh/thành phố..." />
+            </label>
+            <select className="owner-management-select" value={statusFilter} onChange={(event) => { setStatusFilter(event.target.value); setPage(1); }}>
+              <option value="all">Tất cả trạng thái</option>
+              <option value="active">Hoạt động</option>
+              <option value="suspended">Tạm khóa</option>
+              <option value="inactive">Không hoạt động</option>
+            </select>
+            <select className="owner-management-select" value={cityFilter} onChange={(event) => { setCityFilter(event.target.value); setPage(1); }}>
+              <option value="all">Tất cả tỉnh/thành phố</option>
+              {cityOptions.map((city) => <option key={city} value={city}>{city}</option>)}
+            </select>
+            <button type="button" className="owner-management-secondary" onClick={() => setPage(1)}>
+              <Filter size={17} />
+              Bộ lọc
+            </button>
+          </div>
 
-        <div className="owner-table-shell">
-          <table className="owner-table">
-            <thead>
-              <tr>
-                <th>Tên tài khoản</th>
-                <th>Email</th>
-                <th>SĐT</th>
-                <th>Bãi phụ trách</th>
-                <th>Trạng thái</th>
-                <th>Thao tác</th>
-              </tr>
-            </thead>
-            <tbody>
-              {employees.length === 0 ? (
+          <div className="owner-table-shell">
+            <table className="owner-table owner-designed-table">
+              <thead>
                 <tr>
-                  <td colSpan={6} className="owner-empty-cell">Chưa có tài khoản bãi nào.</td>
+                  <th>Bãi xe</th>
+                  <th>Tài khoản</th>
+                  <th>Tỉnh / Thành phố</th>
+                  <th>Trạng thái</th>
+                  <th>Hoạt động cuối</th>
+                  <th>Thao tác</th>
                 </tr>
-              ) : employees.map((employee) => (
-                <tr key={employee.id}>
-                  <td>{employee.full_name || employee.username}</td>
-                  <td>{employee.email || "-"}</td>
-                  <td>{employee.phone || "-"}</td>
-                  <td>{employee.parking_name || `Bãi #${employee.parking_id}`}</td>
-                  <td>
-                    <span className={`owner-badge ${employee.status === "active" ? "owner-badge--success" : "owner-badge--warning"}`}>
-                      {employee.status}
-                    </span>
-                  </td>
-                  <td>
-                    <div className="owner-row-actions">
-                      <button
-                        type="button"
-                        className="btn-secondary owner-btn owner-btn--small"
-                        onClick={() => startEditEmployee(employee)}
-                      >
-                        Sửa
-                      </button>
-                      <button
-                        type="button"
-                        className="btn-secondary owner-btn owner-btn--small owner-btn--danger"
-                        onClick={async () => {
-                          const ok = window.confirm("Xóa tài khoản bãi này vĩnh viễn?");
-                          if (!ok) {
-                            return;
-                          }
-                          const deleted = await actions.deleteEmployee(employee.id);
-                          if (!deleted) {
-                            return;
-                          }
-                          if (editingEmployeeId === employee.id) {
-                            cancelEditEmployee();
-                          }
-                          const nextEmployees = await actions.listEmployees();
-                          setEmployees(nextEmployees);
-                        }}
-                      >
-                        Xóa
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        {editingEmployeeId ? (
-          <form
-            className="owner-settings-form owner-settings-form--employee"
-            onSubmit={async (event) => {
-              event.preventDefault();
-
-              const requiredErrors = validateRequiredEmployeeFields(editEmployeeForm);
-              setEditRequiredErrors(requiredErrors);
-              if (hasRequiredErrors(requiredErrors)) {
-                return;
-              }
-
-              const parkingId = Number(editEmployeeForm.parking_id);
-              const allowedParking = parkingRows.some((row) => Number(row.id) === parkingId);
-              if (!allowedParking) {
-                window.alert("Bạn chỉ có thể gán tài khoản bãi vào bãi thuộc owner hiện tại.");
-                return;
-              }
-              if (editEmployeeForm.password && editEmployeeForm.password.length < EMPLOYEE_PASSWORD_MIN_LENGTH) {
-                window.alert(EMPLOYEE_PASSWORD_NOTE);
-                return;
-              }
-              if (editEmployeeForm.password !== editEmployeeForm.confirmPassword) {
-                window.alert("Mật khẩu xác nhận không khớp");
-                return;
-              }
-
-              const payload = {
-                full_name: editEmployeeForm.full_name.trim(),
-                email: editEmployeeForm.email.trim().toLowerCase(),
-                phone: editEmployeeForm.phone.trim(),
-                parking_id: parkingId,
-              };
-              if (editEmployeeForm.password) {
-                payload.password = editEmployeeForm.password;
-              }
-
-              const updated = await actions.updateEmployee(editingEmployeeId, payload);
-              if (!updated) {
-                return;
-              }
-
-              const nextEmployees = await actions.listEmployees();
-              setEmployees(nextEmployees);
-              cancelEditEmployee();
-            }}
-          >
-            <label className="owner-form-span">Chỉnh sửa tài khoản bãi</label>
-            <label>
-              Tên tài khoản
-              <input
-                className="owner-input"
-                value={editEmployeeForm.full_name}
-                onChange={(event) => {
-                  setEditEmployeeForm((prev) => ({ ...prev, full_name: event.target.value }));
-                  if (editRequiredErrors.full_name) {
-                    setEditRequiredErrors((prev) => ({ ...prev, full_name: "" }));
-                  }
-                }}
-              />
-              <span className="owner-input-error-slot">{editRequiredErrors.full_name || ""}</span>
-            </label>
-            <label>
-              Email đăng nhập
-              <input
-                className="owner-input"
-                type="email"
-                value={editEmployeeForm.email}
-                onChange={(event) => {
-                  setEditEmployeeForm((prev) => ({ ...prev, email: event.target.value }));
-                  if (editRequiredErrors.email) {
-                    setEditRequiredErrors((prev) => ({ ...prev, email: "" }));
-                  }
-                }}
-              />
-              <span className="owner-input-error-slot">{editRequiredErrors.email || ""}</span>
-            </label>
-            <label>
-              Số điện thoại
-              <input
-                className="owner-input"
-                value={editEmployeeForm.phone}
-                onChange={(event) => {
-                  setEditEmployeeForm((prev) => ({ ...prev, phone: event.target.value }));
-                  if (editRequiredErrors.phone) {
-                    setEditRequiredErrors((prev) => ({ ...prev, phone: "" }));
-                  }
-                }}
-              />
-              <span className="owner-input-error-slot">{editRequiredErrors.phone || ""}</span>
-            </label>
-            <label>
-              Bãi phụ trách
-              <select
-                className="owner-input owner-select"
-                value={editEmployeeForm.parking_id}
-                onChange={(event) => setEditEmployeeForm((prev) => ({ ...prev, parking_id: event.target.value }))}
-              >
-                {parkingRows.map((row) => (
-                  <option key={row.id} value={row.id}>{row.parkingName}</option>
-                ))}
-              </select>
-              <span className="owner-input-error-slot">{""}</span>
-            </label>
-            <label>
-              Mật khẩu mới (tùy chọn)
-              <div className="owner-input-wrap owner-input-wrap--password">
-                <input
-                  className="owner-input owner-input--with-icon"
-                  type={showEditEmployeePassword ? "text" : "password"}
-                  minLength={EMPLOYEE_PASSWORD_MIN_LENGTH}
-                  value={editEmployeeForm.password}
-                  onChange={(event) => setEditEmployeeForm((prev) => ({ ...prev, password: event.target.value }))}
-                />
-                <button
-                  type="button"
-                  className="owner-password-icon owner-password-icon--inside"
-                  aria-label={showEditEmployeePassword ? "Ẩn mật khẩu mới" : "Hiện mật khẩu mới"}
-                  onClick={() => setShowEditEmployeePassword((prev) => !prev)}
-                >
-                  <EyeIcon open={showEditEmployeePassword} />
-                </button>
-              </div>
-              <span className="owner-input-error-slot">{""}</span>
-            </label>
-            <label>
-              Nhập lại mật khẩu mới
-              <div className="owner-input-wrap owner-input-wrap--password">
-                <input
-                  className="owner-input owner-input--with-icon"
-                  type={showEditEmployeeConfirmPassword ? "text" : "password"}
-                  minLength={EMPLOYEE_PASSWORD_MIN_LENGTH}
-                  value={editEmployeeForm.confirmPassword}
-                  onChange={(event) => setEditEmployeeForm((prev) => ({ ...prev, confirmPassword: event.target.value }))}
-                />
-                <button
-                  type="button"
-                  className="owner-password-icon owner-password-icon--inside"
-                  aria-label={showEditEmployeeConfirmPassword ? "Ẩn xác nhận mật khẩu mới" : "Hiện xác nhận mật khẩu mới"}
-                  onClick={() => setShowEditEmployeeConfirmPassword((prev) => !prev)}
-                >
-                  <EyeIcon open={showEditEmployeeConfirmPassword} />
-                </button>
-              </div>
-              <span className="owner-input-error-slot">{""}</span>
-            </label>
-            <p className="owner-save-note owner-form-span">{EMPLOYEE_PASSWORD_NOTE}</p>
-            <div className="owner-settings-actions owner-form-span">
-              <button type="button" className="btn-secondary owner-btn" onClick={cancelEditEmployee}>Hủy</button>
-              <button type="submit" className="btn-primary owner-btn">Lưu chỉnh sửa</button>
+              </thead>
+              <tbody>
+                {loading ? (
+                  <tr><td colSpan={6} className="owner-empty-cell">Đang tải tài khoản bãi xe...</td></tr>
+                ) : visibleRows.length === 0 ? (
+                  <tr><td colSpan={6} className="owner-empty-cell">Không có tài khoản nào khớp bộ lọc.</td></tr>
+                ) : visibleRows.map((employee) => {
+                  const parking = parkingRows.find((lot) => Number(lot.id) === Number(employee.parking_id));
+                  return (
+                    <tr key={employee.id}>
+                      <td>
+                        <div className="owner-row-title">
+                          <span className="owner-customer-avatar">{getInitials(employee.parking_name)}</span>
+                          <div><strong>{employee.parking_name || `Bãi #${employee.parking_id}`}</strong><small>Mã: BX{String(employee.parking_id).padStart(3, "0")}</small></div>
+                        </div>
+                      </td>
+                      <td><strong>{employee.email}</strong><small>{employee.full_name} · {employee.phone || "-"}</small></td>
+                      <td>{parking?.district || "Chưa cập nhật"}</td>
+                      <td><StatusBadge status={STATUS_META[employee.status]?.badge || "system"} /> <small>{STATUS_META[employee.status]?.label || employee.status}</small></td>
+                      <td>{employee.last_activity_at ? formatDateTime(employee.last_activity_at) : formatDateTime(employee.created_at)}</td>
+                      <td>
+                        <div className="owner-row-actions">
+                          <button type="button" className="owner-icon-mini" onClick={() => setSelectedEmployee(employee)} aria-label="Xem chi tiết"><Eye size={16} /></button>
+                          <button type="button" className="owner-icon-mini" onClick={() => changeStatus(employee, employee.status === "active" ? "suspended" : "active")} aria-label="Khóa hoặc mở khóa"><Lock size={16} /></button>
+                          <button type="button" className="owner-icon-mini" onClick={() => openEdit(employee)} aria-label="Sửa"><MoreVertical size={16} /></button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+          <div className="owner-management-pagination">
+            <span>Hiển thị {filteredEmployees.length ? (page - 1) * pageSize + 1 : 0} - {Math.min(page * pageSize, filteredEmployees.length)} trong tổng số {formatNumber(filteredEmployees.length)} tài khoản</span>
+            <div>
+              <button type="button" disabled={page <= 1} onClick={() => setPage((value) => Math.max(1, value - 1))}>‹</button>
+              <button type="button" className={page === 1 ? "is-active" : ""} onClick={() => setPage(1)}>1</button>
+              {totalPages > 1 ? <button type="button" className={page === totalPages ? "is-active" : ""} onClick={() => setPage(totalPages)}>{totalPages}</button> : null}
+              <button type="button" disabled={page >= totalPages} onClick={() => setPage((value) => Math.min(totalPages, value + 1))}>›</button>
             </div>
-          </form>
-        ) : null}
-      </SectionCard>
+          </div>
+
+          <section className="owner-account-log-panel">
+            <div className="owner-panel-heading">
+              <div><h3>Nhật ký hoạt động</h3><p>Hoạt động từ tài khoản bãi trong các bãi owner quản lý</p></div>
+            </div>
+            <div className="owner-table-shell">
+              <table className="owner-table owner-designed-table">
+                <thead><tr><th>Thời gian</th><th>Tài khoản</th><th>Hoạt động</th><th>Chi tiết</th><th>Bãi xe</th></tr></thead>
+                <tbody>
+                  {activities.slice(0, 6).map((activity) => (
+                    <tr key={activity.id}>
+                      <td>{formatDateTime(activity.time)}</td>
+                      <td>{activity.actor}</td>
+                      <td>{activity.action}</td>
+                      <td>{activity.detail || "-"}</td>
+                      <td>{activity.parkingLotName}</td>
+                    </tr>
+                  ))}
+                  {activities.length === 0 ? <tr><td colSpan={5} className="owner-empty-cell">Chưa có nhật ký hoạt động.</td></tr> : null}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        </section>
+
+        <aside className="owner-side-stack">
+          <section className="owner-management-panel owner-side-panel">
+            <h3>Chi tiết tài khoản</h3>
+            {selectedEmployee ? (
+              <>
+                <div className="owner-account-detail-card owner-account-detail-card--full">
+                  <div className="owner-account-detail-top">
+                    <span className="owner-customer-avatar owner-customer-avatar--large">{getInitials(selectedEmployee.parking_name)}</span>
+                    <StatusBadge status={STATUS_META[selectedEmployee.status]?.badge || "system"} />
+                  </div>
+                  <strong>{selectedEmployee.parking_name || `Bãi #${selectedEmployee.parking_id}`}</strong>
+                  <p>{selectedEmployee.email}</p>
+                  <small>{selectedEmployee.parking_code || `BX${String(selectedEmployee.parking_id).padStart(3, "0")}`}</small>
+                </div>
+                <div className="owner-detail-list owner-detail-list--icons">
+                  <span><MapPin size={15} /><small>Tỉnh / Thành phố</small><strong>{selectedEmployee.parking_district || selectedParking?.district || "Chưa cập nhật"}</strong></span>
+                  <span><CalendarClock size={15} /><small>Ngày tạo</small><strong>{formatDateTime(selectedEmployee.created_at)}</strong></span>
+                  <span><Wifi size={15} /><small>IP đăng nhập</small><strong>{selectedEmployee.login_ip || "Chưa ghi nhận"}</strong></span>
+                  <span><Monitor size={15} /><small>Thiết bị đăng nhập</small><strong>{selectedEmployee.login_device || "Chưa ghi nhận"}</strong></span>
+                  <span><Activity size={15} /><small>Đăng nhập cuối</small><strong>{selectedEmployee.last_login_at ? formatDateTime(selectedEmployee.last_login_at) : "Chưa ghi nhận"}</strong></span>
+                  <span><Info size={15} /><small>Trạng thái</small><strong>{selectedEmployee.status_detail || STATUS_META[selectedEmployee.status]?.label || selectedEmployee.status}</strong></span>
+                </div>
+                <div className="owner-quick-actions owner-quick-actions--stack">
+                  <button type="button" onClick={() => openEdit(selectedEmployee)}><KeyRound size={18} />Đổi mật khẩu</button>
+                  <button type="button" onClick={() => changeStatus(selectedEmployee, selectedEmployee.status === "active" ? "suspended" : "active")}><Lock size={18} />{selectedEmployee.status === "active" ? "Tạm khóa" : "Mở khóa"}</button>
+                  <button type="button" onClick={() => setSelectedActivity(selectedActivities[0] || null)}><Eye size={18} />Nhật ký hoạt động</button>
+                  <button type="button" onClick={() => deleteEmployee(selectedEmployee)}><MoreVertical size={18} />Xóa tài khoản</button>
+                </div>
+                <p className="owner-account-security-note"><Info size={15} />Mật khẩu đã được mã hóa. Hệ thống không lưu mật khẩu gốc.</p>
+              </>
+            ) : (
+              <p className="owner-empty-cell">Chọn một tài khoản để xem chi tiết.</p>
+            )}
+          </section>
+
+          <section className="owner-management-panel owner-side-panel">
+            <h3>Chi tiết hoạt động</h3>
+            {!selectedEmployee ? <p className="owner-empty-cell">Chọn một tài khoản để xem hoạt động.</p> : null}
+            {selectedEmployee && !activeActivityDetail ? <p className="owner-empty-cell">Chưa có hoạt động chi tiết cho tài khoản đang chọn.</p> : null}
+            {activeActivityDetail ? (
+              <div className="owner-activity-detail-card">
+                <span><small>Thời gian</small><strong>{formatDateTime(activeActivityDetail.time)}</strong></span>
+                <span><small>Tài khoản</small><strong>{activeActivityDetail.actor || selectedEmployee.email}</strong></span>
+                <span><small>Hoạt động</small><strong>{activeActivityDetail.action}</strong></span>
+                <span><small>Kết quả</small><StatusBadge status={activeActivityDetail.status || activeActivityDetail.result || "success"} /></span>
+                <p>{activeActivityDetail.detail || activeActivityDetail.parkingLotName || "Không có chi tiết bổ sung."}</p>
+                {activeActivityDetail.vehicle ? (
+                  <div className="owner-activity-vehicle-box">
+                    <strong>Thông tin xe</strong>
+                    <span><small>Biển số</small><b>{activeActivityDetail.vehicle.license_plate}</b></span>
+                    <span><small>Loại xe</small><b>{activeActivityDetail.vehicle.vehicle_type}</b></span>
+                    <span><small>Vé</small><b>{activeActivityDetail.vehicle.booking_mode}</b></span>
+                  </div>
+                ) : null}
+                <span><small>Thiết bị</small><strong>{activeActivityDetail.device || "Employee console"}</strong></span>
+                <span><small>IP</small><strong>{activeActivityDetail.ip || "Chưa ghi nhận"}</strong></span>
+              </div>
+            ) : null}
+            {selectedActivities.length > 1 ? (
+              <div className="owner-activity-mini-list">
+                {selectedActivities.slice(0, 4).map((activity) => (
+                  <button key={activity.id} type="button" onClick={() => setSelectedActivity(activity)} className={activeActivityDetail?.id === activity.id ? "is-active" : ""}>
+                    <strong>{activity.action}</strong>
+                    <span>{formatDateTime(activity.time)}</span>
+                  </button>
+                ))}
+              </div>
+            ) : null}
+          </section>
+        </aside>
+      </div>
+
+      {modalMode ? (
+        <div className="owner-modal-backdrop" onClick={closeModal}>
+          <div className="owner-modal" onClick={(event) => event.stopPropagation()}>
+            <div className="owner-modal-head">
+              <div>
+                <h2>{modalMode === "edit" ? "Cập nhật tài khoản bãi" : "Tạo tài khoản bãi"}</h2>
+                <p>Mật khẩu được mã hóa ở backend, hệ thống không lưu mật khẩu gốc.</p>
+              </div>
+              <button type="button" className="owner-modal-close" onClick={closeModal}>×</button>
+            </div>
+            <form className="owner-form-grid" onSubmit={saveEmployee}>
+              <label>Tên tài khoản<input className="owner-input" value={form.full_name} onChange={(event) => setForm((current) => ({ ...current, full_name: event.target.value }))} required /></label>
+              <label>Email đăng nhập<input className="owner-input" type="email" value={form.email} onChange={(event) => setForm((current) => ({ ...current, email: event.target.value }))} required /></label>
+              <label>Số điện thoại<input className="owner-input" value={form.phone} onChange={(event) => setForm((current) => ({ ...current, phone: event.target.value }))} required /></label>
+              <label>Bãi phụ trách
+                <select className="owner-input owner-select" value={form.parking_id} onChange={(event) => setForm((current) => ({ ...current, parking_id: event.target.value }))} disabled={modalMode === "edit"}>
+                  {(modalMode === "edit" ? parkingRows : unassignedParkingRows).map((lot) => (
+                    <option key={lot.id} value={lot.id}>{lot.name}</option>
+                  ))}
+                </select>
+              </label>
+              <label>{modalMode === "edit" ? "Mật khẩu mới (tùy chọn)" : "Mật khẩu"}
+                <input className="owner-input" type="password" minLength={6} value={form.password} onChange={(event) => setForm((current) => ({ ...current, password: event.target.value }))} required={modalMode !== "edit"} />
+              </label>
+              <label>Nhập lại mật khẩu
+                <input className="owner-input" type="password" minLength={6} value={form.confirmPassword} onChange={(event) => setForm((current) => ({ ...current, confirmPassword: event.target.value }))} required={modalMode !== "edit" || Boolean(form.password)} />
+              </label>
+              {modalMode === "edit" ? (
+                <label className="owner-form-span">Trạng thái
+                  <select className="owner-input owner-select" value={form.status} onChange={(event) => setForm((current) => ({ ...current, status: event.target.value }))}>
+                    <option value="active">Hoạt động</option>
+                    <option value="suspended">Tạm khóa</option>
+                    <option value="inactive">Không hoạt động</option>
+                  </select>
+                </label>
+              ) : null}
+              <p className="owner-save-note owner-form-span">Mật khẩu tài khoản bãi tối thiểu 6 ký tự.</p>
+              <div className="owner-modal-actions owner-form-span">
+                <button type="button" className="btn-secondary owner-btn" onClick={closeModal} disabled={saving}>Hủy</button>
+                <button type="submit" className="btn-primary owner-btn" disabled={saving}>{saving ? "Đang lưu..." : "Lưu tài khoản"}</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

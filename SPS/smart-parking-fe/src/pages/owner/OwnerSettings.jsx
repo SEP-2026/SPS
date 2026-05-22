@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { SectionCard } from "../../owner/OwnerUI";
 import { useOwnerContext } from "../../owner/useOwnerContext";
 import { isStrongPassword, PASSWORD_POLICY_TEXT } from "../../services/passwordPolicy";
@@ -30,6 +31,7 @@ function normalizeSearchText(value) {
 
 export default function OwnerSettings() {
   const { auth, ownerData, actions } = useOwnerContext();
+  const [searchParams] = useSearchParams();
   const [settingsData, setSettingsData] = useState(ownerData.settings);
   const [ownerForm, setOwnerForm] = useState({
     contactPhone: ownerData.settings.contactPhone || "",
@@ -69,6 +71,13 @@ export default function OwnerSettings() {
     };
     fetchSettings();
   }, [ownerData.settings]);
+
+  useEffect(() => {
+    const parkingId = searchParams.get("parkingId");
+    if (parkingId) {
+      setSelectedParkingId(Number(parkingId));
+    }
+  }, [searchParams]);
 
   const filteredParkingRows = useMemo(() => {
     const query = normalizeSearchText(lotSearch);

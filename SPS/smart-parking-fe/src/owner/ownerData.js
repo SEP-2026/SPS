@@ -2,6 +2,7 @@
   { to: "/owner", label: "Tổng quan", icon: "dashboard" },
   { to: "/owner/parking", label: "Quản lý bãi đỗ", icon: "parking" },
   { to: "/owner/bookings", label: "Quản lý đặt chỗ", icon: "booking" },
+  { to: "/owner/customers", label: "Quản lý khách hàng", icon: "customers" },
   { to: "/owner/parking-map", label: "Sơ đồ bãi xe", icon: "map" },
   { to: "/owner/activity", label: "Lịch sử hoạt động", icon: "history" },
   { to: "/owner/revenue", label: "Doanh thu", icon: "revenue" },
@@ -18,6 +19,10 @@ export const OWNER_ROUTE_META = {
   "/owner/parking": {
     title: "Quản lý bãi đỗ",
     description: "Quản trị trạng thái từng chỗ đỗ, khu vực và năng lực vận hành.",
+  },
+  "/owner/bookings": {
+    title: "Quản lý đặt chỗ",
+    description: "Theo dõi và quản lý toàn bộ đặt chỗ tại các bãi đỗ ô tô.",
   },
   "/owner/customers": {
     title: "Quản lý khách hàng",

@@ -39,6 +39,15 @@ PARKING_LOGIN_PREFIXES = (
     "parking lot",
     "parking",
 )
+LOCATION_TOKEN_ALIASES = (
+    (("ho chi minh", "tp hcm", "tphcm", "hcm", "sai gon", "saigon"), "hcm"),
+    (("ha noi", "hanoi"), "hanoi"),
+    (("da nang", "danang"), "danang"),
+    (("can tho", "cantho"), "cantho"),
+    (("hai phong", "haiphong"), "haiphong"),
+    (("binh duong",), "binhduong"),
+    (("dong nai",), "dongnai"),
+)
 
 BOOKING_STATUS_PRIORITY = {
     "checked_in": 0,
@@ -135,9 +144,25 @@ def _normalize_identity(value: str) -> str:
     return value.strip().lower()
 
 
+def _ascii_words(value: str | None) -> str:
+    normalized = unicodedata.normalize("NFKD", (value or "").replace("Đ", "D").replace("đ", "d"))
+    ascii_text = normalized.encode("ascii", "ignore").decode("ascii").lower()
+    return re.sub(r"[^a-z0-9]+", " ", ascii_text).strip()
+
+
+def _is_address_number_token(value: str) -> bool:
+    return bool(re.fullmatch(r"\d+[a-z]?", value or ""))
+
+
+def _strip_leading_address_tokens(normalized: str) -> str:
+    tokens = normalized.split()
+    while tokens and _is_address_number_token(tokens[0]) and any(not _is_address_number_token(token) for token in tokens[1:]):
+        tokens.pop(0)
+    return " ".join(tokens)
+
+
 def _parking_login_token(parking_name: str) -> str:
-    normalized = unicodedata.normalize("NFKD", parking_name or "").encode("ascii", "ignore").decode("ascii").lower()
-    normalized = re.sub(r"[^a-z0-9]+", " ", normalized).strip()
+    normalized = _ascii_words(parking_name)
 
     for _ in range(4):
         next_value = normalized
@@ -152,24 +177,151 @@ def _parking_login_token(parking_name: str) -> str:
             break
         normalized = next_value
 
+    normalized = _strip_leading_address_tokens(normalized)
     token = re.sub(r"[^a-z0-9]+", "", normalized)
     return token or "parking"
 
 
-def _build_employee_credentials(parking_lot: ParkingLot, db: Session) -> tuple[str, str]:
-    login_token = _parking_login_token(parking_lot.name)
-    password = f"{login_token}@hcm"
-    candidate_tokens = [login_token, f"{login_token}{parking_lot.id}"]
+def _parking_location_token(parking_lot: ParkingLot) -> str:
+    district_name = parking_lot.district.name if parking_lot.district else ""
+    normalized = _ascii_words(f"{parking_lot.address} {district_name} {parking_lot.name}")
+    compact = re.sub(r"[^a-z0-9]+", "", normalized)
+
+    for keywords, token in LOCATION_TOKEN_ALIASES:
+        for keyword in keywords:
+            if keyword in normalized or re.sub(r"[^a-z0-9]+", "", keyword) in compact:
+                return token
+
+    district_token = re.sub(r"[^a-z0-9]+", "", _ascii_words(district_name))
+    if district_token.startswith("quan") or district_token in {"tanphu", "binhtan", "thuduc"}:
+        return "hcm"
+    return district_token or "hcm"
+
+
+def _summarize_user_agent(user_agent: str | None) -> str:
+    value = (user_agent or "").strip()
+    if not value:
+        return "Không ghi nhận"
+    normalized = value.lower()
+    os_name = "Thiết bị"
+    if "windows" in normalized:
+        os_name = "Windows"
+    elif "mac os" in normalized or "macintosh" in normalized:
+        os_name = "macOS"
+    elif "android" in normalized:
+        os_name = "Android"
+    elif "iphone" in normalized or "ios" in normalized:
+        os_name = "iOS"
+    elif "linux" in normalized:
+        os_name = "Linux"
+
+    browser = "Trình duyệt"
+    if "edg/" in normalized:
+        browser = "Edge"
+    elif "chrome/" in normalized and "chromium" not in normalized:
+        browser = "Chrome"
+    elif "safari/" in normalized and "chrome/" not in normalized:
+        browser = "Safari"
+    elif "firefox/" in normalized:
+        browser = "Firefox"
+    return f"{browser} - {os_name}"
+
+
+def _login_detail(request_ip: str | None, user_agent: str | None) -> str:
+    return " | ".join(
+        [
+            "Đăng nhập tài khoản bãi",
+            f"IP: {(request_ip or '').strip() or 'Không ghi nhận'}",
+            f"Thiết bị: {_summarize_user_agent(user_agent)}",
+        ]
+    )
+
+
+def _extract_login_field(detail: str | None, field_name: str) -> str:
+    match = re.search(rf"{re.escape(field_name)}:\s*([^|]+)", detail or "", re.IGNORECASE)
+    return match.group(1).strip() if match else ""
+
+
+def _employee_email_candidates(login_token: str, parking_id: int):
+    candidate_tokens = [login_token, f"{login_token}{parking_id}"]
 
     for index in range(2, 100):
-        candidate_tokens.append(f"{login_token}{parking_lot.id}{index}")
+        candidate_tokens.append(f"{login_token}{parking_id}{index}")
 
     for candidate in candidate_tokens:
-        email = f"bx{candidate}@gmail.com"
-        if not db.query(User.id).filter(User.email == email).first():
-            return email, password
+        yield f"bx{candidate}@gmail.com"
 
+
+def _available_employee_email(
+    login_token: str,
+    parking_id: int,
+    db: Session,
+    current_employee_id: int | None = None,
+) -> str:
+    for email in _employee_email_candidates(login_token, parking_id):
+        duplicate = db.query(User.id).filter(User.email == email).first()
+        if not duplicate or (current_employee_id and int(duplicate.id) == int(current_employee_id)):
+            return email
     raise HTTPException(status_code=409, detail="Không thể tạo email employee tự động cho bãi này")
+
+
+def _build_employee_credentials(parking_lot: ParkingLot, db: Session) -> tuple[str, str]:
+    login_token = _parking_login_token(parking_lot.name)
+    password = f"{login_token}@{_parking_location_token(parking_lot)}"
+    return _available_employee_email(login_token, int(parking_lot.id), db), password
+
+
+def _sync_owner_employee_assignments(owner: User, parking_lots: list[ParkingLot], db: Session) -> None:
+    changed = False
+    claimed_employee_ids: set[int] = set()
+
+    for parking_lot in parking_lots:
+        existing = (
+            db.query(User)
+            .filter(User.role == "employee", User.parking_id == parking_lot.id)
+            .first()
+        )
+        if existing:
+            token = _parking_login_token(parking_lot.name)
+            desired_email = _available_employee_email(token, int(parking_lot.id), db, current_employee_id=int(existing.id))
+            if _normalize_identity(existing.email or "") != desired_email:
+                existing.email = desired_email
+                existing.password = "__legacy_disabled__"
+                existing.password_hash = generate_password_hash(f"{token}@{_parking_location_token(parking_lot)}")
+                changed = True
+            continue
+
+        token = _parking_login_token(parking_lot.name)
+        expected_email = f"bx{token}@gmail.com"
+        employee = (
+            db.query(User)
+            .filter(User.role == "employee", func.lower(User.email) == expected_email)
+            .first()
+        )
+        if not employee:
+            compact_token = token.casefold()
+            unassigned_rows = (
+                db.query(User)
+                .filter(User.role == "employee", User.parking_id.is_(None))
+                .order_by(User.id.asc())
+                .all()
+            )
+            for candidate in unassigned_rows:
+                compact_text = re.sub(r"[^a-z0-9]+", "", _ascii_words(f"{candidate.email} {candidate.name}"))
+                if compact_token and compact_token in compact_text:
+                    employee = candidate
+                    break
+
+        if not employee or int(employee.id) in claimed_employee_ids:
+            continue
+        if employee.owner_id != owner.id or employee.parking_id != parking_lot.id:
+            employee.owner_id = owner.id
+            employee.parking_id = parking_lot.id
+            changed = True
+        claimed_employee_ids.add(int(employee.id))
+
+    if changed:
+        db.flush()
 
 
 def _serialize_parking(parking_lot: ParkingLot, db: Session) -> dict:
@@ -240,7 +392,33 @@ def create_employee_for_owner(
     if not parking_lot:
         raise HTTPException(status_code=404, detail="Không tìm thấy bãi để tạo tài khoản nhân viên")
 
-    normalized_email, generated_password = _build_employee_credentials(parking_lot, db)
+    existing_employee = (
+        db.query(User.id)
+        .filter(
+            User.parking_id == parking_id,
+            User.role == "employee",
+        )
+        .first()
+    )
+    if existing_employee:
+        raise HTTPException(status_code=409, detail="Mỗi bãi xe chỉ được tạo 01 tài khoản vận hành")
+
+    normalized_email = _normalize_identity(email) if email else ""
+    generated_password = password or ""
+    if normalized_email:
+        if "@" not in normalized_email:
+            raise HTTPException(status_code=400, detail="Employee email is invalid")
+        duplicate_user = db.query(User.id).filter(User.email == normalized_email).first()
+        if duplicate_user:
+            raise HTTPException(status_code=409, detail="Employee email already exists")
+    else:
+        normalized_email, generated_password = _build_employee_credentials(parking_lot, db)
+    if not generated_password or len(generated_password) < EMPLOYEE_PASSWORD_MIN_LENGTH:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Employee password must be at least {EMPLOYEE_PASSWORD_MIN_LENGTH} characters",
+        )
+
     normalized_full_name = (full_name or "").strip()
     normalized_phone = (phone or "").strip()
     if not normalized_full_name:
@@ -308,21 +486,73 @@ def _is_preferred_slot_booking(candidate: Booking, current: Booking) -> bool:
 
 
 def get_owner_employees(owner: User, db: Session) -> dict:
+    owner_parking_rows = (
+        db.query(ParkingLot)
+        .join(OwnerParking, OwnerParking.parking_id == ParkingLot.id)
+        .filter(OwnerParking.owner_id == owner.id)
+        .all()
+    )
+    _sync_owner_employee_assignments(owner, owner_parking_rows, db)
+    db.commit()
+    owner_parking_ids = [int(item.id) for item in owner_parking_rows]
     employees = (
         db.query(User)
-        .filter(User.owner_id == owner.id, User.role == "employee", User.is_active == 1)
+        .filter(
+            User.role == "employee",
+            or_(
+                User.owner_id == owner.id,
+                User.parking_id.in_(owner_parking_ids) if owner_parking_ids else False,
+            ),
+        )
         .order_by(User.created_at.desc(), User.id.desc())
         .all()
     )
     if not employees:
         return {"employees": [], "total_count": 0}
 
-    parking_ids = list({int(item.parking_id) for item in employees})
-    parking_rows = db.query(ParkingLot).filter(ParkingLot.id.in_(parking_ids)).all()
-    parking_names = {int(item.id): item.name for item in parking_rows}
+    parking_ids = list({int(item.parking_id) for item in employees if item.parking_id})
+    parking_rows = db.query(ParkingLot).filter(ParkingLot.id.in_(parking_ids)).all() if parking_ids else []
+    parking_meta = {
+        int(item.id): {
+            "name": item.name,
+            "district": item.district.name if item.district else "",
+        }
+        for item in parking_rows
+    }
+    employee_ids = [int(item.id) for item in employees]
+    activity_rows = (
+        db.query(
+            EmployeeActivity.employee_id,
+            func.count(EmployeeActivity.id),
+            func.max(EmployeeActivity.created_at),
+        )
+        .filter(EmployeeActivity.employee_id.in_(employee_ids))
+        .group_by(EmployeeActivity.employee_id)
+        .all()
+    )
+    activity_stats = {
+        int(employee_id): {
+            "activity_count": int(activity_count or 0),
+            "last_activity_at": last_activity_at,
+        }
+        for employee_id, activity_count, last_activity_at in activity_rows
+    }
+    latest_login_by_employee: dict[int, EmployeeActivity] = {}
+    for log in (
+        db.query(EmployeeActivity)
+        .filter(EmployeeActivity.employee_id.in_(employee_ids), EmployeeActivity.action == "employee_login")
+        .order_by(EmployeeActivity.created_at.desc(), EmployeeActivity.id.desc())
+        .all()
+    ):
+        employee_id = int(log.employee_id)
+        if employee_id not in latest_login_by_employee:
+            latest_login_by_employee[employee_id] = log
 
     result = []
     for employee in employees:
+        parking_id = int(employee.parking_id or 0)
+        login_log = latest_login_by_employee.get(int(employee.id))
+        login_detail = login_log.detail if login_log else ""
         result.append(
             {
                 "id": employee.id,
@@ -332,11 +562,19 @@ def get_owner_employees(owner: User, db: Session) -> dict:
                 "full_name": employee.name,
                 "phone": employee.phone,
                 "role": employee.role,
-                "owner_id": employee.owner_id,
+                "owner_id": employee.owner_id or owner.id,
                 "parking_id": employee.parking_id,
-                "parking_name": parking_names.get(int(employee.parking_id)),
+                "parking_name": parking_meta.get(parking_id, {}).get("name"),
+                "parking_district": parking_meta.get(parking_id, {}).get("district"),
+                "parking_code": f"BX{parking_id:03d}" if parking_id else "",
                 "status": employee.status,
                 "created_at": employee.created_at,
+                "activity_count": activity_stats.get(int(employee.id), {}).get("activity_count", 0),
+                "last_activity_at": activity_stats.get(int(employee.id), {}).get("last_activity_at"),
+                "last_login_at": login_log.created_at if login_log else None,
+                "login_ip": _extract_login_field(login_detail, "IP"),
+                "login_device": _extract_login_field(login_detail, "Thiết bị"),
+                "status_detail": "Hoạt động bình thường" if employee.status == "active" else "Cần kiểm tra trạng thái",
             }
         )
     return {"employees": result, "total_count": len(result)}
@@ -352,6 +590,7 @@ def update_owner_employee(
     phone: str | None = None,
     password: str | None = None,
     parking_id: int | None = None,
+    status: str | None = None,
 ) -> dict:
     employee = (
         db.query(User)
@@ -394,6 +633,12 @@ def update_owner_employee(
         password_hash = generate_password_hash(password)
         employee.password = "__legacy_disabled__"
         employee.password_hash = password_hash
+    if status is not None:
+        normalized_status = status.strip().lower()
+        if normalized_status not in {"active", "suspended", "inactive"}:
+            raise HTTPException(status_code=400, detail="Employee status is invalid")
+        employee.status = normalized_status
+        employee.is_active = 0 if normalized_status == "inactive" else 1
 
     db.commit()
     db.refresh(employee)
@@ -412,6 +657,17 @@ def update_owner_employee(
         ),
         "status": employee.status,
         "created_at": employee.created_at,
+        "activity_count": (
+            db.query(func.count(EmployeeActivity.id))
+            .filter(EmployeeActivity.employee_id == employee.id)
+            .scalar()
+            or 0
+        ),
+        "last_activity_at": (
+            db.query(func.max(EmployeeActivity.created_at))
+            .filter(EmployeeActivity.employee_id == employee.id)
+            .scalar()
+        ),
     }
 
 
@@ -431,7 +687,14 @@ def delete_owner_employee(owner: User, employee_id: int, db: Session) -> dict:
     return {"message": "Deleted employee account permanently"}
 
 
-def employee_login(username: str, password: str, db: Session) -> dict:
+def employee_login(
+    username: str,
+    password: str,
+    db: Session,
+    *,
+    request_ip: str | None = None,
+    user_agent: str | None = None,
+) -> dict:
     normalized_username = username.strip().lower()
     employee = db.query(User).filter(User.email == normalized_username, User.role == "employee", User.is_active == 1).first()
     if not employee and "@" not in normalized_username:
@@ -463,6 +726,14 @@ def employee_login(username: str, password: str, db: Session) -> dict:
         role="employee",
         identity=employee.email,
     )
+    _log_activity(
+        employee,
+        int(employee.parking_id),
+        "employee_login",
+        _login_detail(request_ip, user_agent),
+        db,
+    )
+    db.commit()
     return {
         "message": "Ðang nh?p employee thành công",
         "token": token,

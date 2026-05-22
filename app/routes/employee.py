@@ -1,7 +1,7 @@
 ﻿from datetime import datetime
 from math import ceil
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel, Field
 from sqlalchemy import func
@@ -165,6 +165,7 @@ def update_owner_employee(
         phone=payload.phone,
         password=payload.password,
         parking_id=payload.parking_id,
+        status=payload.status,
     )
     return OwnerEmployeeActionResponse(message="Updated employee account", employee=employee)
 
@@ -180,8 +181,14 @@ def delete_owner_employee(
 
 
 @router.post("/login", response_model=EmployeeLoginResponse)
-def employee_login(payload: EmployeeLoginRequest, db: Session = Depends(get_db)):
-    result = employee_login_controller(payload.username, payload.password, db)
+def employee_login(payload: EmployeeLoginRequest, request: Request, db: Session = Depends(get_db)):
+    result = employee_login_controller(
+        payload.username,
+        payload.password,
+        db,
+        request_ip=request.client.host if request.client else None,
+        user_agent=request.headers.get("user-agent"),
+    )
     return EmployeeLoginResponse(
         message=result["message"],
         token=result["token"],

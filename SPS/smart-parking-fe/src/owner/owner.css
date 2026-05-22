@@ -2293,103 +2293,98 @@
 
 .owner-promo-card {
   margin-top: auto;
-  padding: 16px;
+  min-height: 306px;
+  padding: 22px 22px 24px;
   border-radius: 24px;
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  background: linear-gradient(135deg, #0f3d5e, #0ea5e9 58%, #06b6d4);
-  box-shadow: 0 22px 52px rgba(14, 165, 233, 0.24), inset 0 1px 0 rgba(255, 255, 255, 0.24);
+  border: 1px solid rgba(14, 165, 233, 0.34);
+  background:
+    radial-gradient(circle at 86% 16%, rgba(14, 165, 233, 0.9) 0%, rgba(14, 165, 233, 0.28) 34%, transparent 58%),
+    radial-gradient(circle at 82% 52%, rgba(6, 182, 212, 0.5) 0%, transparent 50%),
+    linear-gradient(143deg, #0f172a 0%, #123b5d 42%, #0ea5e9 100%);
+  box-shadow:
+    0 22px 52px rgba(14, 165, 233, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.14);
   overflow: hidden;
   position: relative;
+  isolation: isolate;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
 }
 
 .owner-promo-card::after {
   content: "";
   position: absolute;
   inset: 0;
-  background: radial-gradient(circle at 18% 10%, rgba(255, 255, 255, 0.3), transparent 28%);
+  background:
+    radial-gradient(ellipse at 77% 39%, rgba(255, 255, 255, 0.13) 0 1px, transparent 1px 100%),
+    repeating-radial-gradient(circle at 77% 39%, rgba(186, 230, 253, 0.12) 0 1px, transparent 1px 16px),
+    linear-gradient(118deg, rgba(255, 255, 255, 0.16) 0%, transparent 32%),
+    linear-gradient(180deg, transparent 0%, rgba(15, 23, 42, 0.18) 100%);
+  background-size: auto, 100% 100%, auto, auto;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.owner-promo-card::before {
+  content: "";
+  position: absolute;
+  inset: 1px;
+  z-index: 0;
+  border-radius: inherit;
+  border: 1px solid rgba(186, 230, 253, 0.42);
   pointer-events: none;
 }
 
 .owner-promo-visual {
   position: relative;
-  min-height: 156px;
-  margin: -8px -6px 10px;
-  display: grid;
-  place-items: center;
-  perspective: 680px;
+  z-index: 1;
+  min-height: 176px;
+  margin: -12px -30px 4px;
+  flex: 0 0 auto;
 }
 
-.owner-promo-grid {
+.owner-promo-car {
   position: absolute;
-  width: 152px;
-  height: 96px;
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  transform: rotateX(62deg) rotateZ(-32deg);
-  background:
-    linear-gradient(rgba(255, 255, 255, 0.16) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.16) 1px, transparent 1px),
-    linear-gradient(135deg, rgba(8, 47, 73, 0.36), rgba(20, 184, 166, 0.18));
-  background-size: 22px 22px;
-  box-shadow: 0 24px 52px rgba(8, 47, 73, 0.36);
-}
-
-.owner-promo-platform {
-  position: absolute;
-  width: 132px;
-  height: 76px;
-  border-radius: 22px;
-  transform: rotateX(62deg) rotateZ(-32deg);
-  background: rgba(15, 42, 74, 0.46);
-  border: 1px solid rgba(255, 255, 255, 0.18);
-}
-
-.owner-promo-visual img {
-  position: relative;
+  top: 47%;
+  left: 50%;
   z-index: 2;
-  width: 78px;
-  height: 132px;
+  width: 292px;
+  height: auto;
+  max-width: none;
   object-fit: contain;
-  transform: rotate(-34deg) skewY(7deg) translateY(-8px);
-  filter: drop-shadow(0 20px 20px rgba(11, 30, 53, 0.42));
-}
-
-.owner-promo-pin {
-  position: absolute;
-  right: 34px;
-  top: 42px;
-  z-index: 3;
-  width: 38px;
-  height: 38px;
-  border-radius: 14px;
-  display: grid;
-  place-items: center;
-  color: #0f2a4a;
-  background: #dffbff;
-  box-shadow: 0 16px 28px rgba(11, 30, 53, 0.26);
+  transform: translate(-50%, -50%);
+  filter:
+    drop-shadow(0 0 14px rgba(6, 182, 212, 0.52))
+    drop-shadow(0 18px 26px rgba(15, 23, 42, 0.44));
 }
 
 .owner-promo-copy {
   position: relative;
-  z-index: 1;
+  z-index: 2;
   display: grid;
-  gap: 8px;
+  gap: 12px;
+  margin-top: auto;
 }
 
 .owner-promo-copy strong {
   color: #ffffff;
-  font-size: 15px;
-  line-height: 1.25;
+  font-size: 25px;
+  line-height: 1.08;
+  letter-spacing: 0;
+  text-shadow: 0 2px 12px rgba(15, 23, 42, 0.24);
 }
 
 .owner-promo-copy span {
-  color: rgba(240, 253, 255, 0.82);
-  font-size: 12px;
-  line-height: 1.6;
+  max-width: 92%;
+  color: rgba(226, 246, 255, 0.8);
+  font-size: 15px;
+  line-height: 1.45;
 }
 
 .owner-promo-button {
   position: relative;
-  z-index: 1;
+  z-index: 2;
   margin-top: 14px;
   min-height: 42px;
   border-radius: 13px;
@@ -2584,6 +2579,35 @@
   font: inherit;
   font-size: 13px;
   font-weight: 800;
+}
+
+.owner-date-picker--readonly {
+  cursor: default;
+}
+
+.owner-date-picker-text {
+  display: grid;
+  gap: 2px;
+  min-width: 132px;
+  color: #0f172a;
+}
+
+.owner-date-picker-text strong {
+  font-size: 13px;
+  line-height: 1.1;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.owner-date-picker-text small {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: #64748b;
+  font-size: 11px;
+  line-height: 1.1;
+  font-weight: 800;
+  white-space: nowrap;
 }
 
 .owner-icon-button {
@@ -3988,47 +4012,30 @@
 .owner-promo-card {
   padding: 13px;
   border-radius: 20px;
+  min-height: 276px;
 }
 
 .owner-promo-visual {
-  min-height: 118px;
-  margin: -8px -4px 8px;
+  min-height: 156px;
+  margin: -10px -26px 2px;
 }
 
-.owner-promo-grid {
-  width: 128px;
-  height: 78px;
-}
-
-.owner-promo-platform {
-  width: 110px;
-  height: 64px;
-}
-
-.owner-promo-visual img {
-  width: 62px;
-  height: 106px;
-}
-
-.owner-promo-pin {
-  right: 28px;
-  top: 32px;
-  width: 32px;
-  height: 32px;
-  border-radius: 12px;
+.owner-promo-car {
+  width: 260px;
 }
 
 .owner-promo-copy {
-  gap: 6px;
+  gap: 10px;
 }
 
 .owner-promo-copy strong {
-  font-size: 13px;
+  font-size: 22px;
+  line-height: 1.08;
 }
 
 .owner-promo-copy span {
-  font-size: 11px;
-  line-height: 1.45;
+  font-size: 14px;
+  line-height: 1.42;
 }
 
 .owner-promo-button {
@@ -4546,41 +4553,26 @@
 .owner-promo-card {
   padding: 11px;
   border-radius: 18px;
+  min-height: 246px;
 }
 
 .owner-promo-visual {
-  min-height: 94px;
-  margin-bottom: 6px;
+  min-height: 136px;
+  margin: -8px -24px 0;
 }
 
-.owner-promo-grid {
-  width: 108px;
-  height: 66px;
-}
-
-.owner-promo-platform {
-  width: 94px;
-  height: 54px;
-}
-
-.owner-promo-visual img {
-  width: 52px;
-  height: 88px;
-}
-
-.owner-promo-pin {
-  right: 24px;
-  top: 26px;
-  width: 28px;
-  height: 28px;
+.owner-promo-car {
+  width: 228px;
 }
 
 .owner-promo-copy strong {
-  font-size: 12px;
+  font-size: 19px;
+  line-height: 1.08;
 }
 
 .owner-promo-copy span {
-  font-size: 10px;
+  font-size: 12px;
+  line-height: 1.38;
 }
 
 .owner-promo-button {
@@ -4905,6 +4897,18 @@
 
 .owner-date-picker input {
   width: 96px;
+}
+
+.owner-date-picker-text {
+  min-width: 112px;
+}
+
+.owner-date-picker-text strong {
+  font-size: 12px;
+}
+
+.owner-date-picker-text small {
+  font-size: 10px;
 }
 
 .owner-header-avatar {
@@ -5757,5 +5761,3086 @@
     height: 238px;
     min-height: 238px;
     margin-bottom: 16px;
+  }
+}
+
+/* Keep the owner sidebar background continuous when the page content is taller than the viewport. */
+.owner-shell {
+  background:
+    linear-gradient(90deg, #0f2a4a 0 240px, #f8fafc 240px 100%) !important;
+}
+
+.owner-sidebar {
+  height: auto !important;
+  min-height: 100vh;
+  align-self: stretch;
+  overflow: visible;
+}
+
+.owner-sidebar-scroll {
+  flex: 0 0 auto;
+  overflow: visible;
+  padding-bottom: 12px;
+}
+
+.owner-profile-card {
+  margin-top: 12px;
+}
+
+@media (max-width: 1120px) {
+  .owner-shell {
+    background: #f8fafc !important;
+  }
+
+  .owner-sidebar {
+    height: 100vh !important;
+    min-height: 100vh;
+    overflow: hidden;
+  }
+
+  .owner-sidebar-scroll {
+    flex: 1 1 auto;
+    overflow-y: auto;
+  }
+}
+
+/* Owner management pages: parking lots and bookings */
+.owner-management-page {
+  display: grid;
+  gap: 22px;
+  width: 100%;
+  color: #0f172a;
+}
+
+.owner-management-topline,
+.owner-booking-filterbar {
+  display: grid;
+  grid-template-columns: minmax(260px, 1fr) minmax(160px, max-content) minmax(160px, max-content) max-content;
+  align-items: center;
+  gap: 14px;
+}
+
+.owner-booking-filterbar {
+  grid-template-columns: minmax(320px, 1fr) minmax(170px, max-content) minmax(170px, max-content) max-content max-content;
+  padding: 18px 20px;
+  border-bottom: 1px solid rgba(226, 232, 240, 0.92);
+  background: rgba(255, 255, 255, 0.82);
+}
+
+.owner-booking-actionbar {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 12px;
+  margin-top: -4px;
+}
+
+.owner-management-search {
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 16px;
+  border: 1px solid rgba(203, 213, 225, 0.76);
+  border-radius: 14px;
+  background: #ffffff;
+  color: #64748b;
+  box-shadow: 0 16px 38px rgba(15, 23, 42, 0.045);
+}
+
+.owner-management-search input {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  color: #0f172a;
+  background: transparent;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.owner-management-search input::placeholder {
+  color: #94a3b8;
+  font-weight: 700;
+}
+
+.owner-management-select,
+.owner-management-primary,
+.owner-management-secondary,
+.owner-management-icon-button,
+.owner-management-page-button {
+  min-height: 48px;
+  border-radius: 14px;
+  border: 1px solid rgba(203, 213, 225, 0.76);
+  background: #ffffff;
+  color: #0f172a;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 900;
+  outline: 0;
+}
+
+.owner-management-select {
+  padding: 0 42px 0 16px;
+  box-shadow: 0 16px 38px rgba(15, 23, 42, 0.04);
+}
+
+.owner-management-select--small {
+  min-height: 40px;
+  border-radius: 12px;
+  padding-left: 12px;
+  font-size: 13px;
+}
+
+.owner-management-primary,
+.owner-management-secondary,
+.owner-management-icon-button,
+.owner-management-page-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  padding: 0 18px;
+  cursor: pointer;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease, background 0.18s ease;
+}
+
+.owner-management-primary {
+  border-color: rgba(14, 165, 233, 0.48);
+  background: linear-gradient(135deg, #0ea5e9, #06b6d4);
+  color: #ffffff;
+  box-shadow: 0 18px 36px rgba(14, 165, 233, 0.24);
+}
+
+.owner-management-secondary {
+  color: #0f172a;
+  background: rgba(255, 255, 255, 0.96);
+}
+
+.owner-management-primary:hover,
+.owner-management-secondary:hover,
+.owner-management-icon-button:hover,
+.owner-management-page-button:hover {
+  transform: translateY(-1px);
+  border-color: rgba(14, 165, 233, 0.44);
+  box-shadow: 0 18px 36px rgba(14, 165, 233, 0.12);
+}
+
+.owner-management-icon-button,
+.owner-management-page-button {
+  width: 42px;
+  min-width: 42px;
+  padding: 0;
+}
+
+.owner-management-icon-button.is-active,
+.owner-management-page-button.is-active {
+  border-color: rgba(14, 165, 233, 0.42);
+  color: #0369a1;
+  background: linear-gradient(135deg, rgba(14, 165, 233, 0.12), rgba(6, 182, 212, 0.12));
+}
+
+.owner-management-icon-button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.owner-management-stats {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(160px, 1fr));
+  gap: 16px;
+}
+
+.owner-management-stat {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+  padding: 20px;
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  border-radius: 16px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 252, 255, 0.94)),
+    radial-gradient(circle at top right, rgba(14, 165, 233, 0.1), transparent 36%);
+  box-shadow: 0 18px 48px rgba(15, 23, 42, 0.06);
+}
+
+.owner-management-stat > span {
+  width: 52px;
+  height: 52px;
+  flex: 0 0 52px;
+  display: grid;
+  place-items: center;
+  border-radius: 16px;
+  color: #ffffff;
+  background: linear-gradient(135deg, #0ea5e9, #06b6d4);
+  box-shadow: 0 14px 26px rgba(14, 165, 233, 0.24);
+}
+
+.owner-management-stat--blue > span {
+  background: linear-gradient(135deg, #2563eb, #0ea5e9);
+}
+
+.owner-management-stat--sky > span {
+  background: linear-gradient(135deg, #0ea5e9, #06b6d4);
+}
+
+.owner-management-stat--green > span {
+  background: linear-gradient(135deg, #10b981, #06b6d4);
+}
+
+.owner-management-stat--orange > span {
+  background: linear-gradient(135deg, #f59e0b, #fb7185);
+}
+
+.owner-management-stat--pink > span {
+  background: linear-gradient(135deg, #ec4899, #0ea5e9);
+}
+
+.owner-management-stat div {
+  min-width: 0;
+}
+
+.owner-management-stat p,
+.owner-management-stat small {
+  margin: 0;
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.owner-management-stat strong {
+  display: block;
+  margin: 3px 0 2px;
+  color: #0f172a;
+  font-size: clamp(22px, 1.8vw, 30px);
+  line-height: 1.05;
+  font-weight: 1000;
+  letter-spacing: 0;
+}
+
+.owner-management-panel {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid rgba(226, 232, 240, 0.94);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 22px 64px rgba(15, 23, 42, 0.07);
+}
+
+.owner-management-panel-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 18px;
+  padding: 22px 20px 18px;
+}
+
+.owner-management-panel-head h2 {
+  margin: 0;
+  color: #0f172a;
+  font-size: 22px;
+  line-height: 1.15;
+  font-weight: 1000;
+  letter-spacing: 0;
+}
+
+.owner-management-panel-head p {
+  margin: 7px 0 0;
+  color: #64748b;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.owner-management-viewtools {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.owner-parking-v2-list {
+  display: grid;
+}
+
+.owner-parking-row-card {
+  display: grid;
+  grid-template-columns: minmax(168px, 220px) minmax(250px, 1.25fr) minmax(150px, 0.55fr) minmax(300px, 0.85fr);
+  gap: 22px;
+  align-items: center;
+  padding: 18px 20px;
+  border-top: 1px solid rgba(226, 232, 240, 0.92);
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.98), rgba(248, 252, 255, 0.88)),
+    radial-gradient(circle at right center, rgba(6, 182, 212, 0.08), transparent 34%);
+}
+
+.owner-parking-row-card:hover {
+  background:
+    linear-gradient(90deg, #ffffff, rgba(240, 249, 255, 0.94)),
+    radial-gradient(circle at right center, rgba(14, 165, 233, 0.1), transparent 36%);
+}
+
+.owner-parking-photo {
+  position: relative;
+  min-height: 116px;
+  overflow: hidden;
+  border-radius: 14px;
+  background:
+    linear-gradient(135deg, rgba(15, 23, 42, 0.28), rgba(14, 165, 233, 0.25)),
+    linear-gradient(150deg, #e0f2fe 0%, #0ea5e9 46%, #0f172a 100%);
+  box-shadow: inset 0 0 0 1px rgba(125, 211, 252, 0.36), 0 16px 36px rgba(15, 23, 42, 0.12);
+}
+
+.owner-parking-photo::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(28deg, transparent 0 44%, rgba(255, 255, 255, 0.24) 44% 47%, transparent 47%),
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.15) 0 1px, transparent 1px 28px);
+  opacity: 0.48;
+}
+
+.owner-parking-photo::after {
+  content: "";
+  position: absolute;
+  left: 22px;
+  right: 22px;
+  bottom: 26px;
+  height: 34px;
+  border-radius: 10px;
+  border: 2px solid rgba(103, 232, 249, 0.9);
+  box-shadow: 0 0 18px rgba(6, 182, 212, 0.72), inset 0 0 12px rgba(14, 165, 233, 0.28);
+  transform: skewX(-22deg);
+}
+
+.owner-parking-photo[data-index="1"] {
+  background:
+    linear-gradient(135deg, rgba(15, 23, 42, 0.24), rgba(6, 182, 212, 0.22)),
+    linear-gradient(150deg, #dff7ff 0%, #06b6d4 44%, #164e63 100%);
+}
+
+.owner-parking-photo[data-index="2"] {
+  background:
+    linear-gradient(135deg, rgba(15, 23, 42, 0.18), rgba(16, 185, 129, 0.18)),
+    linear-gradient(150deg, #ecfeff 0%, #0ea5e9 48%, #0f172a 100%);
+}
+
+.owner-parking-photo[data-index="3"] {
+  background:
+    linear-gradient(135deg, rgba(15, 23, 42, 0.18), rgba(245, 158, 11, 0.18)),
+    linear-gradient(150deg, #f8fafc 0%, #06b6d4 42%, #0f172a 100%);
+}
+
+.owner-parking-photo span {
+  position: absolute;
+  z-index: 2;
+  top: 10px;
+  left: 10px;
+  border-radius: 999px;
+  padding: 5px 10px;
+  color: #047857;
+  background: rgba(209, 250, 229, 0.95);
+  font-size: 11px;
+  font-weight: 1000;
+}
+
+.owner-parking-photo span.is-warning {
+  color: #92400e;
+  background: rgba(254, 243, 199, 0.96);
+}
+
+.owner-parking-photo b {
+  position: absolute;
+  z-index: 2;
+  right: 18px;
+  bottom: 18px;
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  color: #ffffff;
+  background: linear-gradient(135deg, #0ea5e9, #06b6d4);
+  box-shadow: 0 12px 28px rgba(6, 182, 212, 0.34);
+  font-size: 22px;
+}
+
+.owner-parking-title-line {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.owner-parking-title-line h3 {
+  margin: 0;
+  color: #0f172a;
+  font-size: 20px;
+  line-height: 1.2;
+  font-weight: 1000;
+}
+
+.owner-parking-title-line span {
+  border-radius: 999px;
+  padding: 4px 9px;
+  color: #0369a1;
+  background: rgba(14, 165, 233, 0.12);
+  font-size: 11px;
+  font-weight: 1000;
+}
+
+.owner-parking-info > p {
+  margin: 8px 0 13px;
+  color: #64748b;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.owner-parking-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(76px, max-content));
+  gap: 10px 20px;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.owner-parking-metrics span {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  white-space: nowrap;
+}
+
+.owner-parking-metrics strong {
+  margin-left: 2px;
+  color: #0f172a;
+  font-weight: 1000;
+}
+
+.owner-parking-metrics .is-success::before,
+.owner-parking-metrics .is-warning::before,
+.owner-parking-metrics .is-info::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: #10b981;
+}
+
+.owner-parking-metrics .is-warning::before {
+  background: #f59e0b;
+}
+
+.owner-parking-metrics .is-info::before {
+  background: #0ea5e9;
+}
+
+.owner-parking-occupancy small,
+.owner-parking-actions-v2 > small {
+  display: block;
+  margin-bottom: 8px;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.owner-parking-occupancy strong {
+  display: block;
+  margin-bottom: 8px;
+  color: #0f172a;
+  font-size: 24px;
+  line-height: 1;
+  font-weight: 1000;
+}
+
+.owner-parking-occupancy-bar {
+  height: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #e2e8f0;
+}
+
+.owner-parking-occupancy-bar span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+}
+
+.owner-parking-occupancy-bar.is-success span {
+  background: linear-gradient(90deg, #10b981, #06b6d4);
+}
+
+.owner-parking-occupancy-bar.is-warning span {
+  background: linear-gradient(90deg, #f59e0b, #0ea5e9);
+}
+
+.owner-parking-occupancy-bar.is-danger span {
+  background: linear-gradient(90deg, #f43f5e, #0ea5e9);
+}
+
+.owner-parking-occupancy p {
+  margin: 8px 0 0;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.owner-parking-actions-v2 > div {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(48px, 1fr)) 34px;
+  gap: 10px;
+  align-items: start;
+}
+
+.owner-parking-actions-v2 button {
+  min-width: 0;
+  min-height: 56px;
+  border: 0;
+  border-radius: 14px;
+  color: #0369a1;
+  background: rgba(14, 165, 233, 0.08);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 900;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  gap: 4px;
+  transition: transform 0.18s ease, background 0.18s ease, color 0.18s ease;
+}
+
+.owner-parking-actions-v2 button:hover {
+  transform: translateY(-1px);
+  color: #ffffff;
+  background: linear-gradient(135deg, #0ea5e9, #06b6d4);
+}
+
+.owner-parking-more {
+  min-height: 34px !important;
+  border-radius: 10px !important;
+  background: transparent !important;
+}
+
+.owner-parking-row-detail {
+  grid-column: 1 / -1;
+  min-width: 0;
+  padding: 4px 0 0;
+}
+
+.owner-management-footnote {
+  padding: 16px 20px 20px;
+  border-top: 1px solid rgba(226, 232, 240, 0.92);
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.owner-booking-panel {
+  overflow: hidden;
+}
+
+.owner-booking-table-shell {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.owner-booking-table {
+  width: 100%;
+  min-width: 1120px;
+  border-collapse: collapse;
+}
+
+.owner-booking-table th,
+.owner-booking-table td {
+  padding: 18px 16px;
+  border-bottom: 1px solid rgba(226, 232, 240, 0.92);
+  text-align: left;
+  vertical-align: middle;
+}
+
+.owner-booking-table th {
+  color: #64748b;
+  background: rgba(248, 250, 252, 0.92);
+  font-size: 12px;
+  font-weight: 1000;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.owner-booking-table tbody tr {
+  background: #ffffff;
+}
+
+.owner-booking-table tbody tr:hover {
+  background: linear-gradient(90deg, rgba(240, 249, 255, 0.92), #ffffff);
+}
+
+.owner-booking-code strong,
+.owner-booking-customer strong,
+.owner-booking-lot strong,
+.owner-booking-plate strong {
+  display: block;
+  color: #0f172a;
+  font-size: 14px;
+  line-height: 1.35;
+  font-weight: 1000;
+}
+
+.owner-booking-code span,
+.owner-booking-customer small,
+.owner-booking-lot small,
+.owner-booking-plate span,
+.owner-booking-time span,
+.owner-booking-time small {
+  display: block;
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1.45;
+  font-weight: 800;
+}
+
+.owner-booking-customer,
+.owner-booking-lot {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.owner-booking-avatar {
+  width: 38px;
+  height: 38px;
+  flex: 0 0 38px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  color: #ffffff;
+  background: linear-gradient(135deg, #0ea5e9, #06b6d4);
+  font-size: 12px;
+  font-weight: 1000;
+}
+
+.owner-booking-avatar--1 {
+  background: linear-gradient(135deg, #ec4899, #0ea5e9);
+}
+
+.owner-booking-avatar--2 {
+  background: linear-gradient(135deg, #f59e0b, #06b6d4);
+}
+
+.owner-booking-avatar--3 {
+  background: linear-gradient(135deg, #10b981, #0ea5e9);
+}
+
+.owner-booking-avatar--4 {
+  background: linear-gradient(135deg, #8b5cf6, #06b6d4);
+}
+
+.owner-booking-lot > span {
+  width: 24px;
+  height: 24px;
+  flex: 0 0 24px;
+  display: grid;
+  place-items: center;
+  border-radius: 7px;
+  color: #ffffff;
+  background: linear-gradient(135deg, #0ea5e9, #06b6d4);
+}
+
+.owner-booking-time {
+  display: grid;
+  gap: 2px;
+}
+
+.owner-booking-time i {
+  width: 1px;
+  height: 10px;
+  margin-left: 32px;
+  background: #cbd5e1;
+}
+
+.owner-booking-price {
+  color: #0f172a;
+  font-size: 15px;
+  font-weight: 1000;
+  white-space: nowrap;
+}
+
+.owner-booking-row-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.owner-booking-row-actions button {
+  min-height: 38px;
+  border: 1px solid rgba(203, 213, 225, 0.76);
+  border-radius: 11px;
+  padding: 0 13px;
+  color: #0369a1;
+  background: #ffffff;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 1000;
+  cursor: pointer;
+}
+
+.owner-booking-row-actions button:hover {
+  border-color: rgba(14, 165, 233, 0.48);
+  background: rgba(14, 165, 233, 0.08);
+}
+
+.owner-booking-row-actions .is-danger {
+  color: #dc2626;
+}
+
+.owner-booking-row-actions .owner-booking-more {
+  width: 38px;
+  padding: 0;
+  color: #64748b;
+}
+
+.owner-management-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 16px 20px;
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.owner-management-pagination > div {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.owner-booking-date-range {
+  min-height: 48px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+  border: 1px solid rgba(203, 213, 225, 0.76);
+  border-radius: 14px;
+  color: #64748b;
+  background: #ffffff;
+  box-shadow: 0 16px 38px rgba(15, 23, 42, 0.04);
+}
+
+.owner-booking-date-range input {
+  width: 132px;
+  border: 0;
+  outline: 0;
+  color: #0f172a;
+  background: transparent;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.owner-parking-detail-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.owner-parking-detail-head strong {
+  color: #0f172a;
+  font-size: 15px;
+  font-weight: 1000;
+}
+
+.owner-parking-detail-head .owner-management-primary {
+  min-height: 38px;
+  border-radius: 12px;
+  padding: 0 14px;
+  font-size: 12px;
+}
+
+.owner-create-booking-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.owner-create-booking-summary div {
+  padding: 14px;
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  border-radius: 14px;
+  background: linear-gradient(180deg, #ffffff, rgba(240, 249, 255, 0.86));
+}
+
+.owner-create-booking-summary span,
+.owner-qr-booking-list button span {
+  display: block;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.owner-create-booking-summary strong {
+  display: block;
+  margin-top: 5px;
+  color: #0f172a;
+  font-size: 17px;
+  font-weight: 1000;
+}
+
+.owner-qr-booking-layout {
+  display: grid;
+  grid-template-columns: minmax(260px, 0.95fr) minmax(260px, 1fr);
+  gap: 16px;
+}
+
+.owner-qr-booking-list {
+  display: grid;
+  gap: 10px;
+  align-content: start;
+}
+
+.owner-qr-booking-list button {
+  width: 100%;
+  min-height: 66px;
+  border: 1px solid rgba(203, 213, 225, 0.76);
+  border-radius: 14px;
+  padding: 12px;
+  text-align: left;
+  color: #0f172a;
+  background: #ffffff;
+  font: inherit;
+  cursor: pointer;
+}
+
+.owner-qr-booking-list button.is-active,
+.owner-qr-booking-list button:hover {
+  border-color: rgba(14, 165, 233, 0.45);
+  background: rgba(14, 165, 233, 0.08);
+}
+
+.owner-qr-booking-list button strong {
+  display: block;
+  margin-bottom: 5px;
+  color: #0f172a;
+  font-size: 14px;
+  font-weight: 1000;
+}
+
+.owner-qr-preview {
+  min-height: 300px;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  border: 1px solid rgba(14, 165, 233, 0.18);
+  border-radius: 16px;
+  background:
+    radial-gradient(circle at top, rgba(14, 165, 233, 0.12), transparent 38%),
+    linear-gradient(180deg, #ffffff, #f8fafc);
+}
+
+.owner-qr-preview img {
+  width: min(260px, 100%);
+  height: auto;
+  border-radius: 12px;
+  box-shadow: 0 18px 42px rgba(15, 23, 42, 0.12);
+}
+
+.owner-qr-preview p,
+.owner-form-error {
+  margin: 0;
+  color: #64748b;
+  font-weight: 800;
+}
+
+.owner-form-error {
+  color: #dc2626;
+}
+
+@media (max-width: 1400px) {
+  .owner-management-stats {
+    grid-template-columns: repeat(3, minmax(180px, 1fr));
+  }
+
+  .owner-parking-row-card {
+    grid-template-columns: minmax(168px, 210px) minmax(230px, 1fr) minmax(150px, 0.45fr);
+  }
+
+  .owner-parking-actions-v2 {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 1120px) {
+  .owner-main {
+    max-width: 100vw !important;
+  }
+}
+
+@media (max-width: 1120px) {
+  .owner-management-topline,
+  .owner-booking-filterbar {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .owner-management-search,
+  .owner-booking-search {
+    grid-column: 1 / -1;
+  }
+
+  .owner-management-stats {
+    grid-template-columns: repeat(2, minmax(160px, 1fr));
+  }
+
+  .owner-parking-row-card {
+    grid-template-columns: 1fr;
+  }
+
+  .owner-parking-metrics {
+    grid-template-columns: repeat(2, minmax(76px, max-content));
+  }
+}
+
+@media (max-width: 720px) {
+  .owner-management-page {
+    gap: 16px;
+  }
+
+  .owner-management-topline,
+  .owner-booking-filterbar,
+  .owner-management-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .owner-booking-actionbar,
+  .owner-management-panel-head,
+  .owner-management-pagination {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .owner-management-primary,
+  .owner-management-secondary,
+  .owner-management-select {
+    width: 100%;
+  }
+
+  .owner-management-viewtools {
+    justify-content: flex-start;
+  }
+
+  .owner-parking-actions-v2 > div {
+    grid-template-columns: repeat(3, minmax(54px, 1fr));
+  }
+
+  .owner-booking-filterbar,
+  .owner-management-panel-head,
+  .owner-parking-row-card,
+  .owner-management-pagination {
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+
+  .owner-booking-date-range {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .owner-booking-date-range input {
+    width: 124px;
+  }
+
+  .owner-create-booking-summary,
+  .owner-qr-booking-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Owner parking detail and final compact booking layout */
+.owner-parking-actions-v2 > div {
+  grid-template-columns: repeat(3, minmax(54px, 72px)) 34px;
+  justify-content: start;
+}
+
+.owner-parking-detail-page {
+  gap: 18px;
+}
+
+.owner-parking-detail-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.owner-parking-detail-toolbar > div {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.owner-parking-detail-hero {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 22px;
+  background:
+    radial-gradient(circle at top right, rgba(14, 165, 233, 0.2), transparent 40%),
+    linear-gradient(135deg, #ffffff, #f0f9ff);
+}
+
+.owner-parking-detail-hero span {
+  color: #0369a1;
+  font-size: 12px;
+  font-weight: 1000;
+  text-transform: uppercase;
+}
+
+.owner-parking-detail-hero h2,
+.owner-parking-detail-empty h2 {
+  margin: 6px 0;
+  color: #0f172a;
+  font-size: clamp(24px, 2.4vw, 34px);
+  line-height: 1.1;
+  font-weight: 1000;
+}
+
+.owner-parking-detail-hero p,
+.owner-parking-detail-empty p {
+  margin: 0;
+  color: #64748b;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.owner-parking-detail-hero > strong {
+  flex: 0 0 auto;
+  border-radius: 999px;
+  padding: 10px 14px;
+  color: #0369a1;
+  background: rgba(14, 165, 233, 0.12);
+  font-size: 20px;
+  font-weight: 1000;
+  white-space: nowrap;
+}
+
+.owner-parking-detail-stats {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.owner-parking-detail-empty {
+  display: grid;
+  justify-items: start;
+  gap: 10px;
+  padding: 24px;
+}
+
+.owner-bookings-page {
+  gap: 16px;
+  font-size: 13px;
+}
+
+.owner-bookings-page .owner-booking-actionbar {
+  gap: 10px;
+  margin-top: -8px;
+}
+
+.owner-bookings-page .owner-management-primary,
+.owner-bookings-page .owner-management-secondary,
+.owner-bookings-page .owner-management-select,
+.owner-bookings-page .owner-management-search,
+.owner-bookings-page .owner-booking-date-range {
+  min-height: 44px;
+  border-radius: 12px;
+  font-size: 12px;
+}
+
+.owner-bookings-page .owner-management-primary,
+.owner-bookings-page .owner-management-secondary {
+  padding: 0 14px;
+}
+
+.owner-bookings-page .owner-management-search {
+  padding: 0 12px;
+}
+
+.owner-bookings-page .owner-management-search input {
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.owner-bookings-page .owner-booking-filterbar {
+  grid-template-columns: minmax(260px, 1fr) minmax(150px, 180px) minmax(150px, 180px) max-content max-content;
+  gap: 10px;
+  padding: 12px 14px;
+}
+
+.owner-bookings-page .owner-management-stats {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.owner-bookings-page .owner-management-stat {
+  gap: 10px;
+  min-height: 104px;
+  padding: 14px;
+  border-radius: 14px;
+}
+
+.owner-bookings-page .owner-management-stat > span {
+  width: 42px;
+  height: 42px;
+  flex-basis: 42px;
+  border-radius: 13px;
+}
+
+.owner-bookings-page .owner-management-stat p {
+  display: -webkit-box;
+  overflow: hidden;
+  color: #64748b;
+  font-size: 11px;
+  line-height: 1.2;
+  font-weight: 900;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.owner-bookings-page .owner-management-stat strong {
+  margin: 2px 0;
+  font-size: 21px;
+  line-height: 1.08;
+  white-space: nowrap;
+}
+
+.owner-bookings-page .owner-management-stat--pink strong {
+  font-size: 18px;
+}
+
+.owner-bookings-page .owner-management-stat small {
+  display: block;
+  overflow: hidden;
+  color: #64748b;
+  font-size: 11px;
+  line-height: 1.25;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.owner-bookings-page .owner-booking-table {
+  min-width: 980px;
+  table-layout: fixed;
+  font-size: 12px;
+}
+
+.owner-bookings-page .owner-booking-table th,
+.owner-bookings-page .owner-booking-table td {
+  height: 70px;
+  padding: 8px 10px;
+}
+
+.owner-bookings-page .owner-booking-table th {
+  font-size: 10px;
+  line-height: 1.2;
+  letter-spacing: 0.03em;
+}
+
+.owner-bookings-page .owner-booking-table th:nth-child(1),
+.owner-bookings-page .owner-booking-table td:nth-child(1) {
+  width: 118px;
+}
+
+.owner-bookings-page .owner-booking-table th:nth-child(2),
+.owner-bookings-page .owner-booking-table td:nth-child(2) {
+  width: 168px;
+  max-width: 168px;
+}
+
+.owner-bookings-page .owner-booking-table th:nth-child(3),
+.owner-bookings-page .owner-booking-table td:nth-child(3) {
+  width: 204px;
+  max-width: 204px;
+}
+
+.owner-bookings-page .owner-booking-table th:nth-child(4),
+.owner-bookings-page .owner-booking-table td:nth-child(4) {
+  width: 112px;
+}
+
+.owner-bookings-page .owner-booking-table th:nth-child(5),
+.owner-bookings-page .owner-booking-table td:nth-child(5) {
+  width: 158px;
+}
+
+.owner-bookings-page .owner-booking-table th:nth-child(6),
+.owner-bookings-page .owner-booking-table td:nth-child(6) {
+  width: 108px;
+}
+
+.owner-bookings-page .owner-booking-table th:nth-child(7),
+.owner-bookings-page .owner-booking-table td:nth-child(7) {
+  width: 112px;
+}
+
+.owner-bookings-page .owner-booking-table th:nth-child(8),
+.owner-bookings-page .owner-booking-table td:nth-child(8) {
+  width: 152px;
+}
+
+.owner-bookings-page .owner-booking-code strong,
+.owner-bookings-page .owner-booking-customer strong,
+.owner-bookings-page .owner-booking-lot strong,
+.owner-bookings-page .owner-booking-plate strong {
+  font-size: 12px;
+  line-height: 1.3;
+}
+
+.owner-bookings-page .owner-booking-code span,
+.owner-bookings-page .owner-booking-customer small,
+.owner-bookings-page .owner-booking-lot small,
+.owner-bookings-page .owner-booking-plate span,
+.owner-bookings-page .owner-booking-time span,
+.owner-bookings-page .owner-booking-time small {
+  font-size: 10px;
+  line-height: 1.35;
+}
+
+.owner-bookings-page .owner-booking-customer > div,
+.owner-bookings-page .owner-booking-lot > div {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.owner-bookings-page .owner-booking-customer,
+.owner-bookings-page .owner-booking-lot {
+  gap: 8px;
+}
+
+.owner-bookings-page .owner-booking-customer strong,
+.owner-bookings-page .owner-booking-customer small,
+.owner-bookings-page .owner-booking-code strong,
+.owner-bookings-page .owner-booking-code span,
+.owner-bookings-page .owner-booking-plate span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.owner-bookings-page .owner-booking-lot strong {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.owner-bookings-page .owner-booking-lot small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.owner-bookings-page .owner-booking-avatar {
+  width: 28px;
+  height: 28px;
+  flex-basis: 28px;
+  font-size: 10px;
+}
+
+.owner-bookings-page .owner-booking-lot > span {
+  width: 22px;
+  height: 22px;
+  flex-basis: 22px;
+}
+
+.owner-bookings-page .owner-booking-plate,
+.owner-bookings-page .owner-booking-plate strong,
+.owner-bookings-page .owner-booking-price {
+  white-space: nowrap;
+}
+
+.owner-bookings-page .owner-booking-price {
+  font-size: 12px;
+}
+
+.owner-bookings-page .owner-booking-time {
+  gap: 1px;
+}
+
+.owner-bookings-page .owner-booking-time i {
+  height: 7px;
+  margin-left: 24px;
+}
+
+.owner-bookings-page .owner-badge {
+  padding: 5px 7px;
+  font-size: 10px;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.owner-bookings-page .owner-booking-row-actions {
+  gap: 6px;
+}
+
+.owner-bookings-page .owner-booking-row-actions button {
+  min-height: 32px;
+  border-radius: 9px;
+  padding: 0 8px;
+  font-size: 10px;
+}
+
+.owner-bookings-page .owner-booking-row-actions .owner-booking-more {
+  width: 32px;
+}
+
+.owner-bookings-page .owner-management-pagination {
+  padding: 12px 14px;
+  font-size: 12px;
+}
+
+@media (max-width: 1280px) {
+  .owner-bookings-page .owner-management-stats {
+    grid-template-columns: repeat(5, minmax(150px, 1fr));
+    overflow-x: auto;
+    padding-bottom: 2px;
+  }
+
+  .owner-parking-detail-stats {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 900px) {
+  .owner-bookings-page .owner-booking-filterbar {
+    grid-template-columns: 1fr;
+  }
+
+  .owner-parking-detail-toolbar,
+  .owner-parking-detail-hero {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .owner-parking-detail-toolbar > div {
+    flex-wrap: wrap;
+  }
+
+  .owner-parking-detail-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* Owner console redesign pages */
+.owner-designed-page {
+  display: grid;
+  gap: 18px;
+  min-width: 0;
+}
+
+.owner-page-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.owner-hidden-file {
+  display: none;
+}
+
+.owner-designed-stats {
+  grid-template-columns: repeat(5, minmax(160px, 1fr));
+}
+
+.owner-filterbar {
+  display: grid;
+  grid-template-columns: minmax(280px, 1fr) repeat(3, minmax(150px, 190px)) max-content;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.owner-activity-filterbar {
+  grid-template-columns: minmax(280px, 1fr) minmax(160px, 190px) minmax(170px, 210px) minmax(145px, 170px) minmax(145px, 170px) max-content;
+}
+
+.owner-customer-filterbar,
+.owner-account-filterbar {
+  grid-template-columns: minmax(280px, 1fr) minmax(150px, 190px) minmax(150px, 190px) max-content;
+}
+
+.owner-review-filterbar {
+  grid-template-columns: minmax(300px, 1fr) minmax(170px, 220px) minmax(170px, 220px) max-content;
+  padding: 14px;
+  border: 1px solid #e5e7eb;
+  border-radius: 18px;
+  background: #ffffff;
+  box-shadow: 0 12px 34px rgba(15, 23, 42, 0.06);
+}
+
+.owner-designed-table th,
+.owner-designed-table td {
+  vertical-align: middle;
+}
+
+.owner-designed-table td small,
+.owner-designed-table td span {
+  display: block;
+}
+
+.owner-row-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.owner-row-title > div {
+  min-width: 0;
+}
+
+.owner-row-title strong,
+.owner-row-title small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.owner-row-title strong {
+  color: #0f172a;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.owner-row-title small,
+.owner-designed-table td small {
+  margin-top: 3px;
+  color: #64748b;
+  font-size: 11px;
+  line-height: 1.25;
+  font-weight: 700;
+}
+
+.owner-row-detail {
+  display: grid;
+  gap: 7px;
+  justify-items: start;
+}
+
+.owner-designed-icon,
+.owner-customer-avatar {
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 11px;
+  color: #ffffff;
+  background: linear-gradient(135deg, #2563eb, #6d28d9);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.owner-customer-avatar--large {
+  width: 58px;
+  height: 58px;
+  border-radius: 18px;
+  font-size: 18px;
+}
+
+.owner-designed-icon--green {
+  background: linear-gradient(135deg, #10b981, #14b8a6);
+}
+
+.owner-designed-icon--orange {
+  background: linear-gradient(135deg, #fb923c, #f59e0b);
+}
+
+.owner-designed-icon--pink {
+  background: linear-gradient(135deg, #ec4899, #f43f5e);
+}
+
+.owner-designed-icon--violet {
+  background: linear-gradient(135deg, #6d28d9, #8b5cf6);
+}
+
+.owner-icon-mini {
+  width: 34px;
+  height: 34px;
+  display: inline-grid;
+  place-items: center;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  color: #0f172a;
+  background: #ffffff;
+  transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.owner-icon-mini:hover {
+  transform: translateY(-1px);
+  border-color: rgba(109, 40, 217, 0.35);
+  box-shadow: 0 12px 24px rgba(37, 99, 235, 0.12);
+}
+
+.owner-modal-note {
+  margin: 14px 0 0;
+  padding: 14px;
+  border-radius: 14px;
+  color: #334155;
+  background: #f8fafc;
+  border: 1px solid #e5e7eb;
+  line-height: 1.55;
+}
+
+.owner-panel-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
+.owner-panel-heading h3,
+.owner-side-panel h3 {
+  margin: 0;
+  color: #0f172a;
+  font-size: 17px;
+  line-height: 1.25;
+  font-weight: 900;
+}
+
+.owner-panel-heading p {
+  margin: 5px 0 0;
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1.4;
+  font-weight: 700;
+}
+
+.owner-customer-tabs,
+.owner-revenue-tabs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.owner-customer-tabs button,
+.owner-revenue-tabs button,
+.owner-revenue-tabs select,
+.owner-revenue-tabs input {
+  min-height: 44px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 0 16px;
+  color: #0f172a;
+  background: #ffffff;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.owner-customer-tabs button.is-active,
+.owner-revenue-tabs button.is-active {
+  color: #ffffff;
+  border-color: transparent;
+  background: linear-gradient(135deg, #2563eb, #6d28d9);
+  box-shadow: 0 14px 28px rgba(109, 40, 217, 0.22);
+}
+
+.owner-customer-layout,
+.owner-accounts-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(310px, 380px);
+  gap: 18px;
+  align-items: start;
+}
+
+.owner-side-stack {
+  display: grid;
+  gap: 18px;
+}
+
+.owner-side-panel {
+  padding: 18px;
+}
+
+.owner-donut-card {
+  display: grid;
+  grid-template-columns: 160px minmax(0, 1fr);
+  gap: 18px;
+  align-items: center;
+  margin-top: 14px;
+}
+
+.owner-css-donut {
+  width: 150px;
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at center, #ffffff 0 52%, transparent 53%),
+    conic-gradient(#10b981 0 var(--a), #2563eb var(--a) var(--b), #8b5cf6 var(--b) var(--c), #ec4899 var(--c) 100%);
+  box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.05);
+}
+
+.owner-css-donut strong,
+.owner-css-donut span {
+  grid-area: 1 / 1;
+  text-align: center;
+}
+
+.owner-css-donut strong {
+  transform: translateY(-8px);
+  color: #0f172a;
+  font-size: 22px;
+  font-weight: 900;
+}
+
+.owner-css-donut span {
+  transform: translateY(17px);
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.owner-donut-legend {
+  display: grid;
+  gap: 10px;
+}
+
+.owner-donut-legend span,
+.owner-payment-legend span {
+  display: grid;
+  grid-template-columns: 10px minmax(0, 1fr) max-content max-content;
+  align-items: center;
+  gap: 8px;
+  color: #334155;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.owner-donut-legend i,
+.owner-payment-legend i {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: #64748b;
+}
+
+.owner-donut-legend i.is-loyal {
+  background: #10b981;
+}
+
+.owner-donut-legend i.is-regular {
+  background: #2563eb;
+}
+
+.owner-donut-legend i.is-new {
+  background: #8b5cf6;
+}
+
+.owner-donut-legend i.is-inactive {
+  background: #ec4899;
+}
+
+.owner-ranked-list,
+.owner-revenue-lot-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.owner-ranked-list button,
+.owner-revenue-lot-list button {
+  width: 100%;
+  display: grid;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  background: #ffffff;
+  color: #0f172a;
+}
+
+.owner-ranked-list button {
+  grid-template-columns: 18px 34px minmax(0, 1fr) max-content;
+  padding: 10px;
+}
+
+.owner-ranked-list span {
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.owner-ranked-list b,
+.owner-revenue-lot-list span {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 11px;
+  color: #ffffff;
+  background: linear-gradient(135deg, #2563eb, #0ea5e9);
+  font-size: 11px;
+  font-style: normal;
+}
+
+.owner-ranked-list strong,
+.owner-revenue-lot-list strong {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+  text-align: left;
+  font-size: 12px;
+}
+
+.owner-ranked-list small,
+.owner-revenue-lot-list small {
+  color: #64748b;
+  font-size: 10px;
+}
+
+.owner-ranked-list em,
+.owner-revenue-lot-list b {
+  color: #0f172a;
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.owner-quick-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.owner-quick-actions--stack {
+  grid-template-columns: 1fr;
+}
+
+.owner-quick-actions button {
+  min-height: 58px;
+  display: grid;
+  place-items: center;
+  gap: 6px;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  color: #334155;
+  background: #ffffff;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.owner-quick-actions button:hover {
+  color: #2563eb;
+  border-color: rgba(37, 99, 235, 0.3);
+  background: #eff6ff;
+}
+
+.owner-review-analytics-grid,
+.owner-revenue-grid,
+.owner-revenue-bottom-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(360px, 0.95fr);
+  gap: 18px;
+}
+
+.owner-review-analytics-grid {
+  grid-template-columns: minmax(0, 1.2fr) minmax(330px, 0.82fr) minmax(230px, 0.55fr);
+}
+
+.owner-chart-box {
+  height: 260px;
+  min-width: 0;
+}
+
+.owner-chart-box--large {
+  height: 340px;
+}
+
+.owner-rating-line {
+  display: grid;
+  grid-template-columns: 58px minmax(0, 1fr) 90px;
+  gap: 12px;
+  align-items: center;
+  margin: 14px 0;
+  color: #334155;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.owner-rating-line div,
+.owner-hour-rank i,
+.owner-revenue-lot-list i {
+  height: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #e5e7eb;
+}
+
+.owner-rating-line i,
+.owner-hour-rank em,
+.owner-revenue-lot-list em {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #2563eb, #6d28d9);
+}
+
+.owner-satisfaction-card {
+  display: grid;
+  place-items: center;
+  gap: 12px;
+  text-align: center;
+}
+
+.owner-gauge {
+  width: 160px;
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at center, #ffffff 0 58%, transparent 59%),
+    conic-gradient(#10b981 0 var(--score), #f59e0b var(--score) 100%);
+}
+
+.owner-gauge strong,
+.owner-gauge span {
+  grid-area: 1 / 1;
+}
+
+.owner-gauge strong {
+  color: #0f172a;
+  font-size: 30px;
+  font-weight: 900;
+  transform: translateY(-8px);
+}
+
+.owner-gauge span {
+  color: #334155;
+  font-size: 13px;
+  font-weight: 900;
+  transform: translateY(24px);
+}
+
+.owner-star-rating {
+  color: #f59e0b;
+  font-size: 17px;
+  letter-spacing: 0;
+  white-space: nowrap;
+}
+
+.owner-review-list-v2 {
+  display: grid;
+  gap: 12px;
+}
+
+.owner-review-row-v2 {
+  display: grid;
+  grid-template-columns: 44px 170px 150px minmax(0, 1fr) max-content;
+  gap: 14px;
+  align-items: start;
+  padding: 16px;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  background: #ffffff;
+}
+
+.owner-review-person,
+.owner-review-score,
+.owner-review-copy {
+  display: grid;
+  gap: 5px;
+}
+
+.owner-review-person strong,
+.owner-review-copy p {
+  margin: 0;
+  color: #0f172a;
+  font-weight: 900;
+}
+
+.owner-review-person span,
+.owner-review-score span,
+.owner-review-copy span,
+.owner-review-copy em {
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1.4;
+  font-style: normal;
+  font-weight: 700;
+}
+
+.owner-review-copy em {
+  padding: 8px 10px;
+  border-radius: 10px;
+  color: #047857;
+  background: #ecfdf5;
+}
+
+.owner-review-actions-v2 {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.owner-payment-chart {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.owner-payment-legend {
+  flex: 1;
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+
+.owner-payment-legend em {
+  color: #64748b;
+  font-style: normal;
+}
+
+.owner-revenue-lot-list button {
+  grid-template-columns: 34px minmax(0, 1fr) max-content;
+  padding: 12px;
+}
+
+.owner-revenue-lot-list i {
+  grid-column: 2 / 4;
+}
+
+.owner-hour-rank {
+  display: grid;
+  gap: 16px;
+}
+
+.owner-hour-rank div {
+  display: grid;
+  grid-template-columns: 92px minmax(0, 1fr) max-content;
+  gap: 12px;
+  align-items: center;
+  color: #334155;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.owner-account-log-panel {
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.owner-account-detail-card {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  padding: 16px;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  background: #f8fafc;
+  text-align: center;
+}
+
+.owner-account-detail-card strong {
+  color: #0f172a;
+  font-size: 16px;
+  font-weight: 900;
+}
+
+.owner-account-detail-card p {
+  margin: 0;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.owner-detail-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.owner-detail-list span {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 10px 0;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.owner-detail-list small {
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.owner-detail-list strong {
+  color: #0f172a;
+  font-size: 12px;
+  font-weight: 900;
+  text-align: right;
+}
+
+.owner-activity-mini {
+  display: grid;
+  gap: 4px;
+  padding: 12px 0;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.owner-activity-mini strong {
+  color: #0f172a;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.owner-activity-mini span,
+.owner-activity-mini p {
+  margin: 0;
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.text-green {
+  color: #059669;
+}
+
+.text-orange {
+  color: #ea580c;
+}
+
+@media (max-width: 1280px) {
+  .owner-designed-stats {
+    grid-template-columns: repeat(5, minmax(160px, 1fr));
+    overflow-x: auto;
+    padding-bottom: 2px;
+  }
+
+  .owner-customer-layout,
+  .owner-accounts-layout,
+  .owner-revenue-grid,
+  .owner-revenue-bottom-grid,
+  .owner-review-analytics-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 900px) {
+  .owner-page-actions,
+  .owner-customer-tabs,
+  .owner-revenue-tabs {
+    justify-content: stretch;
+  }
+
+  .owner-page-actions > *,
+  .owner-customer-tabs button,
+  .owner-revenue-tabs button,
+  .owner-revenue-tabs select,
+  .owner-revenue-tabs input {
+    flex: 1 1 auto;
+  }
+
+  .owner-filterbar,
+  .owner-activity-filterbar,
+  .owner-customer-filterbar,
+  .owner-account-filterbar,
+  .owner-review-filterbar {
+    grid-template-columns: 1fr;
+  }
+
+  .owner-donut-card,
+  .owner-payment-chart {
+    grid-template-columns: 1fr;
+    display: grid;
+  }
+
+  .owner-css-donut,
+  .owner-gauge {
+    margin: 0 auto;
+  }
+
+  .owner-review-row-v2 {
+    grid-template-columns: 40px minmax(0, 1fr);
+  }
+
+  .owner-review-score,
+  .owner-review-copy,
+  .owner-review-actions-v2 {
+    grid-column: 1 / -1;
+  }
+}
+
+/* Owner 100% zoom overflow guard */
+.owner-shell,
+.owner-shell * {
+  box-sizing: border-box;
+}
+
+.owner-shell {
+  font-size: 13px;
+}
+
+.owner-main {
+  max-width: calc(100vw - 240px) !important;
+}
+
+.owner-dashboard-header {
+  grid-template-columns: minmax(0, 1fr) minmax(0, max-content);
+  gap: 12px;
+}
+
+.owner-dashboard-title,
+.owner-dashboard-title > div,
+.owner-card-header > div,
+.owner-section-head > div,
+.owner-kpi-body,
+.owner-parking-row > div,
+.owner-ranking-label,
+.owner-management-stat div,
+.owner-parking-info,
+.owner-parking-actions-v2,
+.owner-parking-occupancy,
+.owner-panel-heading > div,
+.owner-row-title > div {
+  min-width: 0;
+}
+
+.owner-dashboard-title h1 {
+  font-size: clamp(23px, 1.45vw, 29px);
+}
+
+.owner-dashboard-title span {
+  max-width: 520px;
+  font-size: 13px;
+}
+
+.owner-dashboard-tools {
+  min-width: 0;
+  row-gap: 7px;
+}
+
+.owner-date-picker,
+.owner-icon-button,
+.owner-header-avatar,
+.owner-header-button {
+  min-height: 34px;
+}
+
+.owner-date-picker {
+  padding-inline: 9px;
+}
+
+.owner-date-picker-text {
+  min-width: 104px;
+}
+
+.owner-header-avatar {
+  min-width: 154px;
+  max-width: 198px;
+}
+
+.owner-header-button {
+  max-width: 156px;
+  padding-inline: 10px;
+  font-size: 11px;
+}
+
+.owner-header-button span,
+.owner-card-link,
+.owner-filter-select,
+.owner-custom-range-button,
+.owner-management-primary,
+.owner-management-secondary,
+.owner-management-select,
+.owner-management-page-button,
+.owner-management-icon-button,
+.owner-booking-row-actions button,
+.owner-parking-actions-v2 button,
+.owner-customer-tabs button,
+.owner-revenue-tabs button {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.owner-kpi-grid {
+  grid-template-columns: repeat(5, minmax(132px, 1fr)) !important;
+}
+
+.owner-kpi-card {
+  min-height: 98px;
+  padding: 11px;
+  grid-template-columns: 38px minmax(0, 1fr);
+}
+
+.owner-kpi-icon {
+  width: 38px;
+  height: 38px;
+}
+
+.owner-kpi-body p,
+.owner-kpi-body span,
+.owner-kpi-trend,
+.owner-card-header p,
+.owner-section-head p,
+.owner-parking-row span,
+.owner-parking-row small,
+.owner-activity-item span,
+.owner-activity-item time,
+.owner-ranking-label small {
+  overflow-wrap: anywhere;
+}
+
+.owner-kpi-body strong {
+  font-size: clamp(20px, 1.2vw, 24px);
+}
+
+.owner-card-header h2,
+.owner-section-head h2 {
+  font-size: 15px;
+}
+
+.owner-dashboard-card,
+.owner-section-card {
+  padding: 13px;
+}
+
+.owner-revenue-card,
+.owner-parking-overview-card {
+  min-height: 0;
+}
+
+.owner-revenue-total strong {
+  font-size: 16px;
+}
+
+.owner-chart-wrap--revenue {
+  height: 248px;
+  min-height: 248px;
+}
+
+.owner-revenue-footer {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.owner-revenue-footer span {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.owner-parking-overview-grid {
+  grid-template-columns: minmax(120px, 0.35fr) minmax(210px, 0.65fr);
+}
+
+.owner-parking-row {
+  grid-template-columns: minmax(0, 1fr) 66px;
+}
+
+.owner-parking-row strong,
+.owner-parking-row span,
+.owner-parking-row small,
+.owner-ranking-label strong,
+.owner-ranking-label small,
+.owner-activity-item strong,
+.owner-activity-item span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.owner-parking-row strong,
+.owner-ranking-label strong,
+.owner-ranking-label small {
+  white-space: nowrap;
+}
+
+.owner-mini-map {
+  min-height: 236px;
+}
+
+.owner-management-page,
+.owner-designed-page,
+.owner-bookings-page {
+  font-size: 12px;
+}
+
+.owner-management-topline,
+.owner-booking-filterbar,
+.owner-filterbar,
+.owner-activity-filterbar,
+.owner-customer-filterbar,
+.owner-account-filterbar,
+.owner-review-filterbar {
+  min-width: 0;
+}
+
+.owner-management-stat {
+  min-height: 92px;
+  padding: 12px;
+  gap: 9px;
+}
+
+.owner-management-stat > span {
+  width: 40px;
+  height: 40px;
+  flex-basis: 40px;
+}
+
+.owner-management-stat p,
+.owner-management-stat small {
+  font-size: 11px;
+  line-height: 1.25;
+}
+
+.owner-management-stat strong {
+  font-size: clamp(19px, 1.35vw, 24px);
+}
+
+.owner-management-panel-head h2 {
+  font-size: 19px;
+}
+
+.owner-management-panel-head p {
+  font-size: 12px;
+}
+
+.owner-parking-row-card {
+  grid-template-columns: minmax(142px, 190px) minmax(210px, 1.2fr) minmax(124px, 0.48fr) minmax(240px, 0.82fr);
+  gap: 14px;
+  padding: 14px 16px;
+}
+
+.owner-parking-title-line h3 {
+  font-size: 17px;
+}
+
+.owner-parking-info > p,
+.owner-parking-metrics,
+.owner-parking-occupancy p {
+  font-size: 11px;
+}
+
+.owner-parking-actions-v2 > div {
+  grid-template-columns: repeat(3, minmax(48px, 68px)) 32px;
+  gap: 8px;
+}
+
+.owner-parking-actions-v2 button {
+  min-height: 48px;
+  font-size: 10px;
+}
+
+@media (max-width: 1380px) {
+  .owner-dashboard-header {
+    grid-template-columns: 1fr;
+  }
+
+  .owner-dashboard-tools {
+    justify-content: flex-start;
+  }
+
+  .owner-kpi-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+
+  .owner-dashboard-row--analytics,
+  .owner-dashboard-row--triple {
+    grid-template-columns: 1fr !important;
+  }
+
+  .owner-parking-overview-grid {
+    grid-template-columns: minmax(0, 1fr) minmax(280px, 0.8fr);
+  }
+
+  .owner-parking-row-card {
+    grid-template-columns: minmax(140px, 190px) minmax(0, 1fr) minmax(120px, 0.4fr);
+  }
+
+  .owner-parking-actions-v2 {
+    grid-column: 1 / -1;
+  }
+}
+
+/* Owner dense pass for 100% browser zoom */
+.owner-sidebar {
+  width: 240px !important;
+  min-width: 240px !important;
+  max-width: 240px !important;
+  flex-basis: 240px !important;
+  padding: 14px !important;
+}
+
+.owner-main {
+  max-width: calc(100vw - 240px) !important;
+}
+
+.owner-menu {
+  gap: 6px;
+}
+
+.owner-menu-link,
+.owner-shortcut,
+.owner-logout {
+  min-height: 38px;
+  padding: 9px 11px;
+  border-radius: 12px;
+  font-size: 12px;
+  line-height: 1.25;
+}
+
+.owner-menu-icon {
+  width: 16px;
+  height: 16px;
+}
+
+.owner-sidebar .owner-brand strong,
+.owner-sidebar .owner-avatar strong {
+  font-size: 13px;
+}
+
+.owner-sidebar .owner-brand span,
+.owner-sidebar .owner-avatar span {
+  font-size: 10px;
+}
+
+.owner-designed-page,
+.owner-accounts-page,
+.owner-customers-page,
+.owner-activity-page {
+  gap: 12px;
+  font-size: 11px;
+}
+
+.owner-designed-page .owner-page-actions {
+  gap: 8px;
+}
+
+.owner-designed-page .owner-management-primary,
+.owner-designed-page .owner-management-secondary,
+.owner-designed-page .owner-management-select,
+.owner-designed-page .owner-management-search,
+.owner-designed-page .owner-management-search input {
+  min-height: 36px;
+  font-size: 11px;
+}
+
+.owner-designed-page .owner-management-primary,
+.owner-designed-page .owner-management-secondary,
+.owner-designed-page .owner-management-select {
+  padding-inline: 10px;
+}
+
+.owner-designed-page .owner-management-stats {
+  gap: 9px;
+}
+
+.owner-designed-page .owner-management-stat {
+  min-height: 74px;
+  padding: 10px;
+  gap: 8px;
+}
+
+.owner-designed-page .owner-management-stat > span {
+  width: 34px;
+  height: 34px;
+  flex-basis: 34px;
+  border-radius: 11px;
+}
+
+.owner-designed-page .owner-management-stat p,
+.owner-designed-page .owner-management-stat small {
+  font-size: 10px;
+  line-height: 1.2;
+}
+
+.owner-designed-page .owner-management-stat strong {
+  font-size: 19px;
+}
+
+.owner-panel-heading {
+  margin-bottom: 10px;
+}
+
+.owner-panel-heading h3,
+.owner-side-panel h3 {
+  font-size: 15px;
+}
+
+.owner-panel-heading p {
+  font-size: 10px;
+}
+
+.owner-accounts-layout,
+.owner-customer-layout {
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 340px);
+  gap: 12px;
+}
+
+.owner-side-stack {
+  gap: 12px;
+}
+
+.owner-side-panel,
+.owner-management-panel {
+  padding: 13px;
+  border-radius: 14px;
+}
+
+.owner-account-filterbar,
+.owner-customer-filterbar {
+  grid-template-columns: minmax(220px, 1fr) minmax(120px, 150px) minmax(120px, 150px) minmax(82px, max-content);
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.owner-activity-filterbar {
+  grid-template-columns: minmax(230px, 1fr) minmax(118px, 150px) minmax(130px, 160px) minmax(112px, 132px) minmax(112px, 132px) max-content;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.owner-accounts-page .owner-table,
+.owner-customers-page .owner-table,
+.owner-activity-page .owner-table {
+  table-layout: fixed;
+  min-width: 850px;
+  font-size: 11px;
+}
+
+.owner-accounts-page .owner-table th,
+.owner-accounts-page .owner-table td,
+.owner-customers-page .owner-table th,
+.owner-customers-page .owner-table td,
+.owner-activity-page .owner-table th,
+.owner-activity-page .owner-table td {
+  padding: 8px 10px;
+  line-height: 1.25;
+}
+
+.owner-designed-table td > strong,
+.owner-designed-table td > span,
+.owner-designed-table td small,
+.owner-row-title strong,
+.owner-row-title small {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.owner-designed-table td > strong,
+.owner-designed-table td > span,
+.owner-row-title strong,
+.owner-row-title small {
+  white-space: nowrap;
+}
+
+.owner-accounts-page .owner-table th:nth-child(1) { width: 30%; }
+.owner-accounts-page .owner-table th:nth-child(2) { width: 24%; }
+.owner-accounts-page .owner-table th:nth-child(3) { width: 10%; }
+.owner-accounts-page .owner-table th:nth-child(4) { width: 12%; }
+.owner-accounts-page .owner-table th:nth-child(5) { width: 14%; }
+.owner-accounts-page .owner-table th:nth-child(6) { width: 10%; }
+
+.owner-row-title {
+  gap: 8px;
+}
+
+.owner-designed-icon,
+.owner-customer-avatar {
+  width: 30px;
+  height: 30px;
+  flex-basis: 30px;
+  border-radius: 999px;
+  font-size: 10px;
+}
+
+.owner-customer-avatar--large {
+  width: 52px;
+  height: 52px;
+  flex-basis: 52px;
+  font-size: 16px;
+}
+
+.owner-icon-mini {
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+}
+
+.owner-row-actions {
+  gap: 5px;
+}
+
+.owner-account-detail-card--full {
+  gap: 6px;
+  padding: 12px;
+}
+
+.owner-account-detail-top {
+  width: 100%;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.owner-account-detail-card--full small {
+  color: #64748b;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.owner-detail-list--icons span {
+  display: grid;
+  grid-template-columns: 16px minmax(90px, 0.68fr) minmax(0, 1fr);
+  gap: 8px;
+  padding: 8px 0;
+}
+
+.owner-detail-list--icons svg {
+  color: #64748b;
+  align-self: center;
+}
+
+.owner-detail-list--icons small,
+.owner-detail-list--icons strong {
+  min-width: 0;
+}
+
+.owner-detail-list--icons strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.owner-quick-actions--stack {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.owner-quick-actions--stack button {
+  min-height: 44px;
+  padding: 8px;
+  font-size: 10px;
+}
+
+.owner-account-security-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 10px 0 0;
+  padding: 10px;
+  border-radius: 10px;
+  color: #475569;
+  background: #f8fafc;
+  font-size: 10px;
+  line-height: 1.45;
+}
+
+.owner-activity-detail-card {
+  display: grid;
+  gap: 8px;
+}
+
+.owner-activity-detail-card > span,
+.owner-activity-vehicle-box span,
+.owner-behavior-grid span {
+  display: grid;
+  grid-template-columns: minmax(80px, 0.7fr) minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+}
+
+.owner-activity-detail-card small,
+.owner-activity-vehicle-box small,
+.owner-behavior-grid small {
+  color: #64748b;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.owner-activity-detail-card strong,
+.owner-activity-vehicle-box b,
+.owner-behavior-grid strong {
+  min-width: 0;
+  color: #0f172a;
+  font-size: 11px;
+  font-weight: 900;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.owner-activity-detail-card p,
+.owner-behavior-note {
+  margin: 0;
+  color: #475569;
+  font-size: 10px;
+  line-height: 1.45;
+}
+
+.owner-activity-vehicle-box {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  background: #f8fafc;
+}
+
+.owner-activity-vehicle-box > strong {
+  grid-column: 1 / -1;
+  font-size: 11px;
+}
+
+.owner-activity-vehicle-box--modal {
+  margin-top: 12px;
+}
+
+.owner-activity-mini-list {
+  display: grid;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.owner-activity-mini-list button {
+  display: grid;
+  gap: 2px;
+  padding: 8px;
+  border: 1px solid #e5e7eb;
+  border-radius: 9px;
+  background: #ffffff;
+  text-align: left;
+}
+
+.owner-activity-mini-list button.is-active {
+  border-color: rgba(37, 99, 235, 0.35);
+  background: #eff6ff;
+}
+
+.owner-activity-mini-list strong {
+  font-size: 10px;
+}
+
+.owner-activity-mini-list span {
+  color: #64748b;
+  font-size: 10px;
+}
+
+.owner-activity-page .owner-row-title {
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+}
+
+.owner-activity-page .owner-designed-icon {
+  width: 30px;
+  height: 30px;
+  align-self: center;
+  justify-self: center;
+}
+
+.owner-behavior-grid {
+  display: grid;
+  gap: 8px;
+}
+
+.owner-behavior-grid span {
+  grid-template-columns: 18px minmax(86px, 0.7fr) minmax(0, 1fr);
+  padding: 8px;
+  border-radius: 10px;
+  background: #f8fafc;
+}
+
+.owner-behavior-grid svg {
+  color: #2563eb;
+}
+
+.owner-behavior-note {
+  margin-top: 10px;
+}
+
+.owner-modal-backdrop {
+  position: fixed !important;
+  inset: 0 !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.owner-modal {
+  border-radius: 16px;
+}
+
+.owner-modal.owner-modal--large {
+  width: min(820px, calc(100vw - 36px));
+  padding: 16px;
+}
+
+.owner-modal--large .owner-modal-head {
+  margin-bottom: 12px;
+}
+
+.owner-modal--large .owner-modal-head h2 {
+  font-size: 18px;
+}
+
+.owner-modal--large .owner-modal-head p {
+  font-size: 11px;
+}
+
+.owner-modal--large .owner-form-grid {
+  gap: 10px 12px;
+}
+
+.owner-modal--large .owner-form-grid label {
+  gap: 5px;
+  font-size: 12px;
+}
+
+.owner-modal--large .owner-input {
+  min-height: 36px;
+  padding: 8px 10px;
+  font-size: 12px;
+}
+
+.owner-modal--large .owner-slot-group-row {
+  grid-template-columns: minmax(110px, 1fr) minmax(110px, 1fr) minmax(72px, 0.5fr) 62px;
+  gap: 8px;
+  padding: 9px;
+  border-radius: 12px;
+}
+
+.owner-modal--large .owner-slot-groups-title strong {
+  font-size: 13px;
+}
+
+.owner-modal--large .owner-slot-groups-title span,
+.owner-modal--large .owner-form-note {
+  font-size: 11px;
+}
+
+.owner-modal--large .owner-btn {
+  min-height: 34px;
+  padding-inline: 10px;
+  font-size: 11px;
+}
+
+@media (max-width: 1280px) {
+  .owner-accounts-layout,
+  .owner-customer-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .owner-main {
+    max-width: calc(100vw - 240px) !important;
+  }
+}
+
+@media (max-width: 900px) {
+  .owner-sidebar {
+    width: 240px !important;
+    min-width: 240px !important;
+  }
+
+  .owner-main {
+    max-width: 100vw !important;
+  }
+
+  .owner-account-filterbar,
+  .owner-customer-filterbar,
+  .owner-activity-filterbar {
+    grid-template-columns: 1fr;
+  }
+
+  .owner-quick-actions--stack,
+  .owner-activity-vehicle-box {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Owner final alignment fixes */
+.owner-designed-table .owner-customer-avatar,
+.owner-designed-table .owner-designed-icon,
+.owner-row-title .owner-customer-avatar,
+.owner-row-title .owner-designed-icon,
+.owner-account-detail-card .owner-customer-avatar,
+.owner-ranked-list b {
+  display: grid !important;
+  place-items: center !important;
+  text-align: center;
+  line-height: 1;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.owner-designed-icon svg,
+.owner-customer-avatar svg {
+  display: block;
+  margin: 0;
+}
+
+.owner-customers-page .owner-customer-avatar,
+.owner-accounts-page .owner-customer-avatar {
+  width: 32px;
+  height: 32px;
+  flex: 0 0 32px;
+  border-radius: 999px;
+  font-size: 10px;
+  letter-spacing: 0;
+}
+
+.owner-activity-page .owner-designed-icon {
+  display: grid !important;
+  place-items: center !important;
+  width: 32px;
+  height: 32px;
+  flex: 0 0 32px;
+  border-radius: 999px;
+}
+
+.owner-activity-page .owner-row-title {
+  grid-template-columns: 32px minmax(0, 1fr);
+}
+
+@media (min-width: 1121px) {
+  .owner-management-page {
+    gap: 16px;
+    font-size: 11px;
+  }
+
+  .owner-management-page .owner-management-stats {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .owner-management-page .owner-management-stat {
+    min-height: 78px;
+    padding: 11px 12px;
+  }
+
+  .owner-management-page .owner-management-stat > span {
+    width: 38px;
+    height: 38px;
+    flex-basis: 38px;
+  }
+
+  .owner-management-page .owner-management-stat p,
+  .owner-management-page .owner-management-stat small {
+    font-size: 10.5px;
+  }
+
+  .owner-management-page .owner-management-stat strong {
+    font-size: 20px;
+  }
+
+  .owner-management-page .owner-management-panel-head {
+    padding: 16px 18px 14px;
+  }
+
+  .owner-management-page .owner-management-panel-head h2 {
+    font-size: 17px;
+  }
+
+  .owner-management-page .owner-management-panel-head p {
+    font-size: 11px;
+  }
+
+  .owner-management-page .owner-parking-row-card {
+    grid-template-columns: minmax(118px, 165px) minmax(190px, 1fr) minmax(92px, 0.34fr) minmax(170px, 0.5fr) !important;
+    gap: 12px;
+    padding: 12px 14px;
+  }
+
+  .owner-management-page .owner-parking-photo {
+    min-height: 92px;
+    max-height: 104px;
+    border-radius: 12px;
+  }
+
+  .owner-management-page .owner-parking-photo b {
+    width: 34px;
+    height: 34px;
+    right: 12px;
+    bottom: 12px;
+    font-size: 18px;
+  }
+
+  .owner-management-page .owner-parking-photo span {
+    padding: 4px 8px;
+    font-size: 10px;
+  }
+
+  .owner-management-page .owner-parking-title-line h3 {
+    font-size: 15px;
+  }
+
+  .owner-management-page .owner-parking-title-line span {
+    padding: 3px 7px;
+    font-size: 10px;
+  }
+
+  .owner-management-page .owner-parking-info > p,
+  .owner-management-page .owner-parking-metrics,
+  .owner-management-page .owner-parking-occupancy p {
+    font-size: 10px;
+  }
+
+  .owner-management-page .owner-parking-occupancy strong {
+    font-size: 21px;
+  }
+
+  .owner-management-page .owner-parking-actions-v2 {
+    grid-column: auto !important;
+  }
+
+  .owner-management-page .owner-parking-actions-v2 > small {
+    margin-bottom: 6px;
+    font-size: 10px;
+  }
+
+  .owner-management-page .owner-parking-actions-v2 > div {
+    grid-template-columns: repeat(3, minmax(42px, 54px)) 28px !important;
+    gap: 6px;
+    justify-content: start;
+  }
+
+  .owner-management-page .owner-parking-actions-v2 button {
+    min-height: 40px;
+    border-radius: 11px;
+    font-size: 9.5px;
+    gap: 3px;
+  }
+
+  .owner-management-page .owner-parking-actions-v2 button svg {
+    width: 15px;
+    height: 15px;
   }
 }

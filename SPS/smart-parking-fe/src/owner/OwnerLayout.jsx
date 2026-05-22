@@ -183,7 +183,12 @@ export default function OwnerLayout({ auth, onLogout }) {
     };
   }, [ownerData]);
 
-  const meta = OWNER_ROUTE_META[location.pathname] || OWNER_ROUTE_META["/owner"];
+  const meta = OWNER_ROUTE_META[location.pathname]
+    || (location.pathname.startsWith("/owner/parking/") ? {
+      title: "Chi tiết bãi đỗ",
+      description: "Theo dõi tổng quan, slot, trạng thái và doanh thu nhanh của từng bãi.",
+    } : null)
+    || OWNER_ROUTE_META["/owner"];
   
   // Calculate unread notification count from stored read state
   const unreadNotificationsCount = (() => {
@@ -225,6 +230,10 @@ export default function OwnerLayout({ auth, onLogout }) {
   const ownerLockMessage = ownerData?.lockMessage || "Bãi xe của bạn đã bị khóa, vui lòng liên hệ admin.";
 
   const actions = useMemo(() => ({
+    async refreshOwnerData(options = {}) {
+      await refreshOwnerData({ silent: Boolean(options.silent) });
+      return true;
+    },
     async addSlot(payload) {
       try {
         await API.post("/owner/slots", payload);
@@ -292,7 +301,7 @@ export default function OwnerLayout({ auth, onLogout }) {
       try {
         const res = await API.post("/owner/parking-lots", payload);
         if (res.data?.employee?.email && res.data?.employee?.default_password) {
-          window.alert(`Đã tạo bãi đỗ và tài khoản employee:\nEmail: ${res.data.employee.email}\nMật khẩu: ${res.data.employee.default_password}`);
+          window.alert(`Đã tạo bãi đỗ và tài khoản bãi:\nEmail: ${res.data.employee.email}\nMật khẩu: ${res.data.employee.default_password}`);
         }
         await refreshOwnerData();
         return true;
@@ -332,7 +341,7 @@ export default function OwnerLayout({ auth, onLogout }) {
       try {
         const res = await API.post("/api/owner/create-employee", payload);
         if (res.data?.employee?.email && res.data?.employee?.default_password) {
-          window.alert(`Tài khoản employee đã tạo:\nEmail: ${res.data.employee.email}\nMật khẩu: ${res.data.employee.default_password}`);
+          window.alert(`Tài khoản bãi đã tạo:\nEmail: ${res.data.employee.email}\nMật khẩu: ${res.data.employee.default_password}`);
         }
         await refreshOwnerData();
         return res.data?.employee || null;

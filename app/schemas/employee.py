@@ -12,7 +12,7 @@ class EmployeeInfo(BaseModel):
     id: int
     username: str
     role: str = "employee"
-    owner_id: int
+    owner_id: int | None = None
     parking_id: int
     status: str
     created_at: datetime | None = None
@@ -46,8 +46,16 @@ class OwnerEmployeeItem(BaseModel):
     owner_id: int
     parking_id: int
     parking_name: str | None = None
+    parking_district: str | None = None
+    parking_code: str | None = None
     status: str
+    status_detail: str | None = None
     created_at: datetime | None = None
+    activity_count: int = 0
+    last_activity_at: datetime | None = None
+    last_login_at: datetime | None = None
+    login_ip: str | None = None
+    login_device: str | None = None
 
 
 class OwnerEmployeeListResponse(BaseModel):
@@ -61,6 +69,7 @@ class OwnerUpdateEmployeeRequest(BaseModel):
     phone: str | None = Field(default=None, max_length=30)
     password: str | None = Field(default=None, min_length=6, max_length=255)
     parking_id: int | None = Field(default=None, gt=0)
+    status: str | None = Field(default=None, pattern="^(active|suspended|inactive)$")
 
 
 class OwnerEmployeeActionResponse(BaseModel):
