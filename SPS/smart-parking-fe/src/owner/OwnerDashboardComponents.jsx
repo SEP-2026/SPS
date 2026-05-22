@@ -46,6 +46,7 @@ import {
   WalletCards,
   Wrench,
 } from "lucide-react";
+import SidebarPromoCard from "../components/SidebarPromoCard";
 
 const NAV_ICON_MAP = {
   dashboard: LayoutDashboard,
@@ -244,17 +245,7 @@ export function EmptyState({
 }
 
 export function PromoCard() {
-  return (
-    <div className="owner-promo-card">
-      <div className="owner-promo-visual" aria-hidden="true">
-        <img className="owner-promo-car" src="/owner-promo-car.png" alt="" />
-      </div>
-      <div className="owner-promo-copy">
-        <strong>Quản lý bãi xe thông minh</strong>
-        <span>Theo dõi, quản lý và tối ưu doanh thu một cách hiệu quả</span>
-      </div>
-    </div>
-  );
+  return <SidebarPromoCard variant="owner" />;
 }
 
 export function OwnerProfileCard({ ownerName, ownerEmail, onLogout }) {

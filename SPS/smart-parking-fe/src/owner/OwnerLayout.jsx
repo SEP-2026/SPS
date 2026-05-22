@@ -6,6 +6,7 @@ import { DashboardHeader, OwnerSidebar } from "./OwnerDashboardComponents";
 import { OWNER_NAV_ITEMS, OWNER_ROUTE_META } from "./ownerData";
 import { parseVietnamDate } from "../utils/dateTime";
 import "./owner.css";
+import "../styles/sidebar-promo.css";
 
 const EMPTY_OWNER_DATA = {
   parkingLot: null,

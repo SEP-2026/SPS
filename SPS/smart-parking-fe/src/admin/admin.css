@@ -21,29 +21,20 @@ body.admin-page-lock,
   overflow: hidden;
   box-sizing: border-box;
   background:
-    radial-gradient(circle at top left, rgba(119, 198, 255, 0.08), transparent 22%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.04));
+    radial-gradient(circle at top left, rgba(119, 198, 255, 0.1), transparent 26%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.24), rgba(255, 255, 255, 0.08));
 }
 
 .admin-sidebar {
   padding: 12px 12px;
   padding-bottom: 20px;
   border-right: 1px solid var(--line);
-  background: linear-gradient(180deg, rgba(14, 39, 62, 0.99), rgba(10, 31, 49, 0.99));
+  background: linear-gradient(180deg, rgba(16, 47, 72, 0.97), rgba(12, 39, 62, 0.98));
   color: #edf7ff;
   display: flex;
   flex-direction: column;
   gap: 10px;
-  overflow-y: auto;
-  overflow-x: hidden;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-}
-
-.admin-sidebar::-webkit-scrollbar {
-  width: 0;
-  height: 0;
-  display: none;
+  overflow: hidden;
 }
 
 .admin-brand,
@@ -76,8 +67,8 @@ body.admin-page-lock,
   place-items: center;
   color: #fff;
   font-weight: 800;
-  background: linear-gradient(150deg, rgba(15, 123, 143, 0.92), rgba(66, 121, 220, 0.92));
-  box-shadow: 0 14px 24px rgba(5, 18, 32, 0.36);
+  background: linear-gradient(150deg, rgba(36, 175, 171, 0.95), rgba(74, 148, 242, 0.92));
+  box-shadow: 0 14px 24px rgba(11, 36, 61, 0.25);
 }
 
 .admin-sidebar-panel {
@@ -128,8 +119,8 @@ body.admin-page-lock,
 }
 
 .admin-menu-link.active {
-  background: linear-gradient(160deg, rgba(46, 113, 219, 0.38), rgba(17, 149, 167, 0.32));
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.16);
+  background: linear-gradient(160deg, rgba(55, 193, 177, 0.36), rgba(105, 188, 255, 0.28));
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.18);
 }
 
 .admin-menu-icon {
@@ -145,7 +136,7 @@ body.admin-page-lock,
 }
 
 .admin-logout {
-  margin-top: auto;
+  margin-top: 0;
   margin-bottom: 8px;
   position: sticky;
   bottom: 8px;
@@ -182,7 +173,7 @@ body.admin-page-lock,
   padding: 16px 18px;
   border: 1px solid var(--line);
   border-radius: 22px;
-  background: linear-gradient(180deg, rgba(251, 254, 255, 0.92), rgba(235, 244, 250, 0.84));
+  background: linear-gradient(180deg, rgba(251, 254, 255, 0.88), rgba(237, 247, 252, 0.76));
   box-shadow: var(--shadow-md);
 }
 
@@ -199,7 +190,7 @@ body.admin-page-lock,
   font-family: "Space Grotesk", "Be Vietnam Pro", sans-serif;
   font-size: clamp(26px, 2.7vw, 36px);
   line-height: 1.08;
-  color: #12344f;
+  color: #14395d;
 }
 
 .admin-topbar-main span {
@@ -213,7 +204,7 @@ body.admin-page-lock,
 
 .admin-kicker {
   margin: 0;
-  color: #2b67b7;
+  color: #108091;
   text-transform: uppercase;
   font-size: 12px;
   font-weight: 800;

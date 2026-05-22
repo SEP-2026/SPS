@@ -85,22 +85,22 @@
 }
 
 .stepper-step--completed .stepper-number {
-  background: linear-gradient(135deg, #0ca07f, #0e7f96);
+  background: linear-gradient(135deg, #0f5f9d, #16d9ff);
   color: #fff;
 }
 
 .stepper-step--completed .stepper-label {
-  color: #0ca07f;
+  color: #0f6cbf;
 }
 
 .stepper-step--active .stepper-number {
-  background: linear-gradient(135deg, #1c9a95, #116b88);
+  background: linear-gradient(135deg, #0f5f9d, #16d9ff);
   color: #fff;
-  box-shadow: 0 4px 12px rgba(28, 154, 149, 0.4);
+  box-shadow: 0 4px 12px rgba(22, 217, 255, 0.35);
 }
 
 .stepper-step--active .stepper-label {
-  color: #116b88;
+  color: #0f6cbf;
   font-weight: 700;
 }
 
@@ -115,7 +115,7 @@
 
 .booking-form-headline {
   padding: 16px 22px;
-  background: linear-gradient(105deg, #0f4f6e 0%, #116b88 55%, #1c9a95 100%);
+  background: linear-gradient(105deg, #102847 0%, #0f5f9d 55%, #18c8f3 100%);
   position: relative;
 }
 
@@ -230,7 +230,7 @@
 
 .badge--account {
   background: linear-gradient(135deg, rgba(12, 160, 127, 0.15), rgba(14, 127, 150, 0.15));
-  color: #0ca07f;
+  color: #0f6cbf;
   border: 1px solid rgba(12, 160, 127, 0.3);
 }
 
@@ -269,7 +269,7 @@
 }
 
 .btn-outline:hover {
-  border-color: #1c9a95;
+  border-color: #16d9ff;
   background: rgba(28, 154, 149, 0.08);
 }
 
@@ -280,7 +280,7 @@
 
 .vehicle-notice {
   font-size: 13px;
-  color: #0ca07f;
+  color: #0f6cbf;
   font-weight: 600;
 }
 
@@ -420,7 +420,7 @@
 }
 
 .booking-mode-card.is-active {
-  border-color: #1c9a95;
+  border-color: #16d9ff;
   background: linear-gradient(145deg, rgba(28, 154, 149, 0.08), rgba(17, 107, 136, 0.08));
   box-shadow: 0 8px 24px rgba(28, 154, 149, 0.25);
 }
@@ -441,7 +441,7 @@
 .mode-price {
   font-size: 14px;
   font-weight: 700;
-  color: #0ca07f;
+  color: #0f6cbf;
 }
 
 .mode-card-desc {
@@ -550,7 +550,7 @@
 
 .summary-value--price {
   font-size: 18px;
-  color: #0ca07f;
+  color: #0f6cbf;
 }
 
 .btn-primary--summary {
@@ -722,7 +722,7 @@
   width: 18px;
   height: 18px;
   cursor: pointer;
-  accent-color: #1c9a95;
+  accent-color: #16d9ff;
 }
 
 .nearby-map {
@@ -931,8 +931,8 @@
   color: #fff;
   font-weight: 700;
   cursor: pointer;
-  background: linear-gradient(160deg, #0e7f96, #0ca07f);
-  box-shadow: 0 10px 16px rgba(14, 127, 150, 0.25);
+  background: linear-gradient(160deg, #0f5f9d, #16d9ff);
+  box-shadow: 0 10px 16px rgba(22, 217, 255, 0.25);
   transition: transform 0.2s ease, filter 0.2s ease;
 }
 

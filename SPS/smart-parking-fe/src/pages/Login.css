@@ -105,8 +105,8 @@
 }
 
 .segment-btn.active {
-  background: linear-gradient(135deg, #0e9cb2, #0e9588);
-  box-shadow: 0 8px 18px rgba(10, 99, 132, 0.34);
+  background: linear-gradient(135deg, #0f5f9d, #16d9ff);
+  box-shadow: 0 8px 18px rgba(22, 217, 255, 0.3);
   transform: scale(1.02);
 }
 
@@ -233,7 +233,7 @@
   font-size: 31px;
   font-weight: 700;
   color: #fff;
-  background: linear-gradient(110deg, #0e95ac, #3bc4b7);
+  background: linear-gradient(110deg, #0f5f9d, #16d9ff);
   cursor: pointer;
   box-shadow: 0 12px 22px rgba(22, 128, 145, 0.32);
   transition: all 0.3s ease;

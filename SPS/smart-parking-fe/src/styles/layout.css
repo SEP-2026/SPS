@@ -1,20 +1,21 @@
 @import url("https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Space+Grotesk:wght@600;700&display=swap");
+@import "./theme.css";
 
 :root {
   --bg-1: #f3f8ff;
-  --bg-2: #e6f2ff;
-  --bg-3: #d9ecf8;
-  --ink-900: #0f2740;
-  --ink-700: #244665;
-  --line: rgba(25, 58, 87, 0.15);
+  --bg-2: #e8f4ff;
+  --bg-3: #dff0fc;
+  --ink-900: #0b1f3a;
+  --ink-700: #102847;
+  --line: rgba(16, 40, 71, 0.14);
   --glass: rgba(255, 255, 255, 0.72);
   --glass-strong: rgba(255, 255, 255, 0.86);
-  --accent: #0f7b8f;
-  --accent-2: #0a9b8a;
+  --accent: #0f6cbf;
+  --accent-2: #16d9ff;
   --danger: #c73f4c;
   --ok: #2a8c52;
-  --shadow-xl: 0 24px 50px rgba(11, 36, 61, 0.16);
-  --shadow-md: 0 10px 22px rgba(11, 36, 61, 0.1);
+  --shadow-xl: 0 24px 50px rgba(11, 31, 58, 0.14);
+  --shadow-md: var(--sps-shadow-soft);
 }
 
 * {
@@ -27,8 +28,8 @@ body {
   color: var(--ink-900);
   font-family: "Be Vietnam Pro", "Segoe UI", sans-serif;
   background:
-    radial-gradient(circle at 8% 10%, rgba(113, 184, 255, 0.25), transparent 28%),
-    radial-gradient(circle at 88% 22%, rgba(45, 199, 171, 0.2), transparent 30%),
+    radial-gradient(circle at 8% 10%, rgba(22, 217, 255, 0.14), transparent 28%),
+    radial-gradient(circle at 88% 22%, rgba(15, 95, 157, 0.12), transparent 30%),
     linear-gradient(160deg, var(--bg-1) 0%, var(--bg-2) 48%, var(--bg-3) 100%);
 }
 
@@ -66,8 +67,8 @@ body {
   align-items: center;
   gap: 12px;
   padding: 12px;
-  border-bottom: 1px solid var(--line);
-  background: linear-gradient(180deg, rgba(20, 56, 84, 0.88), rgba(16, 47, 72, 0.82));
+  border-bottom: 1px solid var(--sps-cyan-border-soft);
+  background: linear-gradient(180deg, rgba(16, 40, 71, 0.92), rgba(11, 31, 58, 0.9));
   position: sticky;
   top: 0;
   z-index: 20000;

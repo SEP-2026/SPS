@@ -4,8 +4,10 @@ import { ADMIN_NAV_ITEMS, ADMIN_ROUTE_META } from "./adminData";
 import { AdminIcon } from "./AdminIcons";
 import API from "../services/api";
 import useRealtimeRefresh from "../services/useRealtimeRefresh";
+import SidebarPromoCard from "../components/SidebarPromoCard";
 import "./admin.css";
 import "../owner/owner.css";
+import "../styles/sidebar-promo.css";
 
 export default function AdminLayout({ auth, onLogout }) {
   const location = useLocation();
@@ -173,30 +175,34 @@ export default function AdminLayout({ auth, onLogout }) {
   return (
     <div className={`admin-shell${sidebarOpen ? " sidebar-open" : ""}`}>
       <aside className="admin-sidebar">
-        <div className="admin-brand">
-          <div className="admin-brand-mark">AD</div>
-          <div>
-            <strong>Smart Parking</strong>
-            <span>Trung tâm điều hành</span>
+        <div className="admin-sidebar-scroll">
+          <div className="admin-brand">
+            <div className="admin-brand-mark">AD</div>
+            <div>
+              <strong>Smart Parking</strong>
+              <span>Trung tâm điều hành</span>
+            </div>
           </div>
-        </div>
 
-        <div className="admin-sidebar-panel">
-          <p className="admin-sidebar-title">Điều hướng hệ thống</p>
-          <nav className="admin-menu">
-            {ADMIN_NAV_ITEMS.map((item) => (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                end={item.to === "/admin"}
-                className={({ isActive }) => `admin-menu-link${isActive ? " active" : ""}`}
-                onClick={() => setSidebarOpen(false)}
-              >
-                <AdminIcon name={item.icon} className="admin-menu-icon" />
-                <span>{item.label}</span>
-              </NavLink>
-            ))}
-          </nav>
+          <div className="admin-sidebar-panel">
+            <p className="admin-sidebar-title">Điều hướng hệ thống</p>
+            <nav className="admin-menu">
+              {ADMIN_NAV_ITEMS.map((item) => (
+                <NavLink
+                  key={item.to}
+                  to={item.to}
+                  end={item.to === "/admin"}
+                  className={({ isActive }) => `admin-menu-link${isActive ? " active" : ""}`}
+                  onClick={() => setSidebarOpen(false)}
+                >
+                  <AdminIcon name={item.icon} className="admin-menu-icon" />
+                  <span>{item.label}</span>
+                </NavLink>
+              ))}
+            </nav>
+          </div>
+
+          <SidebarPromoCard variant="admin" />
         </div>
 
         <button type="button" className="admin-logout" onClick={onLogout}>

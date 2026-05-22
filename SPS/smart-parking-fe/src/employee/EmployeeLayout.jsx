@@ -4,9 +4,11 @@ import { NavLink, Outlet } from "react-router-dom";
 import { OwnerIcon } from "../owner/OwnerIcons";
 import { getEmployeeParkingLot, getEmployeeProfile, getEmployeeRevenue, getEmployeeSlotsOverview } from "./employeeService";
 import useRealtimeRefresh from "../services/useRealtimeRefresh";
+import SidebarPromoCard from "../components/SidebarPromoCard";
 import "./employee.css";
 import "./employee-reference.css";
 import "./employee-layout-fix.css";
+import "../styles/sidebar-promo.css";
 
 const NAV_GROUPS = [
   {
@@ -151,34 +153,38 @@ export default function EmployeeLayout({ auth, onLogout }) {
   return (
     <div className={`employee-shell emp26-shell emp26-exact employee-dashboard-page${sidebarOpen ? " sidebar-open" : ""}${isParkingLocked ? " is-locked" : ""}`}>
       <aside className="employee-sidebar emp26-sidebar employee-sidebar-fixed">
-        <div className="employee-brand emp26-brand">
-          <div className="employee-brand-mark">SP</div>
-          <div>
-            <strong>Smart Parking</strong>
-            <span>Employee App</span>
+        <div className="employee-sidebar-scroll">
+          <div className="employee-brand emp26-brand">
+            <div className="employee-brand-mark">SP</div>
+            <div>
+              <strong>Smart Parking</strong>
+              <span>Employee App</span>
+            </div>
           </div>
-        </div>
 
-        <div className="emp26-nav-wrap">
-          {NAV_GROUPS.map((group) => (
-            <section key={group.title} className="emp26-nav-section">
-              <p className="employee-sidebar-title">{group.title}</p>
-              <nav className="employee-menu">
-                {group.items.map((item) => (
-                  <NavLink
-                    key={item.label + item.to}
-                    to={item.to}
-                    end={Boolean(item.end)}
-                    className={({ isActive }) => `employee-menu-link${isMenuItemActive(item, isActive) ? " active" : ""}`}
-                    onClick={() => setSidebarOpen(false)}
-                  >
-                    <OwnerIcon name={item.icon} className="owner-menu-icon" />
-                    <span>{item.label}</span>
-                  </NavLink>
-                ))}
-              </nav>
-            </section>
-          ))}
+          <div className="emp26-nav-wrap">
+            {NAV_GROUPS.map((group) => (
+              <section key={group.title} className="emp26-nav-section">
+                <p className="employee-sidebar-title">{group.title}</p>
+                <nav className="employee-menu">
+                  {group.items.map((item) => (
+                    <NavLink
+                      key={item.label + item.to}
+                      to={item.to}
+                      end={Boolean(item.end)}
+                      className={({ isActive }) => `employee-menu-link${isMenuItemActive(item, isActive) ? " active" : ""}`}
+                      onClick={() => setSidebarOpen(false)}
+                    >
+                      <OwnerIcon name={item.icon} className="owner-menu-icon" />
+                      <span>{item.label}</span>
+                    </NavLink>
+                  ))}
+                </nav>
+              </section>
+            ))}
+          </div>
+
+          <SidebarPromoCard variant="employee" />
         </div>
 
         <button type="button" className="employee-logout" onClick={onLogout}>

@@ -3,7 +3,7 @@
   background:
     radial-gradient(circle at 12% 20%, rgba(83, 160, 229, 0.2), transparent 38%),
     radial-gradient(circle at 88% 90%, rgba(50, 205, 128, 0.18), transparent 40%),
-    linear-gradient(135deg, #eaf0f6 0%, #dfe7f1 55%, #d3deec 100%);
+    linear-gradient(135deg, #f3f8ff 0%, #e8f4ff 55%, #dff0fc 100%);
 }
 
 .parking-board {
@@ -20,7 +20,7 @@
 .parking-lot-card {
   padding: 12px;
   border-radius: 14px;
-  border: 1px solid rgba(33, 56, 83, 0.14);
+  border: 1px solid rgba(22, 217, 255, 0.14);
   background: rgba(255, 255, 255, 0.66);
   box-shadow: 0 8px 16px rgba(12, 34, 54, 0.05);
   transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
@@ -29,11 +29,11 @@
 .parking-lot-card:hover {
   transform: translateY(-2px);
   box-shadow: 0 16px 32px rgba(12, 34, 54, 0.1);
-  border-color: rgba(20, 154, 143, 0.3);
+  border-color: rgba(22, 217, 255, 0.28);
 }
 
 .parking-lot-card.is-expanded {
-  border-color: rgba(20, 154, 143, 0.25);
+  border-color: rgba(22, 217, 255, 0.22);
   background: rgba(255, 255, 255, 0.82);
 }
 
@@ -155,14 +155,14 @@
 }
 
 .action-btn--primary {
-  background: linear-gradient(135deg, #149a8f 0%, #52c7c0 100%);
+  background: linear-gradient(135deg, #0f5f9d 0%, #16d9ff 100%);
   color: white;
-  box-shadow: 0 2px 8px rgba(20, 154, 143, 0.3);
+  box-shadow: 0 2px 8px rgba(22, 217, 255, 0.28);
 }
 
 .action-btn--primary:hover:not(:disabled) {
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(20, 154, 143, 0.4);
+  box-shadow: 0 4px 12px rgba(22, 217, 255, 0.35);
 }
 
 .action-btn--primary:disabled {
@@ -335,7 +335,7 @@
 }
 
 .filter-btn--active {
-  background: linear-gradient(135deg, #149a8f 0%, #52c7c0 100%);
+  background: linear-gradient(135deg, #0f5f9d 0%, #16d9ff 100%);
   color: white;
   border-color: transparent;
   box-shadow: 0 2px 8px rgba(20, 154, 143, 0.3);
@@ -371,7 +371,7 @@
   width: 12px;
   height: 12px;
   border-radius: 999px;
-  background: linear-gradient(135deg, #149a8f 0%, #52c7c0 100%);
+  background: linear-gradient(135deg, #0f5f9d 0%, #16d9ff 100%);
   box-shadow: 0 0 0 4px rgba(20, 154, 143, 0.14);
 }
 
@@ -591,7 +591,7 @@
   padding: 10px 20px;
   border-radius: 10px;
   border: 0;
-  background: linear-gradient(135deg, #149a8f 0%, #52c7c0 100%);
+  background: linear-gradient(135deg, #0f5f9d 0%, #16d9ff 100%);
   color: white;
   font-size: 14px;
   font-weight: 700;

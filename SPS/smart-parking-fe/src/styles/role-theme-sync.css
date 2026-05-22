@@ -1,0 +1,261 @@
+/* Role color sync — colors only, no layout/spacing/typography changes */
+
+/* ── Admin → Owner palette ── */
+.admin-shell {
+  background:
+    radial-gradient(circle at top left, var(--sps-radial-a), transparent 26%),
+    var(--sps-gradient-shell);
+}
+
+.admin-sidebar {
+  background: var(--sps-gradient-sidebar-owner);
+}
+
+.admin-brand-mark,
+.admin-avatar-mark {
+  background: var(--sps-gradient-brand);
+  box-shadow: 0 14px 24px rgba(11, 31, 58, 0.25);
+}
+
+.admin-sidebar-panel {
+  border-color: rgba(198, 229, 255, 0.12);
+}
+
+.admin-menu-link.active {
+  background: var(--sps-gradient-menu-active);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.18);
+}
+
+.admin-topbar {
+  background: var(--sps-gradient-card);
+  border-color: var(--sps-cyan-border-soft);
+}
+
+.admin-kicker {
+  color: var(--sps-ink-kicker);
+}
+
+.admin-topbar-main h1 {
+  color: var(--sps-ink-title);
+}
+
+.admin-notify-pill,
+.admin-role-pill {
+  border-color: var(--sps-cyan-border-soft);
+}
+
+.admin-state-card {
+  border-color: var(--sps-cyan-border-soft);
+  background: var(--sps-gradient-card-alt);
+  box-shadow: var(--sps-shadow-soft);
+}
+
+/* ── Employee (emp26 + base) → Owner cyan/blue ── */
+.emp26-exact {
+  --e-bg: #f3f8ff;
+  --e-card: #ffffff;
+  --e-line: rgba(22, 217, 255, 0.14);
+  --e-navy-1: #102847;
+  --e-navy-2: #0b1f3a;
+  --e-primary-1: #0f5f9d;
+  --e-primary-2: #16d9ff;
+}
+
+.emp26-exact.employee-shell,
+.employee-dashboard-page.employee-shell {
+  background:
+    radial-gradient(circle at 0 0, var(--sps-radial-b), transparent 28%),
+    radial-gradient(circle at 88% 16%, rgba(15, 95, 157, 0.1), transparent 24%),
+    #f3f8ff !important;
+}
+
+.emp26-exact .employee-sidebar,
+.employee-shell.emp26-shell.emp26-exact .employee-sidebar,
+.employee-shell.emp26-shell.emp26-exact .employee-sidebar.employee-sidebar-fixed,
+.employee-sidebar-fixed {
+  background: var(--sps-gradient-sidebar-owner) !important;
+  border-right: 1px solid var(--sps-cyan-border-soft) !important;
+}
+
+.emp26-exact .employee-brand-mark,
+.emp26-exact .employee-avatar-mark,
+.employee-shell.emp26-shell.emp26-exact .employee-brand-mark {
+  background: var(--sps-gradient-brand) !important;
+  box-shadow: 0 8px 16px rgba(11, 31, 58, 0.25) !important;
+}
+
+.emp26-exact .employee-menu-link.active,
+.employee-shell.emp26-shell.emp26-exact .employee-sidebar .employee-menu-link.active {
+  background: var(--sps-gradient-menu-active) !important;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.18), var(--sps-shadow-glow) !important;
+}
+
+.emp26-exact .employee-topbar,
+.employee-shell.emp26-shell.emp26-exact .emp26-topbar {
+  border-color: var(--sps-cyan-border-soft) !important;
+  background: var(--sps-gradient-card) !important;
+  box-shadow: var(--sps-shadow-soft) !important;
+}
+
+.emp26-exact .employee-kicker {
+  color: var(--sps-ink-kicker) !important;
+}
+
+.emp26-exact .exact-dashboard .emp26-qr-actions .employee-btn,
+.employee-shell.emp26-shell.emp26-exact .exact-dashboard .employee-panel-qr.employee-qr-card .employee-qr-actions button {
+  background: var(--sps-gradient-btn) !important;
+  box-shadow: var(--sps-shadow-btn) !important;
+}
+
+.employee-shell .employee-sidebar:not(.employee-sidebar-fixed) {
+  background: var(--sps-gradient-sidebar-owner);
+}
+
+.employee-shell .employee-brand-mark,
+.employee-shell .employee-avatar-mark {
+  background: var(--sps-gradient-brand);
+}
+
+.employee-shell .employee-menu-link.active {
+  background: var(--sps-gradient-menu-active);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.18), var(--sps-shadow-glow);
+}
+
+.employee-shell {
+  --employee-bg-1: var(--sps-radial-b);
+  --employee-bg-2: rgba(15, 95, 157, 0.1);
+  --employee-card-border: var(--sps-cyan-border-soft);
+  --employee-shadow-soft: var(--sps-shadow-soft);
+}
+
+.employee-topbar {
+  border-color: var(--sps-cyan-border-soft);
+  background: var(--sps-gradient-card);
+}
+
+.employee-kicker {
+  color: var(--sps-ink-kicker-alt);
+}
+
+.employee-btn {
+  background: var(--sps-gradient-btn);
+  box-shadow: var(--sps-shadow-btn);
+}
+
+.employee-btn:hover:not(:disabled) {
+  box-shadow: 0 16px 28px var(--sps-cyan-glow);
+}
+
+.employee-card {
+  border-color: var(--sps-cyan-border-soft);
+}
+
+/* ── User app — white + cyan, light only ── */
+.parking-home {
+  background:
+    radial-gradient(circle at 12% 20%, rgba(22, 217, 255, 0.14), transparent 38%),
+    radial-gradient(circle at 88% 90%, rgba(15, 95, 157, 0.1), transparent 40%),
+    linear-gradient(135deg, #f3f8ff 0%, #e8f4ff 55%, #dff0fc 100%);
+}
+
+.parking-lot-card {
+  border-color: var(--sps-cyan-border-soft);
+}
+
+.parking-lot-card:hover {
+  border-color: var(--sps-cyan-border);
+  box-shadow: var(--sps-shadow-md);
+}
+
+.parking-lot-card.is-expanded {
+  border-color: var(--sps-cyan-border);
+}
+
+.action-btn--primary {
+  background: var(--sps-gradient-btn-soft);
+  box-shadow: var(--sps-shadow-btn);
+}
+
+.action-btn--primary:hover:not(:disabled) {
+  box-shadow: 0 4px 16px var(--sps-cyan-glow);
+}
+
+.booking-search-section {
+  border-color: var(--sps-cyan-border-soft);
+  background: var(--sps-gradient-card-alt);
+}
+
+.booking-form-headline {
+  background: var(--sps-gradient-hero);
+}
+
+.stepper-step--completed .stepper-number,
+.stepper-step--active .stepper-number {
+  background: var(--sps-gradient-btn-soft);
+}
+
+.stepper-step--active .stepper-number {
+  box-shadow: var(--sps-shadow-btn);
+}
+
+.stepper-step--completed .stepper-label,
+.stepper-step--active .stepper-label {
+  color: var(--sps-blue-accent);
+}
+
+.login-wrap {
+  background:
+    radial-gradient(circle at 20% 12%, rgba(22, 217, 255, 0.28), transparent 36%),
+    radial-gradient(circle at 85% 18%, rgba(15, 95, 157, 0.18), transparent 43%),
+    linear-gradient(145deg, #b8e8ff 0%, #7ec8f5 55%, #5ed4e8 100%);
+}
+
+.segment-wrap {
+  background: linear-gradient(135deg, #7ee8ff, #5ec8f0);
+}
+
+.segment-btn.active {
+  background: var(--sps-gradient-btn-soft);
+  box-shadow: var(--sps-shadow-btn);
+}
+
+.profile-frame {
+  border-color: rgba(22, 217, 255, 0.22);
+  background:
+    radial-gradient(circle at 18% 85%, rgba(22, 217, 255, 0.1), transparent 34%),
+    linear-gradient(125deg, #5eb6d4 0%, #9ed6ef 33%, #b8e6f0 66%, #62b8d4 100%);
+}
+
+.profile-shell {
+  --profile-accent-a: #0f6cbf;
+  --profile-accent-b: #16d9ff;
+}
+
+.app-nav {
+  background: linear-gradient(180deg, rgba(16, 40, 71, 0.9), rgba(11, 31, 58, 0.86));
+}
+
+.app-link.active {
+  background: var(--sps-gradient-menu-active);
+}
+
+.page-card {
+  border-color: var(--sps-cyan-border-soft);
+}
+
+.page-title {
+  color: var(--sps-ink-title);
+}
+
+.employee-scan-page {
+  --employee-scan-navy: var(--sps-navy-mid);
+  --employee-scan-sky: var(--sps-blue-accent);
+}
+
+.employee-scan-page .scan-frame {
+  background: linear-gradient(145deg, #102847 15%, #0f5f9d 60%, #18c8f3 100%);
+}
+
+.employee-scan-page .scan-tab-btn.active {
+  background: var(--sps-gradient-btn-soft);
+}

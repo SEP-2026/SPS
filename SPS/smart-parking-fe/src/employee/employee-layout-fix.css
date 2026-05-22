@@ -13,12 +13,12 @@
   flex-shrink: 0 !important;
   height: 100vh !important;
   border-radius: 0 18px 18px 0 !important;
-  background: linear-gradient(180deg, #06133b 0%, #101d5c 100%) !important;
+  background: linear-gradient(180deg, rgba(16, 47, 72, 0.97) 0%, rgba(12, 39, 62, 0.98) 100%) !important;
   overflow-y: auto;
 }
 
 .employee-shell.emp26-shell.emp26-exact .employee-sidebar.employee-sidebar-fixed {
-  background: linear-gradient(180deg, #071339 0%, #111d58 100%) !important;
+  background: linear-gradient(180deg, rgba(16, 47, 72, 0.97) 0%, rgba(12, 39, 62, 0.98) 100%) !important;
   width: 255px !important;
   min-width: 255px !important;
   max-width: 255px !important;
@@ -26,7 +26,34 @@
   border-radius: 0 18px 18px 0 !important;
   display: flex !important;
   flex-direction: column !important;
-  gap: 0 !important;
+  gap: 10px !important;
+  overflow: hidden !important;
+}
+
+.employee-shell.emp26-shell.emp26-exact .employee-sidebar-scroll {
+  flex: 1 !important;
+  min-height: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 10px !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+}
+
+.employee-shell.emp26-shell.emp26-exact .employee-sidebar .emp26-nav-wrap {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  overflow-y: auto !important;
+}
+
+.employee-shell.emp26-shell.emp26-exact .employee-sidebar .owner-promo-card {
+  margin-top: auto !important;
+  flex-shrink: 0 !important;
+}
+
+.employee-shell.emp26-shell.emp26-exact .employee-sidebar .employee-logout {
+  margin-top: 0 !important;
+  flex-shrink: 0 !important;
 }
 
 .employee-shell.emp26-shell.emp26-exact .employee-sidebar .employee-brand {
@@ -73,8 +100,8 @@
 }
 
 .employee-shell.emp26-shell.emp26-exact .employee-sidebar .employee-menu-link.active {
-  background: linear-gradient(135deg, #246bfe 0%, #8b2cff 100%) !important;
-  box-shadow: 0 10px 22px rgba(69, 79, 255, 0.35) !important;
+  background: linear-gradient(160deg, rgba(55, 193, 177, 0.36), rgba(105, 188, 255, 0.28)) !important;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.18), 0 10px 22px rgba(22, 217, 255, 0.2) !important;
 }
 
 .employee-shell.emp26-shell.emp26-exact .employee-sidebar .employee-menu-link .owner-menu-icon {
@@ -234,7 +261,7 @@
 }
 
 .employee-panel-qr .emp26-qr-actions .employee-btn {
-  background: linear-gradient(135deg, #246bfe 0%, #8b2cff 100%) !important;
+  background: linear-gradient(140deg, #0f6cbf 0%, #16d9ff 100%) !important;
 }
 
 .employee-panel-qr.employee-qr-card {
@@ -394,7 +421,7 @@
   min-height: 44px !important;
   border: 0 !important;
   border-radius: 12px !important;
-  background: linear-gradient(135deg, #246bfe 0%, #8b2cff 100%) !important;
+  background: linear-gradient(140deg, #0f6cbf 0%, #16d9ff 100%) !important;
   color: #ffffff !important;
   font-weight: 700 !important;
   transition: filter .18s ease, box-shadow .18s ease !important;
@@ -791,6 +818,6 @@
   border: none !important;
   color: #fff !important;
   font-weight: 700 !important;
-  background: linear-gradient(135deg, #246bfe 0%, #8b2cff 100%) !important;
+  background: linear-gradient(140deg, #0f6cbf 0%, #16d9ff 100%) !important;
   box-shadow: 0 10px 22px rgba(91, 84, 255, .28) !important;
 }

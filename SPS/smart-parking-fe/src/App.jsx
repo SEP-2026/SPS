@@ -44,6 +44,7 @@ import EmployeeVehicles from "./pages/employee/EmployeeVehicles";
 import API, { clearAuth, getAuth, saveAuth } from "./services/api";
 import useRealtimeNotifications from "./services/useRealtimeNotifications";
 import "./styles/layout.css";
+import "./styles/role-theme-sync.css";
 
 const NOTIFICATIONS_KEY = "smart-parking.notifications";
 

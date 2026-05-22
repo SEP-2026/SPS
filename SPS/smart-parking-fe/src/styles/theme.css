@@ -1,0 +1,70 @@
+/* Smart Parking — shared color system (Owner reference) */
+:root {
+  --sps-cyan: #16d9ff;
+  --sps-navy-deep: #0b1f3a;
+  --sps-blue-accent: #0f6cbf;
+  --sps-navy-mid: #102847;
+  --sps-blue-mid: #0f5f9d;
+  --sps-cyan-bright: #18c8f3;
+  --sps-cyan-glow: rgba(22, 217, 255, 0.25);
+  --sps-cyan-border: rgba(22, 217, 255, 0.22);
+  --sps-cyan-border-soft: rgba(22, 217, 255, 0.14);
+
+  --sps-gradient-brand: linear-gradient(
+    150deg,
+    rgba(15, 95, 157, 0.95) 0%,
+    rgba(24, 200, 243, 0.92) 52%,
+    rgba(22, 217, 255, 0.9) 100%
+  );
+  --sps-gradient-sidebar: linear-gradient(
+    180deg,
+    rgba(16, 40, 71, 0.97) 0%,
+    rgba(11, 31, 58, 0.98) 100%
+  );
+  --sps-gradient-sidebar-owner: linear-gradient(
+    180deg,
+    rgba(16, 47, 72, 0.97) 0%,
+    rgba(12, 39, 62, 0.98) 100%
+  );
+  --sps-gradient-shell: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.24) 0%,
+    rgba(255, 255, 255, 0.08) 100%
+  );
+  --sps-gradient-hero: linear-gradient(105deg, #102847 0%, #0f5f9d 55%, #18c8f3 100%);
+  --sps-gradient-btn: linear-gradient(140deg, #0f6cbf 0%, #16d9ff 100%);
+  --sps-gradient-btn-soft: linear-gradient(135deg, #0f5f9d 0%, #18c8f3 100%);
+  --sps-gradient-menu-active: linear-gradient(
+    160deg,
+    rgba(55, 193, 177, 0.36) 0%,
+    rgba(105, 188, 255, 0.28) 100%
+  );
+  --sps-gradient-menu-active-cyan: linear-gradient(
+    160deg,
+    rgba(24, 200, 243, 0.34) 0%,
+    rgba(22, 217, 255, 0.26) 100%
+  );
+  --sps-gradient-card: linear-gradient(
+    180deg,
+    rgba(251, 254, 255, 0.92) 0%,
+    rgba(237, 247, 252, 0.78) 100%
+  );
+  --sps-gradient-card-alt: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.94) 0%,
+    rgba(241, 249, 253, 0.88) 100%
+  );
+
+  --sps-shadow-soft: 0 10px 22px rgba(11, 31, 58, 0.1);
+  --sps-shadow-md: 0 14px 28px rgba(11, 31, 58, 0.12);
+  --sps-shadow-glow: 0 12px 24px var(--sps-cyan-glow);
+  --sps-shadow-btn: 0 8px 18px rgba(15, 108, 191, 0.32);
+
+  --sps-ink-title: #14395d;
+  --sps-ink-body: #52738f;
+  --sps-ink-kicker: #108091;
+  --sps-ink-kicker-alt: #0f6cbf;
+
+  --sps-radial-a: rgba(119, 198, 255, 0.1);
+  --sps-radial-b: rgba(22, 217, 255, 0.12);
+}
