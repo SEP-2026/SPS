@@ -7,7 +7,7 @@ function formatStatusLabel(status) {
     reserved: "Đang đỗ",
     in_use: "Đang đỗ",
     occupied: "Đang đỗ",
-    maintenance: "Trống",
+    maintenance: "Bảo trì",
   };
   return mapping[status] || "Trống";
 }
@@ -49,7 +49,7 @@ export default function EmployeeParkingBoard({ slotsOverview, title = "Sơ đồ
   const [checkoutMessage, setCheckoutMessage] = useState("");
   const [checkoutError, setCheckoutError] = useState("");
 
-  const slots = Array.isArray(slotsOverview?.slots) ? slotsOverview.slots : [];
+  const slots = useMemo(() => (Array.isArray(slotsOverview?.slots) ? slotsOverview.slots : []), [slotsOverview?.slots]);
   const total = Number(slotsOverview?.total_slots || 0);
   const available = Number(slotsOverview?.available_slots || 0);
   const occupied = Number(slotsOverview?.in_use_slots || 0) + Number(slotsOverview?.reserved_slots || 0);
@@ -139,8 +139,8 @@ export default function EmployeeParkingBoard({ slotsOverview, title = "Sơ đồ
 
       <div className="parking-grid">
         {normalizedSlots.map((slot) => {
-          const isAvailable = slot.status === "available" || slot.status === "maintenance";
-          const cardClass = `slot-card${slot.clickable ? " employee-slot-card--interactive" : " employee-slot-card--static"}`;
+          const isAvailable = slot.status === "available";
+          const cardClass = `slot-card slot-card--${slot.status || "available"}${slot.clickable ? " employee-slot-card--interactive" : " employee-slot-card--static"}`;
 
           return (
             <article

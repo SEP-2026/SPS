@@ -1,0 +1,489 @@
+/* Employee workspace — viewport-fit layout (sync with Overview design system) */
+
+.employee-modern-content.is-workspace {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  height: 100% !important;
+  overflow: hidden !important;
+  padding: 12px 20px 14px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  visibility: visible !important;
+}
+
+.employee-workspace-page {
+  flex: 1 1 auto !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  height: 100% !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 10px !important;
+  overflow: hidden !important;
+}
+
+.employee-page-toolbar {
+  flex: 0 0 auto !important;
+  min-width: 0 !important;
+}
+
+.employee-page-kpis {
+  flex: 0 0 auto !important;
+  min-width: 0 !important;
+}
+
+.employee-page-body {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+  display: flex !important;
+  flex-direction: column !important;
+  min-width: 0 !important;
+}
+
+.employee-page-body > .employee-modern-card,
+.employee-page-body > .employee-parking-board,
+.employee-page-body > .employee-empty-state,
+.employee-page-body > .scan-page,
+.employee-page-body > .page-card {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  min-width: 0 !important;
+  overflow: hidden !important;
+}
+
+.employee-workspace-page .employee-page-heading {
+  display: flex !important;
+  align-items: flex-start !important;
+  justify-content: space-between !important;
+  gap: 16px !important;
+  margin: 0 !important;
+}
+
+.employee-workspace-page .employee-page-heading > div {
+  min-width: 0 !important;
+}
+
+.employee-workspace-page .employee-page-heading p {
+  margin: 0 0 4px !important;
+  color: #0b7cff !important;
+  font-size: 13px !important;
+  font-weight: 800 !important;
+}
+
+.employee-workspace-page .employee-page-heading h2 {
+  margin: 0 !important;
+  color: #081735 !important;
+  font-size: 24px !important;
+  line-height: 1.15 !important;
+  font-weight: 950 !important;
+}
+
+.employee-workspace-page .employee-page-heading > span,
+.employee-workspace-page .employee-page-heading .employee-page-heading-desc {
+  margin-top: 6px !important;
+  display: block !important;
+  color: #64748b !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  line-height: 1.45 !important;
+}
+
+.employee-workspace-page .employee-filter-bar {
+  padding: 10px 12px !important;
+  gap: 10px !important;
+  border-radius: 16px !important;
+  border: 1px solid rgba(191, 219, 254, 0.55) !important;
+  background: #fff !important;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.05) !important;
+}
+
+.employee-workspace-page .employee-filter-count {
+  background: #eff6ff !important;
+  color: #0b7cff !important;
+}
+
+.employee-workspace-page .employee-vehicle-kpi-grid,
+.employee-workspace-page .employee-revenue-metric-grid {
+  gap: 10px !important;
+}
+
+.employee-workspace-page .employee-vehicle-kpi,
+.employee-workspace-page .employee-revenue-metric {
+  min-height: 72px !important;
+  padding: 10px 12px !important;
+  border-radius: 16px !important;
+  border: 1px solid rgba(191, 219, 254, 0.55) !important;
+  background: #fff !important;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.05) !important;
+}
+
+.employee-workspace-page .employee-modern-card,
+.employee-workspace-page .employee-parking-board,
+.employee-workspace-page .employee-assist-map-wrap,
+.employee-workspace-page .employee-assist-form {
+  border-radius: 18px !important;
+  border: 1px solid rgba(191, 219, 254, 0.55) !important;
+  background: #fff !important;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.05) !important;
+}
+
+.employee-workspace-page .employee-empty-state {
+  padding: 24px 20px !important;
+  border-radius: 18px !important;
+  border: 1px dashed rgba(191, 219, 254, 0.8) !important;
+  background: #fff !important;
+  text-align: center !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.employee-workspace-page .employee-note {
+  padding: 8px 12px !important;
+  margin: 0 !important;
+  border-radius: 12px !important;
+  border: 1px solid #bfdbfe !important;
+  background: #eff6ff !important;
+  color: #1e40af !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+}
+
+/* History */
+.employee-history-page .employee-history-filter {
+  grid-template-columns: minmax(160px, 1fr) minmax(120px, auto) auto auto !important;
+}
+
+.employee-history-page .employee-page-body .employee-modern-table-card {
+  display: flex !important;
+  flex-direction: column !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+  padding: 0 !important;
+}
+
+.employee-history-page .employee-modern-table-wrap {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  overflow: auto !important;
+  scrollbar-width: thin !important;
+}
+
+.employee-history-page .employee-modern-table-wrap table {
+  width: 100% !important;
+  table-layout: fixed !important;
+}
+
+.employee-history-page .employee-modern-table-wrap th,
+.employee-history-page .employee-modern-table-wrap td {
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+  padding: 10px 12px !important;
+  font-size: 13px !important;
+}
+
+.employee-history-page .employee-table-detail {
+  white-space: nowrap !important;
+}
+
+.employee-history-page .employee-table-pagination {
+  flex: 0 0 auto !important;
+  padding: 8px 12px !important;
+  border-top: 1px solid #e2e8f0 !important;
+}
+
+/* Vehicles */
+.employee-vehicles-page .employee-vehicles-toolbar {
+  grid-template-columns: minmax(220px, 1.4fr) minmax(140px, auto) minmax(140px, auto) auto !important;
+}
+
+.employee-vehicles-page .employee-page-body .employee-parking-board {
+  display: flex !important;
+  flex-direction: column !important;
+  padding: 14px !important;
+  overflow: hidden !important;
+}
+
+.employee-vehicles-page .employee-parking-board .parking-lot-head {
+  flex: 0 0 auto !important;
+  margin-bottom: 10px !important;
+}
+
+.employee-vehicles-page .employee-parking-board .parking-lot-name {
+  font-size: 18px !important;
+}
+
+.employee-vehicles-page .employee-parking-board .employee-board-hint {
+  display: none !important;
+}
+
+.employee-vehicles-page .employee-parking-board .parking-grid {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  overflow: auto !important;
+  align-content: start !important;
+  scrollbar-width: thin !important;
+  grid-template-columns: repeat(auto-fill, minmax(112px, 1fr)) !important;
+  gap: 10px !important;
+}
+
+.employee-vehicles-page .employee-parking-board .slot-card {
+  min-height: 108px !important;
+}
+
+/* Booking assist */
+.employee-booking-assist-page .employee-booking-toolbar {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 12px !important;
+  flex-wrap: wrap !important;
+}
+
+.employee-booking-assist-page .employee-page-body.employee-assist-layout {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1.05fr) minmax(340px, 0.95fr) !important;
+  gap: 12px !important;
+  align-items: stretch !important;
+  overflow: hidden !important;
+}
+
+.employee-booking-assist-page .employee-assist-map-wrap,
+.employee-booking-assist-page .employee-assist-form {
+  padding: 14px !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  max-height: 100% !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  scrollbar-width: thin !important;
+}
+
+.employee-booking-assist-page .employee-assist-map-head h3 {
+  font-size: 17px !important;
+  margin: 0 0 4px !important;
+}
+
+.employee-booking-assist-page .employee-assist-map-head p {
+  margin: 0 0 8px !important;
+  font-size: 13px !important;
+}
+
+.employee-booking-assist-page .parking-map-legend.employee-assist-legend {
+  margin-bottom: 8px !important;
+  gap: 8px !important;
+}
+
+.employee-booking-assist-page .employee-assist-map-grid {
+  max-height: none !important;
+  overflow: visible !important;
+}
+
+.employee-booking-assist-page .employee-assist-form-head {
+  border-radius: 14px !important;
+  border: 1px solid #bfdbfe !important;
+  background: #f8fbff !important;
+}
+
+.employee-booking-assist-page .employee-assist-mode-row .employee-chip.is-active {
+  background: linear-gradient(135deg, #0b7cff, #14b8a6) !important;
+  border-color: transparent !important;
+  color: #fff !important;
+}
+
+.employee-booking-assist-page .employee-assist-summary {
+  border-radius: 14px !important;
+  border: 1px solid #e2e8f0 !important;
+  background: #f8fbff !important;
+}
+
+.employee-booking-assist-page .employee-assist-flow-button {
+  flex-shrink: 0 !important;
+  border-radius: 12px !important;
+  border: 1px solid rgba(191, 219, 254, 0.8) !important;
+  background: #fff !important;
+  color: #0b7cff !important;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.05) !important;
+}
+
+.employee-booking-assist-page .employee-action-row.employee-form-span {
+  position: sticky !important;
+  bottom: 0 !important;
+  z-index: 2 !important;
+  margin-top: 4px !important;
+  padding-top: 8px !important;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0), #fff 28%) !important;
+}
+
+/* Scanner */
+.employee-scanner-workspace.employee-scan-page {
+  gap: 0 !important;
+}
+
+.employee-scanner-workspace .employee-page-body {
+  min-height: 0 !important;
+}
+
+.employee-scanner-workspace .employee-scanner-card {
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  height: 100% !important;
+}
+
+.employee-scanner-workspace .scan-page {
+  display: flex !important;
+  flex-direction: column !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  border-radius: 18px !important;
+  border: 1px solid rgba(191, 219, 254, 0.55) !important;
+  background: #fff !important;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.05) !important;
+  padding: 12px 14px !important;
+  gap: 10px !important;
+  overflow: hidden !important;
+}
+
+.employee-scanner-workspace .scan-page::before {
+  display: none !important;
+}
+
+.employee-scanner-workspace .scan-eyebrow {
+  color: #0b7cff !important;
+  background: #eff6ff !important;
+  border-color: rgba(191, 219, 254, 0.8) !important;
+  letter-spacing: 0.08em !important;
+  font-size: 11px !important;
+  padding: 3px 8px !important;
+}
+
+.employee-scanner-workspace .scan-subtitle {
+  color: #64748b !important;
+  font-size: 13px !important;
+  line-height: 1.4 !important;
+}
+
+.employee-scanner-workspace .scan-hero {
+  flex: 0 0 auto !important;
+  display: flex !important;
+  align-items: flex-start !important;
+  justify-content: space-between !important;
+  gap: 12px !important;
+  margin-bottom: 0 !important;
+}
+
+.employee-scanner-workspace .scan-hero-copy {
+  min-width: 0 !important;
+  flex: 1 1 auto !important;
+}
+
+.employee-scanner-workspace .scan-hero-badge {
+  min-width: 180px !important;
+  padding: 8px 10px !important;
+  border-radius: 14px !important;
+  border: 1px solid rgba(191, 219, 254, 0.55) !important;
+  background: #f8fbff !important;
+  box-shadow: none !important;
+}
+
+.employee-scanner-workspace .scan-hero-badge strong {
+  color: #081735 !important;
+  font-size: 13px !important;
+}
+
+.employee-scanner-workspace .scan-hero-badge span {
+  background: #fff !important;
+  color: #64748b !important;
+  font-size: 11px !important;
+  padding: 4px 8px !important;
+}
+
+.employee-scanner-workspace .scan-grid {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  grid-template-columns: minmax(0, 1.05fr) minmax(320px, 0.95fr) !important;
+  gap: 12px !important;
+  align-items: stretch !important;
+}
+
+.employee-scanner-workspace .scan-grid > .scan-panel {
+  min-height: 0 !important;
+  max-height: 100% !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  scrollbar-width: thin !important;
+}
+
+.employee-scanner-workspace .scan-panel {
+  border-radius: 16px !important;
+  border: 1px solid rgba(191, 219, 254, 0.55) !important;
+  background: #fff !important;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.05) !important;
+  padding: 12px !important;
+  gap: 10px !important;
+}
+
+.employee-scanner-workspace .scan-panel--primary {
+  border-radius: 16px !important;
+  border: 1px solid rgba(191, 219, 254, 0.55) !important;
+  background: linear-gradient(145deg, #061b3a 0%, #082b4a 52%, #0b3658 100%) !important;
+  box-shadow: 0 16px 36px rgba(6, 27, 58, 0.18) !important;
+}
+
+.employee-scanner-workspace .scan-frame {
+  min-height: 160px !important;
+  max-height: min(34vh, 260px) !important;
+}
+
+.employee-scanner-workspace .scan-camera-wrap,
+.employee-scanner-workspace .scan-camera-preview,
+.employee-scanner-workspace .scan-camera-preview video {
+  max-height: min(34vh, 260px) !important;
+}
+
+.employee-scanner-workspace .scan-primary-btn,
+.employee-scanner-workspace .scan-tab-btn.active {
+  background: linear-gradient(135deg, #2563eb, #14b8a6) !important;
+}
+
+.employee-scanner-workspace .scan-summary-list div {
+  border-radius: 12px !important;
+  border: 1px solid #e2e8f0 !important;
+  background: #f8fbff !important;
+}
+
+@media (max-width: 1180px) {
+  .employee-booking-assist-page .employee-page-body.employee-assist-layout,
+  .employee-scanner-workspace .scan-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .employee-scanner-workspace .scan-grid {
+    overflow-y: auto !important;
+  }
+
+  .employee-scanner-workspace .scan-grid > .scan-panel {
+    max-height: min(48vh, 420px) !important;
+  }
+
+  .employee-vehicles-page .employee-vehicles-toolbar {
+    grid-template-columns: 1fr !important;
+  }
+
+  .employee-history-page .employee-history-filter {
+    grid-template-columns: 1fr 1fr !important;
+  }
+}
+
+@media (max-width: 900px) {
+  .employee-workspace-page .employee-vehicle-kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}

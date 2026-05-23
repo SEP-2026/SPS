@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { createElement, useCallback, useEffect, useMemo, useState } from "react";
+import { Car, Clock, Search, SquareParking } from "lucide-react";
 
 import EmployeeParkingBoard from "../../employee/EmployeeParkingBoard";
 import { employeeCheckOut, getEmployeeVehicles } from "../../employee/employeeService";
@@ -24,6 +25,20 @@ function resolveBookingIdFromSlot(slot) {
   return match ? Number(match[1]) : null;
 }
 
+function VehicleKpi({ icon: Icon, label, value, tone = "blue" }) {
+  return (
+    <article className={`employee-vehicle-kpi is-${tone}`}>
+      <span>
+        {createElement(Icon, { size: 20 })}
+      </span>
+      <div>
+        <small>{label}</small>
+        <strong>{value}</strong>
+      </div>
+    </article>
+  );
+}
+
 export default function EmployeeVehicles() {
   const { slotsOverview, refreshEmployee } = useEmployeeContext();
   const [data, setData] = useState({ vehicles: [], total_count: 0 });
@@ -39,18 +54,20 @@ export default function EmployeeVehicles() {
   useEffect(() => {
     let mounted = true;
 
-    refreshVehicles().catch(() => {
+    const loadVehicles = () => refreshVehicles().catch(() => {
       if (mounted) {
         setData({ vehicles: [], total_count: 0 });
       }
     });
+    const initialTimerId = window.setTimeout(loadVehicles, 0);
 
     const timerId = window.setInterval(() => {
-      refreshVehicles().catch(() => null);
+      loadVehicles().catch(() => null);
     }, 20000);
 
     return () => {
       mounted = false;
+      window.clearTimeout(initialTimerId);
       window.clearInterval(timerId);
     };
   }, [refreshVehicles]);
@@ -126,19 +143,16 @@ export default function EmployeeVehicles() {
   }, [data.vehicles, normalizedQuery, slotsOverview, statusFilter]);
 
   return (
-    <section className="employee-card employee-section-shell employee-vehicles-page">
-      <div className="employee-section-headline">
-        <h2>Xe trong bãi</h2>
-      </div>
-
-      <div className="employee-vehicles-toolbar">
-        <div className="employee-search-wrap">
+    <section className="employee-workspace-page employee-vehicles-page">
+      <div className="employee-page-toolbar employee-filter-bar employee-vehicles-toolbar">
+        <label className="employee-search-wrap">
+          <Search size={18} />
           <input
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Tìm biển số, vị trí đỗ hoặc mã booking..."
+            placeholder="Tìm biển số, vị trí hoặc mã booking..."
           />
-        </div>
+        </label>
         <div className="employee-filter-wrap">
           <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
             {STATUS_FILTER_OPTIONS.map((item) => (
@@ -146,28 +160,24 @@ export default function EmployeeVehicles() {
             ))}
           </select>
         </div>
-        <span className="employee-chip">Tổng xe hiện tại: {occupiedOrReserved}</span>
+        <div className="employee-filter-wrap">
+          <select defaultValue="all" aria-label="Loại xe">
+            <option value="all">Tất cả loại xe</option>
+            <option value="car">Ô tô</option>
+            <option value="motorbike">Xe máy</option>
+          </select>
+        </div>
+        <span className="employee-filter-count">Tổng xe hiện tại: {occupiedOrReserved}</span>
       </div>
 
-      <div className="employee-traffic-summary">
-        <div className="employee-traffic-chip">
-          <span>Số xe giữ/đang đỗ</span>
-          <strong>{occupiedOrReserved}</strong>
-        </div>
-        <div className="employee-traffic-chip">
-          <span>Vị trí trống</span>
-          <strong>{slotsOverview?.available_slots || 0}</strong>
-        </div>
-        <div className="employee-traffic-chip">
-          <span>Vị trí đã dùng/giữ</span>
-          <strong>{(slotsOverview?.in_use_slots || 0) + (slotsOverview?.reserved_slots || 0)}</strong>
-        </div>
-        <div className="employee-traffic-chip">
-          <span>Check-in gần nhất</span>
-          <strong className="employee-inline-small">{latestCheckIn}</strong>
-        </div>
+      <div className="employee-page-kpis employee-vehicle-kpi-grid">
+        <VehicleKpi icon={Car} tone="green" label="Số xe giữ/đang đỗ" value={occupiedOrReserved} />
+        <VehicleKpi icon={SquareParking} tone="blue" label="Vị trí trống" value={slotsOverview?.available_slots || 0} />
+        <VehicleKpi icon={SquareParking} tone="purple" label="Vị trí đã dùng/giữ" value={(slotsOverview?.in_use_slots || 0) + (slotsOverview?.reserved_slots || 0)} />
+        <VehicleKpi icon={Clock} tone="orange" label="Check-in gần nhất" value={latestCheckIn} />
       </div>
 
+      <div className="employee-page-body">
       {boardSlotsOverview?.slots?.length ? (
         <EmployeeParkingBoard
           slotsOverview={boardSlotsOverview}
@@ -180,6 +190,7 @@ export default function EmployeeVehicles() {
           <p>Hãy thử đổi trạng thái lọc hoặc từ khóa tìm kiếm để xem dữ liệu.</p>
         </div>
       )}
+      </div>
     </section>
   );
 }

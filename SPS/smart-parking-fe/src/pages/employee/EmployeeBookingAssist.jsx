@@ -134,7 +134,8 @@ function resolveStatusClass(status) {
 }
 
 export default function EmployeeBookingAssist() {
-  const { parkingLot, slotsOverview, refreshEmployee, isParkingLocked } = useEmployeeContext();
+  const context = useEmployeeContext() || {};
+  const { parkingLot, slotsOverview, refreshEmployee, isParkingLocked } = context;
   const [form, setForm] = useState(getDefaultForm);
   const [price, setPrice] = useState({ price_per_hour: 0, price_per_day: 0, price_per_month: 0 });
   const [selectedMapSlotId, setSelectedMapSlotId] = useState("");
@@ -272,15 +273,16 @@ export default function EmployeeBookingAssist() {
   };
 
   return (
-    <section className="employee-card employee-section-shell employee-booking-assist">
-      <div className="employee-section-headline">
-        <h2>Đặt chỗ giúp khách</h2>
-        <span className="employee-chip">Nhập thông tin giống luồng user</span>
+    <section className="employee-workspace-page employee-booking-assist-page">
+      <div className="employee-page-toolbar">
+        <div className="employee-filter-bar employee-booking-toolbar">
+          <span className="employee-filter-count">Ô trống: {slotsOverview?.available_slots ?? 0}</span>
+          <button type="button" className="employee-assist-flow-button">Nhập thông tin giống luồng user</button>
+        </div>
+        {message ? <p className="employee-note">{message}</p> : null}
       </div>
 
-      {message ? <p className="employee-note">{message}</p> : null}
-
-      <div className="employee-assist-layout">
+      <div className="employee-page-body employee-assist-layout">
         <div className="employee-assist-map-wrap">
           <div className="employee-assist-map-head">
             <h3>Sơ đồ bãi xe {parkingLot?.parking_name || ""}</h3>
@@ -347,9 +349,19 @@ export default function EmployeeBookingAssist() {
               </div>
             </div>
           ) : null}
+
+          <div className="employee-assist-note-box">
+            <strong>Lưu ý vận hành</strong>
+            <span>Chỉ chọn ô còn trống để tạo đặt chỗ. Các ô đang đỗ, đã đặt hoặc bảo trì không khả dụng cho booking mới.</span>
+          </div>
         </div>
 
         <form className="employee-form-grid employee-assist-form" onSubmit={handleSubmit}>
+          <div className="employee-assist-form-head employee-form-span">
+            <p>Thông tin đặt chỗ cho khách</p>
+            <strong>{selectedSlot?.code || selectedSlot?.slot_number || "Chưa chọn ô"}</strong>
+          </div>
+
           <label>
             <span>Tên khách hàng</span>
             <input className="employee-input" value={form.customerName} onChange={(e) => setForm((p) => ({ ...p, customerName: e.target.value }))} required />
@@ -431,7 +443,7 @@ export default function EmployeeBookingAssist() {
 
           <div className="employee-action-row employee-form-span">
             <button type="submit" className="employee-btn" disabled={loading || submitting || isParkingLocked}>
-              {submitting ? "Đang tạo..." : "Tạo đặt chỗ"}
+              {submitting ? "Đang tạo..." : "Xác nhận đặt chỗ"}
             </button>
           </div>
         </form>

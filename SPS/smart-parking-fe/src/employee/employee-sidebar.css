@@ -1,0 +1,210 @@
+/* Employee sidebar — compact layout (mockup #2), scoped to modern shell */
+
+.employee-shell.employee-modern-shell {
+  --employee-sidebar-width: 236px;
+}
+
+.employee-shell.employee-modern-shell .employee-sidebar.employee-modern-sidebar {
+  width: var(--employee-sidebar-width) !important;
+  min-width: var(--employee-sidebar-width) !important;
+  max-width: var(--employee-sidebar-width) !important;
+  flex: 0 0 var(--employee-sidebar-width) !important;
+  height: 100dvh !important;
+  min-height: 100dvh !important;
+  max-height: 100dvh !important;
+  padding: 14px !important;
+  gap: 6px !important;
+  overflow: hidden !important;
+  background: linear-gradient(180deg, #06244a 0%, #031b38 55%, #02142c 100%) !important;
+}
+
+.employee-shell.employee-modern-shell .employee-modern-brand {
+  min-height: 0 !important;
+  padding: 0 2px 4px !important;
+  gap: 8px !important;
+  flex-shrink: 0 !important;
+}
+
+.employee-shell.employee-modern-shell .employee-modern-brand-mark {
+  width: 40px !important;
+  height: 40px !important;
+  border-radius: 12px !important;
+  font-size: 14px !important;
+}
+
+.employee-shell.employee-modern-shell .employee-modern-brand strong {
+  font-size: 15px !important;
+  line-height: 1.15 !important;
+}
+
+.employee-shell.employee-modern-shell .employee-modern-brand span {
+  margin-top: 1px !important;
+  font-size: 11px !important;
+}
+
+.employee-shell.employee-modern-shell .employee-modern-nav-wrap {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.employee-shell.employee-modern-shell .employee-modern-nav.employee-modern-nav--flat {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 2px !important;
+  padding: 0 !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+}
+
+.employee-shell.employee-modern-shell .employee-modern-nav-link {
+  min-height: 32px !important;
+  height: 32px !important;
+  padding: 0 9px !important;
+  gap: 8px !important;
+  border-radius: 10px !important;
+  font-size: 12.5px !important;
+  font-weight: 700 !important;
+  line-height: 1.2 !important;
+  transform: none !important;
+}
+
+.employee-shell.employee-modern-shell .employee-modern-nav-link span {
+  min-width: 0 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+.employee-shell.employee-modern-shell .employee-modern-nav-link svg {
+  width: 16px !important;
+  height: 16px !important;
+  flex-shrink: 0 !important;
+}
+
+.employee-shell.employee-modern-shell .employee-modern-nav-link b {
+  min-width: 18px !important;
+  height: 18px !important;
+  padding: 0 5px !important;
+  font-size: 10px !important;
+}
+
+.employee-shell.employee-modern-shell .employee-modern-nav-link.active {
+  background: linear-gradient(135deg, #0b84ff 0%, #11bfae 100%) !important;
+  box-shadow: 0 6px 14px rgba(11, 132, 255, 0.22), inset 0 0 0 1px rgba(255, 255, 255, 0.12) !important;
+}
+
+.employee-shell.employee-modern-shell .employee-modern-sidebar-bottom {
+  flex-shrink: 0 !important;
+  margin-top: auto !important;
+  gap: 6px !important;
+}
+
+.employee-shell.employee-modern-shell .employee-realtime-card {
+  padding: 8px !important;
+  gap: 6px !important;
+  border-radius: 14px !important;
+}
+
+.employee-shell.employee-modern-shell .employee-realtime-row {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  min-width: 0 !important;
+}
+
+.employee-shell.employee-modern-shell .employee-realtime-media {
+  flex: 0 0 56px !important;
+  width: 56px !important;
+  height: 48px !important;
+  border-radius: 10px !important;
+}
+
+.employee-shell.employee-modern-shell .employee-realtime-media img {
+  width: 72px !important;
+  max-height: 44px !important;
+}
+
+.employee-shell.employee-modern-shell .employee-realtime-copy {
+  min-width: 0 !important;
+  flex: 1 1 auto !important;
+}
+
+.employee-shell.employee-modern-shell .employee-realtime-copy strong {
+  font-size: 11.5px !important;
+  line-height: 1.25 !important;
+}
+
+.employee-shell.employee-modern-shell .employee-realtime-copy small {
+  display: -webkit-box !important;
+  -webkit-line-clamp: 2 !important;
+  -webkit-box-orient: vertical !important;
+  overflow: hidden !important;
+  font-size: 10px !important;
+  line-height: 1.3 !important;
+  margin-top: 1px !important;
+}
+
+.employee-shell.employee-modern-shell .employee-realtime-button {
+  min-height: 30px !important;
+  padding: 0 10px !important;
+  border-radius: 10px !important;
+  font-size: 12px !important;
+}
+
+.employee-shell.employee-modern-shell .employee-modern-lot-card {
+  min-height: 0 !important;
+  padding: 7px 8px !important;
+  gap: 8px !important;
+  border-radius: 12px !important;
+}
+
+.employee-shell.employee-modern-shell .employee-modern-lot-icon {
+  width: 32px !important;
+  height: 32px !important;
+  font-size: 13px !important;
+}
+
+.employee-shell.employee-modern-shell .employee-modern-lot-card strong {
+  font-size: 11.5px !important;
+}
+
+.employee-shell.employee-modern-shell .employee-modern-lot-card small {
+  font-size: 10px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+.employee-shell.employee-modern-shell .employee-modern-logout {
+  min-height: 36px !important;
+  font-size: 13px !important;
+  border-radius: 10px !important;
+}
+
+@media (max-height: 820px) {
+  .employee-shell.employee-modern-shell .employee-modern-nav-link {
+    min-height: 30px !important;
+    height: 30px !important;
+    font-size: 12px !important;
+  }
+
+  .employee-shell.employee-modern-shell .employee-realtime-media {
+    width: 50px !important;
+    height: 42px !important;
+    flex-basis: 50px !important;
+  }
+
+  .employee-shell.employee-modern-shell .employee-realtime-media img {
+    max-height: 38px !important;
+  }
+}
+
+@media (max-width: 1180px) {
+  .employee-shell.employee-modern-shell .employee-modern-nav-wrap {
+    overflow-y: auto !important;
+    scrollbar-width: thin !important;
+  }
+}

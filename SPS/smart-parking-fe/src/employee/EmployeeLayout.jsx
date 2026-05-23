@@ -1,26 +1,23 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { NavLink, Outlet } from "react-router-dom";
+import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import {
   Bell,
-  Building2,
+  BookOpen,
   CalendarPlus,
   Car,
   ChevronDown,
+  ClipboardList,
   Clock,
   History,
   LayoutDashboard,
   LogOut,
-  Map,
   MapPin,
   Menu,
-  MoreVertical,
   QrCode,
-  Search,
   Settings,
   ShieldAlert,
-  SquareParking,
   UserRound,
-  Wrench,
+  Wallet,
   X,
 } from "lucide-react";
 
@@ -30,40 +27,22 @@ import "./employee.css";
 import "./employee-reference.css";
 import "./employee-layout-fix.css";
 import "../styles/sidebar-promo.css";
+import "./employee-redesign.css";
+import "./employee-workspace.css";
+import "./employee-sidebar.css";
 
-const NAV_GROUPS = [
-  {
-    title: "TỔNG QUAN",
-    items: [{ to: "/employee", label: "Tổng quan", icon: LayoutDashboard, end: true }],
-  },
-  {
-    title: "QUẢN LÝ VẬN HÀNH",
-    items: [
-      { to: "/employee/scanner", label: "Quét QR", icon: QrCode },
-      { to: "/employee/vehicles", label: "Xe trong bãi", icon: Car },
-      { to: "/employee/booking-assist", label: "Đặt chỗ giúp khách", icon: CalendarPlus },
-      { to: "/employee/scanner", label: "Tìm booking", icon: Search, softActive: true },
-      { to: "/employee/history", label: "Lịch sử giao dịch", icon: History },
-    ],
-  },
-  {
-    title: "THÔNG TIN BÃI XE",
-    items: [
-      { to: "/employee/vehicles", label: "Sơ đồ bãi xe", icon: Map, softActive: true },
-      { to: "/employee/revenue", label: "Thông tin bãi", icon: Building2 },
-    ],
-  },
-  {
-    title: "HỖ TRỢ",
-    items: [
-      { to: "/employee/history", label: "Thông báo", icon: Bell, badge: "3", softActive: true },
-      { to: "/employee/profile", label: "Báo sự cố", icon: ShieldAlert, softActive: true },
-    ],
-  },
-  {
-    title: "CÀI ĐẶT",
-    items: [{ to: "/employee/profile", label: "Cài đặt", icon: Settings, softActive: true }],
-  },
+const SIDEBAR_NAV_ITEMS = [
+  { to: "/employee", label: "Tổng quan", icon: LayoutDashboard, end: true },
+  { to: "/employee/scanner", label: "Quét QR", icon: QrCode },
+  { to: "/employee/vehicles", label: "Xe trong bãi", icon: Car },
+  { to: "/employee/history", label: "Lịch sử ra/vào", icon: History },
+  { to: "/employee/booking-assist", label: "Đặt chỗ hộ", icon: CalendarPlus },
+  { to: "/employee/history", label: "Danh sách đặt chỗ", icon: ClipboardList, softActive: true },
+  { to: "/employee/revenue", label: "Doanh thu", icon: Wallet },
+  { to: "/employee/profile", label: "Sự cố - Báo cáo", icon: ShieldAlert, softActive: true },
+  { to: "/employee/history", label: "Thông báo", icon: Bell, softActive: true },
+  { to: "/employee/profile", label: "Hướng dẫn sử dụng", icon: BookOpen, softActive: true },
+  { to: "/employee/profile", label: "Cài đặt", icon: Settings },
 ];
 
 function formatDate(value) {
@@ -109,7 +88,7 @@ function SidebarItem({ item, closeSidebar }) {
       className={({ isActive }) => `employee-modern-nav-link${isActive && !item.softActive ? " active" : ""}`}
       onClick={closeSidebar}
     >
-      <Icon size={19} strokeWidth={2.1} />
+      <Icon size={16} strokeWidth={2.1} />
       <span>{item.label}</span>
       {item.badge ? <b>{item.badge}</b> : null}
     </NavLink>
@@ -117,6 +96,55 @@ function SidebarItem({ item, closeSidebar }) {
 }
 
 export default function EmployeeLayout({ auth, onLogout }) {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const isOverviewPage = location.pathname === "/employee" || location.pathname === "/employee/";
+
+  const workspaceHeader = (() => {
+    if (location.pathname.startsWith("/employee/scanner")) {
+      return {
+        eyebrow: "Quản lý vận hành",
+        title: "Quét QR",
+        subtitle: "Quét QR để nhận diện booking, check-in/check-out và xử lý thanh toán tại cổng.",
+      };
+    }
+    if (location.pathname.startsWith("/employee/vehicles")) {
+      return {
+        eyebrow: "Quản lý vận hành",
+        title: "Xe trong bãi",
+        subtitle: "Theo dõi sơ đồ bãi, trạng thái ô đỗ và thông tin xe đang lưu bãi.",
+      };
+    }
+    if (location.pathname.startsWith("/employee/history")) {
+      return {
+        eyebrow: "Lịch sử vận hành",
+        title: "Lịch sử ra/vào",
+        subtitle: "Xem lịch sử check-in, check-out và các hoạt động tại bãi xe.",
+      };
+    }
+    if (location.pathname.startsWith("/employee/booking-assist")) {
+      return {
+        eyebrow: "Quản lý vận hành",
+        title: "Đặt chỗ giúp khách",
+        subtitle: "Chọn vị trí trống, nhập thông tin khách và tạo booking hộ.",
+      };
+    }
+    if (location.pathname.startsWith("/employee/revenue")) {
+      return {
+        eyebrow: "Thông tin bãi / Doanh thu",
+        title: "Doanh thu",
+        subtitle: "Theo dõi doanh thu, lưu lượng và trạng thái lấp đầy bãi xe.",
+      };
+    }
+    if (location.pathname.startsWith("/employee/profile")) {
+      return {
+        eyebrow: "Tài khoản",
+        title: "Cài đặt & hồ sơ",
+        subtitle: "Quản lý thông tin nhân viên và các tùy chọn liên quan.",
+      };
+    }
+    return null;
+  })();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [parkingLot, setParkingLot] = useState(null);
   const [profile, setProfile] = useState(null);
@@ -182,48 +210,67 @@ export default function EmployeeLayout({ auth, onLogout }) {
   }, []);
 
   const isParkingLocked = parkingLot?.status === "locked";
-  const displayName = "Nguyễn Văn An";
-  const pageTitle = "Bãi xe Trường Chinh";
-  const pageAddress = "Trường Chinh, Tân Phú, TP.HCM";
+  const displayName =
+    profile?.employee?.full_name
+    || auth?.user?.full_name
+    || auth?.user?.name
+    || auth?.user?.username
+    || "Nguyễn Văn An";
+  const pageTitle = parkingLot?.parking_name || profile?.parking_lot?.parking_name || "Bãi xe Trường Chinh";
+  const lotShortName = pageTitle.replace(/^Bãi xe\s+/i, "").trim() || pageTitle;
+  const pageAddress = parkingLot?.address || profile?.parking_lot?.address || "Trường Chinh, Tân Phú, TP.HCM";
+  const currentShift = "Ca sáng (06:00 - 14:00)";
+  const headerTitle = isOverviewPage
+    ? `Tổng quan bãi xe ${lotShortName}`
+    : workspaceHeader?.title || pageTitle;
+  const headerSubtitle = isOverviewPage
+    ? "Theo dõi hoạt động và quản lý công việc trong ca làm"
+    : workspaceHeader?.subtitle || pageAddress;
+  const headerEyebrow = isOverviewPage ? null : workspaceHeader?.eyebrow;
 
   return (
     <div className={`employee-shell employee-modern-shell${sidebarOpen ? " sidebar-open" : ""}${isParkingLocked ? " is-locked" : ""}`}>
       <aside className="employee-sidebar employee-modern-sidebar">
-        <div className="employee-modern-sidebar-scroll">
-          <div className="employee-modern-brand">
-            <div className="employee-modern-brand-mark">SP</div>
-            <div>
-              <strong>Smart Parking</strong>
-              <span>Employee Dashboard</span>
-            </div>
-          </div>
-
-          <div className="employee-modern-nav">
-            {NAV_GROUPS.map((group) => (
-              <section key={group.title} className="employee-modern-nav-section">
-                <p>{group.title}</p>
-                <nav>
-                  {group.items.map((item) => (
-                    <SidebarItem key={`${group.title}-${item.label}`} item={item} closeSidebar={() => setSidebarOpen(false)} />
-                  ))}
-                </nav>
-              </section>
-            ))}
+        <div className="employee-modern-brand">
+          <div className="employee-modern-brand-mark">SP</div>
+          <div>
+            <strong>Smart Parking</strong>
+            <span>Nhân viên bãi xe</span>
           </div>
         </div>
 
+        <div className="employee-modern-nav-wrap">
+          <nav className="employee-modern-nav employee-modern-nav--flat" aria-label="Menu nhân viên">
+            {SIDEBAR_NAV_ITEMS.map((item) => (
+              <SidebarItem key={item.label} item={item} closeSidebar={() => setSidebarOpen(false)} />
+            ))}
+          </nav>
+        </div>
+
         <div className="employee-modern-sidebar-bottom">
-          <div className="employee-modern-profile-card">
-            <div className="employee-modern-avatar">
-              <UserRound size={21} />
-              <span />
+          <div className="employee-realtime-card">
+            <div className="employee-realtime-row">
+              <div className="employee-realtime-media">
+                <img src="/owner-promo-car.png" alt="" onError={(event) => { event.currentTarget.src = "/car-top-view.png"; }} />
+              </div>
+              <div className="employee-realtime-copy">
+                <strong>Vận hành realtime</strong>
+                <small>Quét QR & cập nhật trạng thái bãi</small>
+              </div>
             </div>
-            <div>
-              <strong>{displayName}</strong>
-              <small>Nhân viên bãi xe</small>
-            </div>
-            <ChevronDown size={18} />
+            <NavLink to="/employee/scanner" className="employee-realtime-button" onClick={() => setSidebarOpen(false)}>
+              Quét QR
+            </NavLink>
           </div>
+
+          <div className="employee-modern-lot-card">
+            <span className="employee-modern-lot-icon">P</span>
+            <div>
+              <strong title={pageTitle}>{lotShortName}</strong>
+              <small>{currentShift}</small>
+            </div>
+          </div>
+
           <button type="button" className="employee-modern-logout" onClick={onLogout}>
             <LogOut size={18} />
             <span>Đăng xuất</span>
@@ -231,23 +278,32 @@ export default function EmployeeLayout({ auth, onLogout }) {
         </div>
       </aside>
 
-      <div className="employee-modern-main">
-        <header className="employee-modern-header">
+      <div className="employee-main employee-modern-main">
+        <header className={`employee-modern-header${isOverviewPage ? " is-overview" : " is-workspace"}`}>
           <button type="button" className="employee-modern-menu-toggle" onClick={() => setSidebarOpen((value) => !value)} aria-label="Mở menu">
             {sidebarOpen ? <X size={22} /> : <Menu size={22} />}
           </button>
 
           <div className="employee-modern-title-block">
-            <p>Xin chào, {displayName} 👋</p>
-            <h1>{pageTitle}</h1>
-            <span>
-              <MapPin size={17} />
-              {pageAddress}
+            <p>{headerEyebrow || `Xin chào, ${displayName} 👋`}</p>
+            <h1>{headerTitle}</h1>
+            <span className={isOverviewPage || workspaceHeader ? "employee-modern-header-subtitle" : ""}>
+              {!isOverviewPage && !workspaceHeader ? <MapPin size={17} /> : null}
+              {headerSubtitle}
             </span>
           </div>
 
           <div className="employee-modern-header-tools">
-            <ParkingStatusLabel status={parkingLot?.status} />
+            {!isOverviewPage ? <ParkingStatusLabel status={parkingLot?.status} /> : null}
+            {isOverviewPage ? (
+              <div className="employee-modern-lot-chip">
+                <span className="employee-modern-lot-icon">P</span>
+                <div>
+                  <strong>{lotShortName}</strong>
+                  <small>{currentShift}</small>
+                </div>
+              </div>
+            ) : null}
             <div className="employee-modern-clock-card">
               <Clock size={20} />
               <div>
@@ -255,26 +311,31 @@ export default function EmployeeLayout({ auth, onLogout }) {
                 <small>{formatDate(now)}</small>
               </div>
             </div>
-            <button type="button" className="employee-modern-icon-button" aria-label="Thông báo">
+            <button type="button" className="employee-modern-icon-button" aria-label="Thông báo" onClick={() => navigate("/employee/history")}>
               <Bell size={20} />
               <b className="is-red">3</b>
             </button>
-            <button type="button" className="employee-modern-icon-button" aria-label="Mã QR đang chờ">
+            <button type="button" className="employee-modern-icon-button" aria-label="Mã QR đang chờ" onClick={() => navigate("/employee/scanner")}>
               <QrCode size={20} />
               <b className="is-blue">4</b>
+            </button>
+            <button type="button" className="employee-modern-report-btn" onClick={() => navigate("/employee/revenue")}>
+              Báo cáo nhanh
+            </button>
+            <button type="button" className="employee-modern-header-avatar" onClick={() => navigate("/employee/profile")} aria-label="Tài khoản nhân viên">
+              <UserRound size={18} />
+              <span>{displayName.slice(0, 1).toUpperCase()}</span>
+              <ChevronDown size={16} />
             </button>
           </div>
         </header>
 
-        <main className="employee-modern-content">
+        <main className={`employee-modern-content${isOverviewPage ? " is-overview" : " is-workspace"}`}>
           <Outlet context={{ auth, parkingLot, profile, revenue, slotsOverview, refreshEmployee, loading, syncNote, isParkingLocked }} />
         </main>
       </div>
 
       <div className="employee-modern-mobile-scrim" onClick={() => setSidebarOpen(false)} />
-      <Wrench className="employee-modern-hidden-icon" size={1} aria-hidden="true" />
-      <SquareParking className="employee-modern-hidden-icon" size={1} aria-hidden="true" />
-      <MoreVertical className="employee-modern-hidden-icon" size={1} aria-hidden="true" />
     </div>
   );
 }

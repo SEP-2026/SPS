@@ -259,14 +259,14 @@ export default function EmployeeQrScanner() {
   };
 
   return (
-    <section className="page-wrap employee-scan-page">
-      <div className="page-card scan-page">
+    <section className="employee-workspace-page employee-scanner-workspace employee-scan-page employee-scanner-shell">
+      <div className="employee-page-body">
+      <div className="page-card scan-page employee-scanner-card">
         <div className="scan-hero">
-          <div>
-            <p className="scan-eyebrow">SCAN GATE</p>
-            <h1 className="page-title scan-title">Cổng quét QR vào / ra bãi</h1>
+          <div className="scan-hero-copy">
+            <p className="scan-eyebrow">Vùng quét QR</p>
             <p className="scan-subtitle">
-              Quét QR để nhận diện booking, sau đó nhân viên chủ động chọn thao tác cho xe vào hoặc ra bãi.
+              Quét QR để nhận diện booking, sau đó chọn thao tác check-in hoặc check-out.
             </p>
           </div>
 
@@ -317,6 +317,7 @@ export default function EmployeeQrScanner() {
             />
           </section>
         </div>
+      </div>
       </div>
     </section>
   );
