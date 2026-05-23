@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { sortSlotsNaturally } from "./sortSlotsNaturally";
 import "../pages/Home.css";
 
 function formatStatusLabel(status) {
@@ -49,7 +50,10 @@ export default function EmployeeParkingBoard({ slotsOverview, title = "Sơ đồ
   const [checkoutMessage, setCheckoutMessage] = useState("");
   const [checkoutError, setCheckoutError] = useState("");
 
-  const slots = useMemo(() => (Array.isArray(slotsOverview?.slots) ? slotsOverview.slots : []), [slotsOverview?.slots]);
+  const slots = useMemo(
+    () => sortSlotsNaturally(slotsOverview?.slots),
+    [slotsOverview?.slots],
+  );
   const total = Number(slotsOverview?.total_slots || 0);
   const available = Number(slotsOverview?.available_slots || 0);
   const occupied = Number(slotsOverview?.in_use_slots || 0) + Number(slotsOverview?.reserved_slots || 0);

@@ -1,6 +1,7 @@
 ﻿import { useEffect, useMemo, useState } from "react";
 import API from "../../services/api";
 import { useEmployeeContext } from "../../employee/useEmployeeContext";
+import { getEmployeeSlotDisplayLabel, sortSlotsNaturally } from "../../employee/sortSlotsNaturally";
 import "../Home.css";
 
 const BOOKING_MODE_OPTIONS = [
@@ -144,7 +145,7 @@ export default function EmployeeBookingAssist() {
   const [updatingSlot, setUpdatingSlot] = useState(false);
   const [message, setMessage] = useState("");
 
-  const slots = useMemo(() => (Array.isArray(slotsOverview?.slots) ? slotsOverview.slots : []), [slotsOverview]);
+  const slots = useMemo(() => sortSlotsNaturally(slotsOverview?.slots), [slotsOverview]);
   const selectedSlot = useMemo(() => slots.find((item) => String(item.id) === String(form.slotId)) || null, [slots, form.slotId]);
   const selectedMapSlot = useMemo(
     () => slots.find((item) => String(item.id) === String(selectedMapSlotId)) || null,
@@ -277,7 +278,6 @@ export default function EmployeeBookingAssist() {
       <div className="employee-page-toolbar">
         <div className="employee-filter-bar employee-booking-toolbar">
           <span className="employee-filter-count">Ô trống: {slotsOverview?.available_slots ?? 0}</span>
-          <button type="button" className="employee-assist-flow-button">Nhập thông tin giống luồng user</button>
         </div>
         {message ? <p className="employee-note">{message}</p> : null}
       </div>
@@ -307,9 +307,9 @@ export default function EmployeeBookingAssist() {
                   type="button"
                   className={`parking-slot ${cls} ${clickable ? "is-clickable" : "is-locked"}`}
                   onClick={() => handleSelectSlotFromMap(slot)}
-                  title={`${slot.code || slot.slot_number} - ${resolveStatusLabel(slot.status)}`}
+                  title={`${getEmployeeSlotDisplayLabel(slot)} - ${resolveStatusLabel(slot.status)}`}
                 >
-                  <div className="slot-code">{slot.code || slot.slot_number || `S-${slot.id}`}</div>
+                  <div className="slot-code">{getEmployeeSlotDisplayLabel(slot)}</div>
                   {slot.zone ? <div className="slot-zone">{slot.zone}</div> : null}
                 </button>
               );
@@ -350,9 +350,11 @@ export default function EmployeeBookingAssist() {
             </div>
           ) : null}
 
-          <div className="employee-assist-note-box">
-            <strong>Lưu ý vận hành</strong>
-            <span>Chỉ chọn ô còn trống để tạo đặt chỗ. Các ô đang đỗ, đã đặt hoặc bảo trì không khả dụng cho booking mới.</span>
+          <div className="employee-assist-note-box booking-operation-note">
+            <span className="booking-operation-note-title">Lưu ý vận hành:</span>
+            <span className="booking-operation-note-text">
+              Chỉ chọn ô còn trống để tạo đặt chỗ. Các ô đang đỗ, đã đặt hoặc bảo trì không khả dụng cho booking mới.
+            </span>
           </div>
         </div>
 

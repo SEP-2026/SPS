@@ -7,7 +7,7 @@
 
 .employee-shell.employee-modern-shell,
 .employee-modern-shell {
-  --employee-sidebar-width: 236px;
+  --employee-sidebar-width: 260px;
   --employee-navy-1: #061b3a;
   --employee-navy-2: #082b4a;
   --employee-navy-3: #0b3658;
@@ -1619,20 +1619,6 @@
   font-weight: 700 !important;
 }
 
-.employee-assist-flow-button {
-  min-height: 44px !important;
-  padding: 0 16px !important;
-  border: 1px solid var(--employee-line) !important;
-  border-radius: 14px !important;
-  color: #0b7cff !important;
-  background: #fff !important;
-  font: inherit !important;
-  font-size: 14px !important;
-  font-weight: 900 !important;
-  cursor: default !important;
-  box-shadow: var(--employee-shadow) !important;
-}
-
 .employee-assist-legend,
 .parking-map-legend {
   margin: 16px 0 !important;
@@ -2844,7 +2830,7 @@
 
 @media (max-width: 1366px) {
   .employee-shell.employee-modern-shell .employee-sidebar.employee-modern-sidebar {
-    --employee-sidebar-width: 236px;
+    --employee-sidebar-width: 260px;
     padding: 12px !important;
   }
 

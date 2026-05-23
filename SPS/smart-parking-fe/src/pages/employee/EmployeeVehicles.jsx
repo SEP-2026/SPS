@@ -4,6 +4,7 @@ import { Car, Clock, Search, SquareParking } from "lucide-react";
 import EmployeeParkingBoard from "../../employee/EmployeeParkingBoard";
 import { employeeCheckOut, getEmployeeVehicles } from "../../employee/employeeService";
 import { useEmployeeContext } from "../../employee/useEmployeeContext";
+import { sortSlotsNaturally } from "../../employee/sortSlotsNaturally";
 
 const STATUS_FILTER_OPTIONS = [
   { value: "all", label: "Tất cả trạng thái" },
@@ -133,7 +134,7 @@ export default function EmployeeVehicles() {
 
     return {
       ...slotsOverview,
-      slots: filteredSlots,
+      slots: sortSlotsNaturally(filteredSlots),
       total_slots: filteredSlots.length,
       available_slots: availableCount,
       reserved_slots: reservedCount,

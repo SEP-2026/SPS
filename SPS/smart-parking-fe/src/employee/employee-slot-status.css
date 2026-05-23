@@ -1,0 +1,152 @@
+/* Employee slot status colors — booking-assist + vehicles board + legend */
+
+/* ========== Booking assist — map slots ========== */
+.employee-booking-assist-page .employee-assist-map-grid .parking-slot.slot-available {
+  background: linear-gradient(180deg, #ecfdf5 0%, #dffbea 100%) !important;
+  border: 1.5px solid #a7f3d0 !important;
+  color: #166534 !important;
+  box-shadow: 0 8px 20px rgba(34, 197, 94, 0.08) !important;
+}
+
+.employee-booking-assist-page .employee-assist-map-grid .parking-slot.slot-available:hover {
+  border-color: #6ee7b7 !important;
+  box-shadow: 0 10px 24px rgba(34, 197, 94, 0.16) !important;
+}
+
+.employee-booking-assist-page .employee-assist-map-grid .parking-slot.slot-selected {
+  background: linear-gradient(135deg, #16a34a 0%, #15803d 100%) !important;
+  border: 2px solid #86efac !important;
+  color: #fff !important;
+  box-shadow:
+    0 0 0 3px rgba(34, 197, 94, 0.28),
+    0 12px 28px rgba(22, 163, 74, 0.32) !important;
+}
+
+.employee-booking-assist-page .employee-assist-map-grid .parking-slot.slot-occupied {
+  background: linear-gradient(180deg, #fef2f2 0%, #fee2e2 100%) !important;
+  border: 1.5px solid #fca5a5 !important;
+  color: #991b1b !important;
+  box-shadow: 0 8px 20px rgba(239, 68, 68, 0.1) !important;
+  cursor: not-allowed !important;
+}
+
+.employee-booking-assist-page .employee-assist-map-grid .parking-slot.slot-occupied:hover {
+  transform: none !important;
+  box-shadow: 0 8px 20px rgba(239, 68, 68, 0.1) !important;
+}
+
+.employee-booking-assist-page .employee-assist-map-grid .parking-slot.slot-maintenance {
+  background:
+    repeating-linear-gradient(
+      -45deg,
+      #e2e8f0 0,
+      #e2e8f0 8px,
+      #cbd5e1 8px,
+      #cbd5e1 16px
+    ) !important;
+  border: 1.5px solid #94a3b8 !important;
+  color: #334155 !important;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.35) !important;
+  cursor: not-allowed !important;
+}
+
+.employee-booking-assist-page .employee-assist-map-grid .parking-slot.slot-maintenance:hover {
+  transform: none !important;
+}
+
+/* ========== Booking assist — legend ========== */
+.employee-booking-assist-page .legend-color.slot-available {
+  background: linear-gradient(180deg, #ecfdf5 0%, #dffbea 100%) !important;
+  border: 1.5px solid #a7f3d0 !important;
+  border-radius: 4px !important;
+}
+
+.employee-booking-assist-page .legend-color.slot-selected {
+  background: linear-gradient(135deg, #16a34a 0%, #15803d 100%) !important;
+  border: 1.5px solid #86efac !important;
+  border-radius: 4px !important;
+}
+
+.employee-booking-assist-page .legend-color.slot-occupied {
+  background: linear-gradient(180deg, #fef2f2 0%, #fee2e2 100%) !important;
+  border: 1.5px solid #fca5a5 !important;
+  border-radius: 4px !important;
+}
+
+.employee-booking-assist-page .legend-color.slot-maintenance {
+  background: repeating-linear-gradient(-45deg, #e2e8f0 0, #e2e8f0 4px, #cbd5e1 4px, #cbd5e1 8px) !important;
+  border: 1.5px solid #94a3b8 !important;
+  border-radius: 4px !important;
+}
+
+/* ========== Vehicles — parking board cards ========== */
+.employee-parking-board .slot-card--available {
+  background: linear-gradient(180deg, #ecfdf5 0%, #dffbea 100%) !important;
+  border: 1.5px solid #a7f3d0 !important;
+  box-shadow: 0 8px 20px rgba(34, 197, 94, 0.08) !important;
+}
+
+.employee-parking-board .slot-card--available .slot-lane {
+  border-color: rgba(52, 211, 153, 0.45) !important;
+}
+
+.employee-parking-board .slot-card--occupied,
+.employee-parking-board .slot-card--in_use,
+.employee-parking-board .slot-card--reserved {
+  background: linear-gradient(180deg, #fef2f2 0%, #fee2e2 100%) !important;
+  border: 1.5px solid #fca5a5 !important;
+  box-shadow: 0 8px 20px rgba(239, 68, 68, 0.1) !important;
+}
+
+.employee-parking-board .slot-card--occupied .slot-lane,
+.employee-parking-board .slot-card--in_use .slot-lane,
+.employee-parking-board .slot-card--reserved .slot-lane {
+  border-color: rgba(248, 113, 113, 0.5) !important;
+  border-style: solid !important;
+}
+
+.employee-parking-board .slot-card--maintenance {
+  background: repeating-linear-gradient(-45deg, #e2e8f0 0, #e2e8f0 10px, #cbd5e1 10px, #cbd5e1 20px) !important;
+  border: 1.5px solid #94a3b8 !important;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.35) !important;
+  opacity: 1 !important;
+}
+
+.employee-parking-board .slot-card--maintenance .slot-lane {
+  border-color: #94a3b8 !important;
+  border-style: dashed !important;
+}
+
+.employee-parking-board .slot-card--available .slot-badge {
+  background: rgba(255, 255, 255, 0.92) !important;
+  border-color: #a7f3d0 !important;
+  color: #166534 !important;
+}
+
+.employee-parking-board .slot-card--occupied .slot-badge,
+.employee-parking-board .slot-card--in_use .slot-badge,
+.employee-parking-board .slot-card--reserved .slot-badge {
+  background: rgba(255, 255, 255, 0.94) !important;
+  border-color: #fca5a5 !important;
+  color: #991b1b !important;
+}
+
+.employee-parking-board .slot-card--maintenance .slot-badge {
+  background: rgba(255, 255, 255, 0.9) !important;
+  border-color: #94a3b8 !important;
+  color: #334155 !important;
+}
+
+.employee-parking-board .slot-card--available .slot-car.slot-available {
+  background: linear-gradient(180deg, #d1fae5 0%, #a7f3d0 100%) !important;
+}
+
+.employee-parking-board .slot-card--occupied .slot-car.slot-occupied,
+.employee-parking-board .slot-card--in_use .slot-car.slot-occupied,
+.employee-parking-board .slot-card--reserved .slot-car.slot-occupied {
+  background: linear-gradient(180deg, #fecaca 0%, #fca5a5 100%) !important;
+}
+
+.employee-parking-board .slot-card--maintenance .slot-car {
+  background: linear-gradient(180deg, #e2e8f0 0%, #cbd5e1 100%) !important;
+}

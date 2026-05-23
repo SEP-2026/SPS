@@ -2,11 +2,9 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import {
   Bell,
-  BookOpen,
   CalendarPlus,
   Car,
   ChevronDown,
-  ClipboardList,
   Clock,
   History,
   LayoutDashboard,
@@ -15,7 +13,6 @@ import {
   Menu,
   QrCode,
   Settings,
-  ShieldAlert,
   UserRound,
   Wallet,
   X,
@@ -30,6 +27,7 @@ import "../styles/sidebar-promo.css";
 import "./employee-redesign.css";
 import "./employee-workspace.css";
 import "./employee-sidebar.css";
+import "./employee-slot-status.css";
 
 const SIDEBAR_NAV_ITEMS = [
   { to: "/employee", label: "Tổng quan", icon: LayoutDashboard, end: true },
@@ -37,11 +35,7 @@ const SIDEBAR_NAV_ITEMS = [
   { to: "/employee/vehicles", label: "Xe trong bãi", icon: Car },
   { to: "/employee/history", label: "Lịch sử ra/vào", icon: History },
   { to: "/employee/booking-assist", label: "Đặt chỗ hộ", icon: CalendarPlus },
-  { to: "/employee/history", label: "Danh sách đặt chỗ", icon: ClipboardList, softActive: true },
   { to: "/employee/revenue", label: "Doanh thu", icon: Wallet },
-  { to: "/employee/profile", label: "Sự cố - Báo cáo", icon: ShieldAlert, softActive: true },
-  { to: "/employee/history", label: "Thông báo", icon: Bell, softActive: true },
-  { to: "/employee/profile", label: "Hướng dẫn sử dụng", icon: BookOpen, softActive: true },
   { to: "/employee/profile", label: "Cài đặt", icon: Settings },
 ];
 
@@ -88,7 +82,7 @@ function SidebarItem({ item, closeSidebar }) {
       className={({ isActive }) => `employee-modern-nav-link${isActive && !item.softActive ? " active" : ""}`}
       onClick={closeSidebar}
     >
-      <Icon size={16} strokeWidth={2.1} />
+      <Icon size={18} strokeWidth={2.1} />
       <span>{item.label}</span>
       {item.badge ? <b>{item.badge}</b> : null}
     </NavLink>
@@ -239,15 +233,13 @@ export default function EmployeeLayout({ auth, onLogout }) {
           </div>
         </div>
 
-        <div className="employee-modern-nav-wrap">
+        <div className="employee-modern-sidebar-main">
           <nav className="employee-modern-nav employee-modern-nav--flat" aria-label="Menu nhân viên">
             {SIDEBAR_NAV_ITEMS.map((item) => (
               <SidebarItem key={item.label} item={item} closeSidebar={() => setSidebarOpen(false)} />
             ))}
           </nav>
-        </div>
 
-        <div className="employee-modern-sidebar-bottom">
           <div className="employee-realtime-card">
             <div className="employee-realtime-row">
               <div className="employee-realtime-media">
@@ -262,7 +254,9 @@ export default function EmployeeLayout({ auth, onLogout }) {
               Quét QR
             </NavLink>
           </div>
+        </div>
 
+        <div className="employee-modern-sidebar-bottom">
           <div className="employee-modern-lot-card">
             <span className="employee-modern-lot-icon">P</span>
             <div>
@@ -313,11 +307,9 @@ export default function EmployeeLayout({ auth, onLogout }) {
             </div>
             <button type="button" className="employee-modern-icon-button" aria-label="Thông báo" onClick={() => navigate("/employee/history")}>
               <Bell size={20} />
-              <b className="is-red">3</b>
             </button>
-            <button type="button" className="employee-modern-icon-button" aria-label="Mã QR đang chờ" onClick={() => navigate("/employee/scanner")}>
+            <button type="button" className="employee-modern-icon-button" aria-label="Quét QR" onClick={() => navigate("/employee/scanner")}>
               <QrCode size={20} />
-              <b className="is-blue">4</b>
             </button>
             <button type="button" className="employee-modern-report-btn" onClick={() => navigate("/employee/revenue")}>
               Báo cáo nhanh
