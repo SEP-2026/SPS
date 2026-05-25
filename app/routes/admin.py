@@ -509,6 +509,222 @@ def _build_login_history(db: Session) -> list[dict]:
     ]
 
 
+def _build_daily_revenue_series(payments_list: list, days: int = 7) -> list:
+    """Build daily revenue and commission series for the last N days."""
+    now = datetime.utcnow()
+    today = now.date()
+    commission_rate = float(ADMIN_RUNTIME_SETTINGS["commissionRate"]) / 100
+    
+    # Initialize dictionary for each day
+    daily_data = {}
+    for i in range(days):
+        date = today - timedelta(days=days - 1 - i)
+        daily_data[date] = {"revenue": 0.0, "commission": 0.0}
+    
+    # Aggregate payments by date
+    paid_payments = [p for p in payments_list if p.payment_status == "paid"] if payments_list else []
+    
+    for payment in paid_payments:
+        payment_date = (payment.paid_at or payment.created_at)
+        if payment_date:
+            payment_date = payment_date.date()
+            if payment_date in daily_data:
+                amount = float(payment.amount or 0) + float(payment.overtime_fee or 0)
+                daily_data[payment_date]["revenue"] += amount
+                daily_data[payment_date]["commission"] += amount * commission_rate
+    
+    # Format as list with day labels
+    result = []
+    for date in sorted(daily_data.keys()):
+        day_str = date.strftime("%d/%m")
+        result.append({
+            "date": day_str,
+            "label": day_str,
+            "revenue": round(daily_data[date]["revenue"], 2),
+            "commission": round(daily_data[date]["commission"], 2),
+        })
+    
+    return result
+
+
+def _build_dashboard_stats(db: Session) -> dict:
+    """Build dashboard statistics from real database data with week-over-week comparison."""
+    users = db.query(User).all()
+    parking_lots = db.query(ParkingLot).all()
+    bookings = db.query(Booking).all()
+    slots = db.query(ParkingSlot).all()
+    payments = db.query(Payment).all()
+    
+    now = datetime.utcnow()
+    today = now.date()
+    
+    # Define date ranges for week-over-week comparison
+    # This week: last 7 days (including today)
+    this_week_start = today - timedelta(days=6)
+    this_week_end = today
+    
+    # Last week: 7 days before this week
+    last_week_start = today - timedelta(days=13)
+    last_week_end = today - timedelta(days=7)
+    
+    def get_revenue_for_period(payments_list, start_date, end_date):
+        """Calculate revenue for a given date range."""
+        period_payments = [
+            p for p in payments_list 
+            if p.payment_status == "paid" 
+            and (p.paid_at or p.created_at)
+            and (p.paid_at or p.created_at).date() >= start_date
+            and (p.paid_at or p.created_at).date() <= end_date
+        ]
+        return sum(float(p.amount or 0) + float(p.overtime_fee or 0) for p in period_payments)
+    
+    def get_commission_for_period(payments_list, start_date, end_date):
+        """Calculate commission for a given date range."""
+        commission_rate = float(ADMIN_RUNTIME_SETTINGS["commissionRate"]) / 100
+        period_payments = [
+            p for p in payments_list 
+            if p.payment_status == "paid" 
+            and (p.paid_at or p.created_at)
+            and (p.paid_at or p.created_at).date() >= start_date
+            and (p.paid_at or p.created_at).date() <= end_date
+        ]
+        gross = sum(float(p.amount or 0) + float(p.overtime_fee or 0) for p in period_payments)
+        return gross * commission_rate
+    
+    def get_bookings_count_for_period(bookings_list, start_date, end_date):
+        """Count bookings for a given date range."""
+        return sum(
+            1 for b in bookings_list 
+            if b.created_at 
+            and b.created_at.date() >= start_date 
+            and b.created_at.date() <= end_date
+        )
+    
+    # Calculate revenue and commission for this week and last week
+    paid_transactions = [p for p in payments if p.payment_status == "paid"] if payments else []
+    
+    if paid_transactions:
+        this_week_gross = get_revenue_for_period(paid_transactions, this_week_start, this_week_end)
+        last_week_gross = get_revenue_for_period(paid_transactions, last_week_start, last_week_end)
+        
+        this_week_commission = get_commission_for_period(paid_transactions, this_week_start, this_week_end)
+        last_week_commission = get_commission_for_period(paid_transactions, last_week_start, last_week_end)
+    else:
+        # Fallback to bookings if no payments
+        paid_bookings = [b for b in bookings if b.status in {"booked", "checked_in", "in_progress", "completed"}]
+        
+        this_week_bookings = [b for b in paid_bookings if b.created_at and b.created_at.date() >= this_week_start and b.created_at.date() <= this_week_end]
+        last_week_bookings = [b for b in paid_bookings if b.created_at and b.created_at.date() >= last_week_start and b.created_at.date() <= last_week_end]
+        
+        this_week_gross = sum(float(b.total_amount or 0) for b in this_week_bookings)
+        last_week_gross = sum(float(b.total_amount or 0) for b in last_week_bookings)
+        
+        commission_rate = float(ADMIN_RUNTIME_SETTINGS["commissionRate"]) / 100
+        this_week_commission = this_week_gross * commission_rate
+        last_week_commission = last_week_gross * commission_rate
+    
+    # Calculate total (all time)
+    total_gross = sum(float(p.amount or 0) + float(p.overtime_fee or 0) for p in paid_transactions) if paid_transactions else 0
+    total_commission = total_gross * (float(ADMIN_RUNTIME_SETTINGS["commissionRate"]) / 100) if total_gross > 0 else 0
+    
+    # Calculate week-over-week change percentage
+    def calculate_change_percent(current, previous):
+        """Calculate percentage change from previous to current."""
+        if previous <= 0:
+            return 100 if current > 0 else 0
+        return round(((current - previous) / previous) * 100, 1)
+    
+    revenue_change_percent = calculate_change_percent(this_week_gross, last_week_gross)
+    commission_change_percent = calculate_change_percent(this_week_commission, last_week_commission)
+    
+    # Count active users
+    active_users = sum(1 for u in users if u.role == "user" and (u.status or "").lower() != "banned" and u.is_active == 1)
+    active_owners = sum(1 for u in users if u.role == "owner" and (u.status or "").lower() != "suspended")
+    
+    # Calculate occupancy
+    slot_counts = _slot_counts_by_lot(slots)
+    occupancy_values = [
+        (slot_counts[lot_id]["occupied"] / slot_counts[lot_id]["total"] * 100) 
+        if slot_counts[lot_id]["total"] > 0 else 0
+        for lot_id in slot_counts
+    ]
+    avg_occupancy = int(round(sum(occupancy_values) / len(occupancy_values))) if occupancy_values else 0
+    
+    # Parking lot stats
+    active_parking_lots = sum(1 for lot in parking_lots if lot.is_active == 1)
+    total_parking_lots = len(parking_lots)
+    
+    # Bookings stats with week comparison
+    this_week_bookings_count = get_bookings_count_for_period(bookings, this_week_start, this_week_end)
+    last_week_bookings_count = get_bookings_count_for_period(bookings, last_week_start, last_week_end)
+    bookings_change_percent = calculate_change_percent(this_week_bookings_count, last_week_bookings_count)
+    
+    # System status (mock data - in real scenario, collect from monitoring)
+    system_status = {
+        "uptime": "99.98%",
+        "cpu": "23%",
+        "ram": "56%",
+        "database": "98%",
+        "apiResponse": "120ms",
+        "backupTime": now.strftime("%d/%m/%Y %H:%M"),
+    }
+    
+    # Format trend strings
+    def format_trend(percent):
+        """Format trend percentage with sign."""
+        if percent > 0:
+            return f"+{percent}%"
+        elif percent < 0:
+            return f"{percent}%"
+        else:
+            return "0%"
+    
+    return {
+        "revenue": {
+            "totalRevenue": round(total_gross, 2),
+            "thisWeekRevenue": round(this_week_gross, 2),
+            "lastWeekRevenue": round(last_week_gross, 2),
+            "totalCommission": round(total_commission, 2),
+            "thisWeekCommission": round(this_week_commission, 2),
+            "lastWeekCommission": round(last_week_commission, 2),
+            "totalOwnerPayout": round(total_gross - total_commission, 2),
+        },
+        "users": {
+            "totalUsers": sum(1 for u in users if u.role == "user"),
+            "activeUsers": active_users,
+            "totalOwners": sum(1 for u in users if u.role == "owner"),
+            "activeOwners": active_owners,
+            "totalEmployees": sum(1 for u in users if u.role == "employee"),
+        },
+        "parking": {
+            "totalParkingLots": total_parking_lots,
+            "activeParkingLots": active_parking_lots,
+            "averageOccupancy": avg_occupancy,
+            "totalSlots": sum(c["total"] for c in slot_counts.values()),
+            "occupiedSlots": sum(c["occupied"] for c in slot_counts.values()),
+        },
+        "bookings": {
+            "totalBookings": len(bookings),
+            "thisWeekBookings": this_week_bookings_count,
+            "lastWeekBookings": last_week_bookings_count,
+            "completedBookings": sum(1 for b in bookings if b.status in {"completed", "checked_in"}),
+            "pendingBookings": sum(1 for b in bookings if b.status in {"booked", "in_progress"}),
+            "cancelledBookings": sum(1 for b in bookings if b.status == "cancelled"),
+        },
+        "systemStatus": system_status,
+        "trends": {
+            "revenueChange": format_trend(revenue_change_percent),
+            "revenueChangePercent": revenue_change_percent,
+            "commissionChange": format_trend(commission_change_percent),
+            "commissionChangePercent": commission_change_percent,
+            "bookingChange": format_trend(bookings_change_percent),
+            "bookingChangePercent": bookings_change_percent,
+        },
+        "dailyRevenueSeries": _build_daily_revenue_series(payments, days=7),
+    }
+
+
+
 def _serialize_bootstrap(db: Session) -> dict:
     users = db.query(User).all()
     parking_lots = db.query(ParkingLot).all()
@@ -537,6 +753,7 @@ def _serialize_bootstrap(db: Session) -> dict:
 
     slot_counts = _slot_counts_by_lot(slots)
     owners = [user for user in users if user.role == "owner"]
+    employees = [user for user in users if user.role == "employee"]
     lot_by_owner, owner_by_lot = _owner_parking_maps(db)
 
     user_rows = [
@@ -679,6 +896,13 @@ def _serialize_bootstrap(db: Session) -> dict:
         "commissionRate": get_commission_rate_percent(),
         "users": user_rows,
         "owners": owner_rows,
+        "employees": [{
+            "id": emp.id,
+            "name": emp.name,
+            "email": emp.email,
+            "phone": emp.phone,
+            "status": _to_status_label(emp),
+        } for emp in employees],
         "parkingLots": parking_rows,
         "bookings": booking_rows,
         "transactions": transaction_rows,
@@ -704,6 +928,14 @@ def _serialize_bootstrap(db: Session) -> dict:
         "loginHistory": _build_login_history(db),
         "settings": ADMIN_RUNTIME_SETTINGS,
     }
+
+
+@router.get("/dashboard-stats")
+def get_dashboard_stats(
+    _: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    return _build_dashboard_stats(db)
 
 
 @router.get("/bootstrap")
