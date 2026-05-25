@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import Column, DateTime, DECIMAL, Float, CheckConstraint, ForeignKey, Integer, SmallInteger, String, Text
+from sqlalchemy import Boolean, Column, Date, DateTime, DECIMAL, Float, CheckConstraint, ForeignKey, Integer, SmallInteger, String, Text, UniqueConstraint
 from sqlalchemy.orm import relationship
 from app.database import Base
 from app.utils.timezone import vn_now
@@ -275,4 +275,91 @@ class EmployeeActivity(Base):
 
     employee = relationship("User")
     parking_lot = relationship("ParkingLot")
+    booking = relationship("Booking")
+
+
+class OwnerBalance(Base):
+    __tablename__ = "owner_balances"
+
+    id = Column(Integer, primary_key=True, index=True)
+    owner_id = Column(Integer, ForeignKey("users.id"), unique=True, nullable=False, index=True)
+    available_balance = Column(DECIMAL(12, 2), default=0, nullable=False)
+    lifetime_earned = Column(DECIMAL(12, 2), default=0, nullable=False)
+    lifetime_withdrawn = Column(DECIMAL(12, 2), default=0, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    owner = relationship("User")
+
+
+class OwnerBankAccount(Base):
+    __tablename__ = "owner_bank_accounts"
+
+    id = Column(Integer, primary_key=True, index=True)
+    owner_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    bank_code = Column(String(20), nullable=False)
+    bank_name = Column(String(100), nullable=False)
+    account_number = Column(String(50), nullable=False)
+    account_holder_name = Column(String(255), nullable=False)
+    is_default = Column(Boolean, default=False, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    owner = relationship("User")
+
+
+class OwnerWithdrawal(Base):
+    __tablename__ = "owner_withdrawals"
+
+    id = Column(Integer, primary_key=True, index=True)
+    owner_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    bank_account_id = Column(Integer, ForeignKey("owner_bank_accounts.id"), nullable=True)
+    request_code = Column(String(32), unique=True, nullable=False, index=True)
+    amount = Column(DECIMAL(12, 2), nullable=False)
+    fee = Column(DECIMAL(12, 2), default=0, nullable=False)
+    net_amount = Column(DECIMAL(12, 2), nullable=False)
+    status = Column(String(20), default="processing", nullable=False, index=True)
+    note = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    owner = relationship("User")
+    bank_account = relationship("OwnerBankAccount")
+
+
+class CashReconciliationSlip(Base):
+    __tablename__ = "cash_reconciliation_slips"
+    __table_args__ = (
+        UniqueConstraint("slip_code", name="uq_cash_reconciliation_slip_code"),
+    )
+
+    id = Column(Integer, primary_key=True, index=True)
+    owner_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    parking_id = Column(Integer, ForeignKey("parking_lots.id"), nullable=False, index=True)
+    employee_id = Column(Integer, ForeignKey("users.id"), nullable=True, index=True)
+    slip_code = Column(String(32), nullable=False)
+    reconciliation_date = Column(Date, nullable=False, index=True)
+    total_collected = Column(DECIMAL(12, 2), default=0, nullable=False)
+    deposited_amount = Column(DECIMAL(12, 2), default=0, nullable=False)
+    variance = Column(DECIMAL(12, 2), default=0, nullable=False)
+    status = Column(String(20), default="pending", nullable=False, index=True)
+    note = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    owner = relationship("User", foreign_keys=[owner_id])
+    employee = relationship("User", foreign_keys=[employee_id])
+    parking_lot = relationship("ParkingLot")
+    items = relationship("CashReconciliationItem", back_populates="slip", cascade="all, delete-orphan")
+
+
+class CashReconciliationItem(Base):
+    __tablename__ = "cash_reconciliation_items"
+
+    id = Column(Integer, primary_key=True, index=True)
+    slip_id = Column(Integer, ForeignKey("cash_reconciliation_slips.id"), nullable=False, index=True)
+    payment_id = Column(Integer, ForeignKey("payments.id"), nullable=False, index=True)
+    booking_id = Column(Integer, ForeignKey("bookings.id"), nullable=False, index=True)
+    amount = Column(DECIMAL(12, 2), nullable=False)
+
+    slip = relationship("CashReconciliationSlip", back_populates="items")
+    payment = relationship("Payment")
     booking = relationship("Booking")

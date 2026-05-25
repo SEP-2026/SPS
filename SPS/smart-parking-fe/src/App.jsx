@@ -23,7 +23,11 @@ import OwnerOverview from "./pages/owner/OwnerOverview";
 import OwnerParking from "./pages/owner/OwnerParking";
 import OwnerParkingDetail from "./pages/owner/OwnerParkingDetail";
 import OwnerParkingMap from "./pages/owner/OwnerParkingMap";
-import OwnerRevenue from "./pages/owner/OwnerRevenue";
+import OwnerRevenueLayout from "./owner/revenue/OwnerRevenueLayout";
+import OwnerRevenueOverview from "./owner/revenue/OwnerRevenueOverview";
+import OwnerRevenueTransactions from "./owner/revenue/OwnerRevenueTransactions";
+import OwnerRevenueWithdrawals from "./owner/revenue/OwnerRevenueWithdrawals";
+import OwnerRevenueCommission from "./owner/revenue/OwnerRevenueCommission";
 import OwnerReviews from "./pages/owner/OwnerReviews";
 import OwnerSettings from "./pages/owner/OwnerSettings";
 import Payment from "./pages/Payment";
@@ -317,7 +321,13 @@ function AppBody({ auth, role, onLogin, onLogout }) {
           <Route path="customers" element={<OwnerCustomers />} />
           <Route path="parking-map" element={<OwnerParkingMap />} />
           <Route path="activity" element={<OwnerActivityHistory />} />
-          <Route path="revenue" element={<OwnerRevenue />} />
+          <Route path="revenue" element={<OwnerRevenueLayout />}>
+            <Route index element={<OwnerRevenueOverview />} />
+            <Route path="transactions" element={<OwnerRevenueTransactions />} />
+            <Route path="cash-reconciliation" element={<Navigate to="/owner/revenue" replace />} />
+            <Route path="withdrawals" element={<OwnerRevenueWithdrawals />} />
+            <Route path="commission" element={<OwnerRevenueCommission />} />
+          </Route>
           <Route path="reviews" element={<OwnerReviews />} />
           <Route path="review-replies" element={<Navigate to="/owner/reviews" replace />} />
           <Route path="notifications" element={<OwnerNotifications />} />

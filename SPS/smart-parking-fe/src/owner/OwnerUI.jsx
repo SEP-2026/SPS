@@ -31,7 +31,7 @@ export function getStatusMeta(status) {
     in_progress: { label: "Đang hoạt động", tone: "warning" },
     completed: { label: "Hoàn tất", tone: "success" },
     cancelled: { label: "Đã hủy", tone: "danger" },
-    paid: { label: "Đã thanh toán", tone: "success" },
+    paid: { label: "Thành công", tone: "success" },
     refunded: { label: "Hoàn tiền", tone: "danger" },
     system: { label: "Hệ thống", tone: "neutral" },
     security: { label: "Bảo mật", tone: "danger" },
