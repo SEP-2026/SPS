@@ -1,4 +1,4 @@
-export function PieChart({ data, formatValue = (v) => v }) {
+export function PieChart({ data, formatValue = (v) => v, hideLegend = false, className = "" }) {
   const total = data.reduce((sum, item) => sum + item.amount, 0);
   const colors = {
     active: "#10b981",
@@ -38,14 +38,22 @@ export function PieChart({ data, formatValue = (v) => v }) {
     return {
       ...item,
       pathData,
-      color: colors[item.label.toLowerCase()] || colors[item.status] || "#6366f1",
+      color: item.color || colors[item.label.toLowerCase()] || colors[item.status] || "#6366f1",
       percentage: ((item.amount / total) * 100).toFixed(1),
     };
   });
 
+  const shellClassName = [
+    "owner-pie-shell",
+    hideLegend ? "owner-pie-shell--chart-only" : "",
+    className,
+  ]
+    .filter(Boolean)
+    .join(" ");
+
   return (
-    <div className="owner-pie-shell">
-      <svg viewBox="0 0 200 200" className="owner-pie-chart">
+    <div className={shellClassName}>
+      <svg viewBox="0 0 200 200" className="owner-pie-chart" role="img" aria-label="Biểu đồ tỷ lệ">
         {slices.map((slice, idx) => (
           <path key={idx} d={slice.pathData} fill={slice.color} stroke="white" strokeWidth="2" />
         ))}
@@ -55,16 +63,18 @@ export function PieChart({ data, formatValue = (v) => v }) {
         </text>
       </svg>
 
-      <div className="owner-pie-legend">
-        {slices.map((slice, idx) => (
-          <div key={idx} className="owner-pie-item">
-            <span className="owner-pie-color" style={{ backgroundColor: slice.color }} />
-            <span className="owner-pie-label">
-              {slice.label} ({slice.percentage}%)
-            </span>
-          </div>
-        ))}
-      </div>
+      {!hideLegend ? (
+        <div className="owner-pie-legend">
+          {slices.map((slice, idx) => (
+            <div key={idx} className="owner-pie-item">
+              <span className="owner-pie-color" style={{ backgroundColor: slice.color }} />
+              <span className="owner-pie-label">
+                {slice.label} ({slice.percentage}%)
+              </span>
+            </div>
+          ))}
+        </div>
+      ) : null}
     </div>
   );
 }

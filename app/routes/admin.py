@@ -25,6 +25,7 @@ from app.models.models import (
 from app.utils.timezone import isoformat_vn, vn_now
 from app.routes.auth import get_current_user
 from app.security.password_policy import ensure_strong_password
+from app.services import admin_commissions
 from app.services.revenue_settings import ADMIN_RUNTIME_SETTINGS, get_commission_rate_percent, split_revenue
 import unicodedata
 
@@ -1045,6 +1046,44 @@ def _serialize_bootstrap(db: Session) -> dict:
         "loginHistory": _build_login_history(db),
         "settings": ADMIN_RUNTIME_SETTINGS,
     }
+
+
+class AdminCommissionPayoutRequest(BaseModel):
+    ownerIds: list[int] | None = None
+
+
+@router.get("/commissions")
+def get_admin_commissions(
+    dateFrom: str | None = None,
+    dateTo: str | None = None,
+    districtId: int | None = None,
+    paymentStatus: str | None = None,
+    search: str | None = None,
+    page: int = 1,
+    pageSize: int = 10,
+    _: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    return admin_commissions.build_admin_commissions(
+        db,
+        date_from=dateFrom,
+        date_to=dateTo,
+        district_id=districtId,
+        payment_status=paymentStatus,
+        search=search,
+        page=page,
+        page_size=pageSize,
+    )
+
+
+@router.post("/commissions/payout")
+def process_admin_commission_payout(
+    payload: AdminCommissionPayoutRequest | None = None,
+    _: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    owner_ids = payload.ownerIds if payload else None
+    return admin_commissions.process_partner_payouts(db, owner_ids=owner_ids)
 
 
 @router.get("/dashboard-stats")

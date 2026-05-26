@@ -1,4 +1,5 @@
 ﻿import { useMemo, useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { BarChart, LineChart, SectionCard, StatCard, StatusBadge, formatCurrency, formatDateTime } from "../../owner/OwnerUI";
 import { PieChart } from "../../owner/PieChart";
 import { RevenueSystemChart, RecentActivities } from "../../owner/OwnerDashboardComponents";
@@ -299,14 +300,14 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        <div className="admin-stat-card-compact">
+        <Link to="/admin/commissions" className="admin-stat-card-compact admin-stat-card-compact--link">
           <div className="admin-stat-card-icon">💰</div>
           <div className="admin-stat-card-content">
             <p className="admin-stat-card-label">Hoa hồng</p>
             <div className="admin-stat-card-value">{formatCurrency(stats.totalCommission)}</div>
-            <span className="admin-stat-card-meta">{trends.commissionChange}</span>
+            <span className="admin-stat-card-meta">{trends.commissionChange} • Xem chi tiết</span>
           </div>
-        </div>
+        </Link>
 
         <div className="admin-stat-card-compact">
           <div className="admin-stat-card-icon">👥</div>

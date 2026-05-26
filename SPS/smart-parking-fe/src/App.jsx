@@ -14,6 +14,7 @@ import BookingManagement from "./pages/admin/BookingManagement";
 import OwnerManagement from "./pages/admin/OwnerManagement";
 import ParkingManagement from "./pages/admin/ParkingManagement";
 import RevenuePage from "./pages/admin/RevenuePage";
+import AdminCommissions from "./pages/admin/AdminCommissions";
 import UserManagement from "./pages/admin/UserManagement";
 import OwnerActivityHistory from "./pages/owner/OwnerActivityHistory";
 import OwnerBookings from "./pages/owner/OwnerBookings";
@@ -345,6 +346,7 @@ function AppBody({ auth, role, onLogin, onLogout }) {
           <Route path="parking-lots" element={<ParkingManagement />} />
           <Route path="bookings" element={<BookingManagement />} />
           <Route path="revenue" element={<RevenuePage />} />
+          <Route path="commissions" element={<AdminCommissions />} />
           <Route path="analytics" element={<AdminAnalytics />} />
           <Route path="notifications" element={<AdminNotifications />} />
           <Route path="settings" element={<AdminSettings />} />

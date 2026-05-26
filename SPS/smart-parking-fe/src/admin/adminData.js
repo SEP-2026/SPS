@@ -5,6 +5,7 @@ export const ADMIN_NAV_ITEMS = [
   { to: "/admin/parking-lots", label: "Bãi đỗ", icon: "parking" },
   { to: "/admin/bookings", label: "Đặt chỗ", icon: "booking" },
   { to: "/admin/revenue", label: "Doanh thu", icon: "revenue" },
+  { to: "/admin/commissions", label: "Hoa hồng", icon: "revenue" },
   { to: "/admin/analytics", label: "Phân tích", icon: "analytics" },
   { to: "/admin/settings", label: "Cài đặt", icon: "settings" },
 ];
@@ -33,6 +34,10 @@ export const ADMIN_ROUTE_META = {
   "/admin/revenue": {
     title: "Doanh thu & Hoa hồng",
     description: "Theo dõi doanh thu hệ thống và phần commission admin theo từng chu kỳ.",
+  },
+  "/admin/commissions": {
+    title: "Hoa hồng & thanh toán",
+    description: "Quản lý hoa hồng, doanh thu và thanh toán cho đối tác.",
   },
   "/admin/analytics": {
     title: "Phân tích",

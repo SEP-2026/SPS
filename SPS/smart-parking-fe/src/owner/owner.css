@@ -1522,6 +1522,12 @@
   align-items: center;
 }
 
+.owner-pie-shell--chart-only {
+  grid-template-columns: 1fr;
+  justify-items: center;
+  gap: 0;
+}
+
 .owner-pie-chart {
   width: 200px;
   height: 200px;
