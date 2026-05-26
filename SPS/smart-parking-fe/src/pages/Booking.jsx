@@ -330,6 +330,26 @@ export default function Booking() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const auth = getAuth();
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarHover, setSidebarHover] = useState(false);
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem("bookingSidebarCollapsed");
+      if (raw !== null) {
+        setSidebarCollapsed(raw === "true");
+      }
+    } catch (e) {
+      // ignore
+    }
+  }, []);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem("bookingSidebarCollapsed", sidebarCollapsed ? "true" : "false");
+    } catch (e) {
+      // ignore
+    }
+  }, [sidebarCollapsed]);
   const [address, setAddress] = useState("");
   const [sortBy, setSortBy] = useState("nearest");
   const [coveredOnly, setCoveredOnly] = useState(false);
@@ -347,7 +367,6 @@ export default function Booking() {
   const [vehicleNotice, setVehicleNotice] = useState("");
   const [bookingResult, setBookingResult] = useState(null);
   const [profile, setProfile] = useState(() => auth?.user || null);
-  const [expandedLotId, setExpandedLotId] = useState(null);
   const [prefilledSlotName, setPrefilledSlotName] = useState("");
   const quickSearchAppliedRef = useRef("");
   const bookingSectionRef = useRef(null);
@@ -785,6 +804,31 @@ export default function Booking() {
     loadNearby();
   };
 
+  const handleQuickFilter = async (addressQuery) => {
+    try {
+      setError("");
+      setSearching(true);
+      setAddress(addressQuery);
+      const payload = await searchParkingByAddress({ address: addressQuery, limit: 5, sortBy, coveredOnly });
+      applySearchResult({ query: payload.query, center: payload.center, nearest: payload.nearby });
+    } catch (err) {
+      setNearby([]);
+      setSearchMeta(null);
+      setError(normalizeError(err));
+    } finally {
+      setSearching(false);
+    }
+  };
+
+  const handleLogout = () => {
+    try {
+      saveAuth(null);
+    } catch (e) {
+      // ignore
+    }
+    navigate("/login");
+  };
+
   const handleSelectLot = (lot) => {
     setSelectedLot(normalizeSelectedLot(lot));
     setBookingResult(null);
@@ -798,10 +842,6 @@ export default function Booking() {
     setPrefilledSlotName(slot.code || slot.slot_number || "");
     setError("");
     setBookingError("");
-  };
-
-  const handleToggleLotDetail = (lotId) => {
-    setExpandedLotId((prev) => (prev === lotId ? null : lotId));
   };
 
   const handleBookingModeChange = (mode) => {
@@ -991,15 +1031,63 @@ export default function Booking() {
 
   return (
     <section className="page-wrap booking-page">
-      <div className="booking-dashboard">
-        <aside className="booking-sidebar">
+      <div className={`booking-dashboard ${sidebarCollapsed ? "is-sidebar-collapsed" : ""}`}>
+          <aside
+            className={`booking-sidebar ${sidebarCollapsed ? "is-collapsed" : ""} ${sidebarHover ? "is-hovered" : ""}`}
+            onMouseEnter={() => setSidebarHover(true)}
+            onMouseLeave={() => setSidebarHover(false)}
+          >
           <div className="booking-brand-card">
             <div className="booking-brand-mark">SP</div>
-            <div>
+            <div className="booking-brand-copy">
               <p className="booking-brand-eyebrow">Smart Parking Platform</p>
               <h1>Booking Studio</h1>
             </div>
+            <button
+              type="button"
+              className="booking-sidebar-toggle"
+              aria-label={sidebarCollapsed ? "Mở rộng sidebar" : "Thu gọn sidebar"}
+              aria-expanded={!sidebarCollapsed}
+              onClick={() => setSidebarCollapsed((prev) => !prev)}
+            >
+              <span aria-hidden="true">{sidebarCollapsed ? "›" : "‹"}</span>
+            </button>
           </div>
+
+          <nav className="booking-sidebar-nav" role="navigation" aria-label="Main navigation">
+            <button type="button" className="nav-item" title="Trang chủ" aria-label="Trang chủ" onFocus={() => setSidebarHover(true)} onBlur={() => setSidebarHover(false)} onClick={() => navigate('/')}>
+              <span className="nav-icon">🏠</span>
+              <span className="nav-label">Trang chủ</span>
+            </button>
+            <button type="button" className="nav-item" title="Tìm bãi xe" aria-label="Tìm bãi xe" onFocus={() => setSidebarHover(true)} onBlur={() => setSidebarHover(false)} onClick={() => navigate('/booking')}>
+              <span className="nav-icon">🔎</span>
+              <span className="nav-label">Tìm bãi xe</span>
+            </button>
+            <button type="button" className="nav-item" title="Đặt chỗ của tôi" aria-label="Đặt chỗ của tôi" onFocus={() => setSidebarHover(true)} onBlur={() => setSidebarHover(false)} onClick={() => navigate('/my-bookings')}>
+              <span className="nav-icon">📥</span>
+              <span className="nav-label">Đặt chỗ của tôi</span>
+            </button>
+            <button type="button" className="nav-item" title="Lịch sử đặt chỗ" aria-label="Lịch sử đặt chỗ" onFocus={() => setSidebarHover(true)} onBlur={() => setSidebarHover(false)} onClick={() => navigate('/booking-history')}>
+              <span className="nav-icon">📜</span>
+              <span className="nav-label">Lịch sử</span>
+            </button>
+            <button type="button" className="nav-item" title="Ví của tôi" aria-label="Ví của tôi" onFocus={() => setSidebarHover(true)} onBlur={() => setSidebarHover(false)} onClick={() => navigate('/wallet')}>
+              <span className="nav-icon">💰</span>
+              <span className="nav-label">Ví</span>
+            </button>
+            <button type="button" className="nav-item" title="Phương tiện" aria-label="Phương tiện" onFocus={() => setSidebarHover(true)} onBlur={() => setSidebarHover(false)} onClick={() => navigate('/vehicles')}>
+              <span className="nav-icon">🚗</span>
+              <span className="nav-label">Phương tiện</span>
+            </button>
+            <button type="button" className="nav-item" title="Thông báo" aria-label="Thông báo" onFocus={() => setSidebarHover(true)} onBlur={() => setSidebarHover(false)} onClick={() => navigate('/notifications')}>
+              <span className="nav-icon">🔔</span>
+              <span className="nav-label">Thông báo</span>
+            </button>
+            <button type="button" className="nav-item" title="Cài đặt" aria-label="Cài đặt" onFocus={() => setSidebarHover(true)} onBlur={() => setSidebarHover(false)} onClick={() => navigate('/settings')}>
+              <span className="nav-icon">⚙️</span>
+              <span className="nav-label">Cài đặt</span>
+            </button>
+          </nav>
 
           <div className="booking-sidebar-section">
             <p className="booking-sidebar-label">Luồng booking</p>
@@ -1019,7 +1107,7 @@ export default function Booking() {
             </div>
           </div>
 
-          <div className="booking-sidebar-section booking-sidebar-card">
+            <div className="booking-sidebar-section booking-sidebar-card">
             <div className="booking-sidebar-card-head">
               <span>Parking snapshot</span>
               <strong>{selectedLot ? `${selectedLotCapacity.availableSlots}/${selectedLotCapacity.totalSlots}` : "--"}</strong>
@@ -1059,7 +1147,25 @@ export default function Booking() {
         </aside>
 
         <div className="booking-workspace">
+          <div className="booking-hero">
+            <div className="booking-hero-left">
+              <h1 className="booking-hero-title">Khám phá bãi xe nhanh chóng</h1>
+              <p className="booking-hero-sub">Tìm bãi gần bạn, chọn slot trống và nhận mã QR trong vài bước.</p>
+            </div>
+            <div className="booking-hero-right">
+              <div className="hero-illustration" aria-hidden="true" />
+            </div>
+          </div>
+
           <header className="booking-topbar">
+            <div className="booking-topbar-left">
+              <select className="booking-city-select">
+                <option value="hn">Hà Nội</option>
+                <option value="hcm">TP. HCM</option>
+                <option value="dn">Đà Nẵng</option>
+              </select>
+            </div>
+
             <div className="booking-topbar-title">
               <span className="booking-topbar-kicker">Realtime booking</span>
               <h2>Chọn bãi, chọn slot, xác nhận và nhận QR trong một flow liền mạch</h2>
@@ -1068,7 +1174,7 @@ export default function Booking() {
             <div className="booking-topbar-search">
               <div className="input-with-clear booking-topbar-search-field">
                 <input
-                  className="booking-input booking-search-input"
+                  className="booking-input booking-search-input booking-search-input--large"
                   aria-label="Địa chỉ tìm kiếm"
                   placeholder="Tìm địa điểm, quận, đường..."
                   value={address}
@@ -1093,6 +1199,12 @@ export default function Booking() {
               <button type="button" className="btn-secondary" onClick={handleUseCurrentLocation} disabled={searching}>
                 📍 Vị trí hiện tại
               </button>
+            </div>
+
+            <div className="booking-quick-filters">
+              <button type="button" className="booking-chip" onClick={() => handleQuickFilter("Quận Hoàn Kiếm, Hà Nội")}>Hoàn Kiếm</button>
+              <button type="button" className="booking-chip" onClick={() => handleQuickFilter("Quận Đống Đa, Hà Nội")}>Đống Đa</button>
+              <button type="button" className="booking-chip" onClick={() => handleQuickFilter("Trung tâm thương mại, Hà Nội")}>Trung tâm</button>
             </div>
 
             <div className="booking-topbar-actions">
@@ -1196,79 +1308,8 @@ export default function Booking() {
                       onSelectLot={handleSelectLot}
                     />
 
-                    <div className="parking-card-grid">
-                      {nearby.map((lot) => {
-                        const isSelected = Number(selectedLot?.id) === Number(lot.id);
-                        const lotCapacity = getParkingCapacitySummary(lot, []);
-                        const rating = getParkingRating(lot);
-                        const pricePerHour = Number(lot.price_per_hour || 0);
-                        const coverImage = lot.cover_image || lot.image_url || lot.thumbnail || "";
-
-                        return (
-                          <article key={lot.id} className={`parking-card ${isSelected ? "is-selected" : ""}`}>
-                            <button
-                              type="button"
-                              className="parking-card-visual"
-                              onClick={() => handleSelectLot(lot)}
-                              aria-label={`Chọn ${lot.name}`}
-                              style={coverImage ? { backgroundImage: `linear-gradient(180deg, rgba(10, 22, 44, 0.18), rgba(10, 22, 44, 0.58)), url(${coverImage})` } : undefined}
-                            >
-                              <div className="parking-card-visual-badge">{lot.has_roof ? "Indoor" : "Outdoor"}</div>
-                            </button>
-
-                            <div className="parking-card-body">
-                              <div className="parking-card-head">
-                                <div>
-                                  <h4>{lot.name}</h4>
-                                  <p>{lot.address || "Chưa có địa chỉ"}</p>
-                                </div>
-                                <span className="parking-card-distance">{lot.distance || "--"} km</span>
-                              </div>
-
-                              <div className="parking-card-badges">
-                                <span>{lot.has_roof ? "Trong nhà" : "Ngoài trời"}</span>
-                                <span>Bảo vệ: {getParkingSecurityLabel(lot)}</span>
-                                <span>{lotCapacity.occupancyPercent}% lấp đầy</span>
-                              </div>
-
-                              <div className="parking-card-stats">
-                                <div>
-                                  <span>Slot trống</span>
-                                  <strong>{lot.available_slots ?? lotCapacity.availableSlots ?? "--"}</strong>
-                                </div>
-                                <div>
-                                  <span>Đánh giá</span>
-                                  <strong>{rating ? rating.toFixed(1) : "Mới"}</strong>
-                                </div>
-                                <div>
-                                  <span>Giá/giờ</span>
-                                  <strong>{formatMoney(pricePerHour)}đ</strong>
-                                </div>
-                              </div>
-
-                              <div className="parking-card-actions">
-                                <button type="button" className="btn-secondary" onClick={() => handleToggleLotDetail(lot.id)}>
-                                  {expandedLotId === lot.id ? "Ẩn chi tiết" : "Xem chi tiết"}
-                                </button>
-                                <button type="button" className="btn-primary" onClick={() => handleSelectLot(lot)}>
-                                  Chọn bãi này
-                                </button>
-                              </div>
-
-                              {expandedLotId === lot.id ? (
-                                <div className="parking-card-detail">
-                                  <p><strong>ID bãi:</strong> {lot.id}</p>
-                                  <p><strong>Địa chỉ:</strong> {lot.address || "Chưa có địa chỉ"}</p>
-                                  <p><strong>Có mái che:</strong> {lot.has_roof ? "Có" : "Không"}</p>
-                                  <p><strong>Giá theo giờ:</strong> {formatMoney(lot.price_per_hour || 0)}đ</p>
-                                  <p><strong>Giá theo ngày:</strong> {formatMoney(lot.price_per_day || 0)}đ</p>
-                                  <p><strong>Giá theo tháng:</strong> {formatMoney(lot.price_per_month || 0)}đ</p>
-                                </div>
-                              ) : null}
-                            </div>
-                          </article>
-                        );
-                      })}
+                    <div className="booking-map-hint">
+                      <p>Nhấn vào một marker trên bản đồ để xem chi tiết bãi xe. Danh sách rút gọn đã được ẩn để tránh làm trang quá dài.</p>
                     </div>
                   </>
                 ) : (
@@ -1606,10 +1647,10 @@ export default function Booking() {
                 <div className="booking-panel-head booking-summary-head">
                   <div>
                     <span className="booking-section-eyebrow">Step 3</span>
-                    <h3>Payment summary</h3>
+                    <h3>Tóm tắt thanh toán</h3>
                   </div>
                   <span className={`booking-status-pill ${summaryReady ? "is-ready" : "is-idle"}`}>
-                    {summaryReady ? "Ready" : "Pending"}
+                    {summaryReady ? "Sẵn sàng" : "Đang chờ"}
                   </span>
                 </div>
 
@@ -1686,6 +1727,33 @@ export default function Booking() {
                 {(bookingError || error) && <p className="booking-error booking-error--card">{bookingError || error}</p>}
               </div>
             </aside>
+            <div className="booking-sidebar-footer" style={{marginTop:12}}>
+              <div className="booking-sidebar-support booking-sidebar-card">
+                <div className="booking-sidebar-card-head">
+                  <span>Hỗ trợ</span>
+                  <strong>Online</strong>
+                </div>
+                <p style={{marginTop:8}}>Gặp sự cố khi dùng dịch vụ? <a href="mailto:support@smartparking.example">support@smartparking.example</a></p>
+                <div style={{marginTop:10}}>
+                  <button type="button" className="btn-secondary">Mở ticket</button>
+                  <button type="button" className="btn-primary" style={{marginLeft:8}}>Chat ngay</button>
+                </div>
+              </div>
+
+              <div className="booking-sidebar-userfoot" style={{marginTop:12}}>
+                <div className="booking-user-chip">
+                  <div className="booking-user-avatar">{(profile?.name || auth?.user?.name || "SP").slice(0,1).toUpperCase()}</div>
+                  <div>
+                    <strong>{profile?.name || auth?.user?.name || "Smart Parking"}</strong>
+                    <span>{profile?.phone || auth?.user?.phone || "-"}</span>
+                  </div>
+                </div>
+                <div style={{marginTop:10, display:'flex', gap:8}}>
+                  <button type="button" className="btn-secondary">Tài khoản</button>
+                  <button type="button" className="btn-outline" onClick={handleLogout}>Đăng xuất</button>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
