@@ -25,7 +25,7 @@ from app.models.models import (
 from app.utils.timezone import isoformat_vn, vn_now
 from app.routes.auth import get_current_user
 from app.security.password_policy import ensure_strong_password
-from app.services import admin_commissions
+from app.services import admin_commissions, admin_contracts, admin_owners, admin_registrations
 from app.services.revenue_settings import ADMIN_RUNTIME_SETTINGS, get_commission_rate_percent, split_revenue
 import unicodedata
 
@@ -1148,6 +1148,177 @@ def update_user_status(
 
     db.commit()
     return {"message": "Cập nhật trạng thái người dùng thành công"}
+
+
+class RegistrationReviewRequest(BaseModel):
+    adminNotes: str | None = None
+    reason: str | None = None
+
+
+class ContractUpdateRequest(BaseModel):
+    commissionRate: float | None = None
+    contractValue: float | None = None
+    paymentMethod: str | None = None
+    paymentCycle: str | None = None
+
+
+@router.get("/registrations/management")
+def get_registrations_management(
+    search: str | None = None,
+    status: str | None = None,
+    districtId: int | None = None,
+    page: int = 1,
+    pageSize: int = 10,
+    _: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    return admin_registrations.build_registration_management(
+        db, search=search, status=status, district_id=districtId, page=page, page_size=pageSize,
+    )
+
+
+@router.get("/registrations/{registration_id}")
+def get_registration_detail(
+    registration_id: int,
+    _: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    detail = admin_registrations.get_registration_detail(db, registration_id)
+    if not detail:
+        raise HTTPException(status_code=404, detail="Không tìm thấy hồ sơ đăng ký")
+    return detail
+
+
+@router.post("/registrations/{registration_id}/approve")
+def approve_registration(
+    registration_id: int,
+    payload: RegistrationReviewRequest | None = None,
+    admin: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    try:
+        return admin_registrations.approve_registration(
+            db, registration_id, int(admin.id), admin_notes=payload.adminNotes if payload else None,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@router.post("/registrations/{registration_id}/reject")
+def reject_registration(
+    registration_id: int,
+    payload: RegistrationReviewRequest | None = None,
+    admin: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    try:
+        return admin_registrations.reject_registration(
+            db,
+            registration_id,
+            int(admin.id),
+            reason=payload.reason if payload else None,
+            admin_notes=payload.adminNotes if payload else None,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@router.get("/contracts/management")
+def get_contracts_management(
+    search: str | None = None,
+    status: str | None = None,
+    districtId: int | None = None,
+    page: int = 1,
+    pageSize: int = 10,
+    _: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    return admin_contracts.build_contract_management(
+        db, search=search, status=status, district_id=districtId, page=page, page_size=pageSize,
+    )
+
+
+@router.get("/contracts/{contract_id}")
+def get_contract_detail(
+    contract_id: int,
+    _: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    detail = admin_contracts.get_contract_detail(db, contract_id)
+    if not detail:
+        raise HTTPException(status_code=404, detail="Không tìm thấy hợp đồng")
+    return detail
+
+
+@router.post("/contracts/{contract_id}/renew")
+def renew_contract(
+    contract_id: int,
+    _: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    try:
+        return admin_contracts.renew_contract(db, contract_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@router.post("/contracts/{contract_id}/terminate")
+def terminate_contract(
+    contract_id: int,
+    _: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    try:
+        return admin_contracts.terminate_contract(db, contract_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@router.patch("/contracts/{contract_id}")
+def update_contract(
+    contract_id: int,
+    payload: ContractUpdateRequest,
+    _: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    try:
+        return admin_contracts.update_contract_notes(db, contract_id, payload.model_dump(exclude_unset=True))
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@router.get("/owners/management")
+def get_owners_management(
+    search: str | None = None,
+    status: str | None = None,
+    districtId: int | None = None,
+    createdSort: str = "newest",
+    page: int = 1,
+    pageSize: int = 10,
+    _: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    return admin_owners.build_owner_management(
+        db,
+        search=search,
+        status=status,
+        district_id=districtId,
+        created_sort=createdSort,
+        page=page,
+        page_size=pageSize,
+    )
+
+
+@router.get("/owners/{owner_id}/detail")
+def get_owner_detail(
+    owner_id: int,
+    _: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    detail = admin_owners.build_owner_detail(db, owner_id)
+    if not detail:
+        raise HTTPException(status_code=404, detail="Không tìm thấy chủ bãi")
+    return detail
 
 
 @router.post("/owners")

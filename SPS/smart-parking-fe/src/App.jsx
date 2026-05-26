@@ -12,9 +12,12 @@ import AdminNotifications from "./pages/admin/AdminNotifications";
 import AdminSettings from "./pages/admin/AdminSettings";
 import BookingManagement from "./pages/admin/BookingManagement";
 import OwnerManagement from "./pages/admin/OwnerManagement";
+import AdminOwnerRegistrations from "./pages/admin/AdminOwnerRegistrations";
+import AdminOwnerContracts from "./pages/admin/AdminOwnerContracts";
 import ParkingManagement from "./pages/admin/ParkingManagement";
 import RevenuePage from "./pages/admin/RevenuePage";
 import AdminCommissions from "./pages/admin/AdminCommissions";
+import AdminPartnerLayout from "./admin/AdminPartnerLayout";
 import UserManagement from "./pages/admin/UserManagement";
 import OwnerActivityHistory from "./pages/owner/OwnerActivityHistory";
 import OwnerBookings from "./pages/owner/OwnerBookings";
@@ -342,11 +345,16 @@ function AppBody({ auth, role, onLogin, onLogout }) {
         >
           <Route index element={<AdminDashboard />} />
           <Route path="users" element={<UserManagement />} />
-          <Route path="owners" element={<OwnerManagement />} />
+          <Route path="owners" element={<AdminPartnerLayout />}>
+            <Route index element={<OwnerManagement />} />
+            <Route path="registrations" element={<AdminOwnerRegistrations />} />
+            <Route path="commissions" element={<AdminCommissions />} />
+            <Route path="contracts" element={<AdminOwnerContracts />} />
+          </Route>
+          <Route path="commissions" element={<Navigate to="/admin/owners/commissions" replace />} />
           <Route path="parking-lots" element={<ParkingManagement />} />
           <Route path="bookings" element={<BookingManagement />} />
           <Route path="revenue" element={<RevenuePage />} />
-          <Route path="commissions" element={<AdminCommissions />} />
           <Route path="analytics" element={<AdminAnalytics />} />
           <Route path="notifications" element={<AdminNotifications />} />
           <Route path="settings" element={<AdminSettings />} />

@@ -1,11 +1,22 @@
+export const ADMIN_PARTNER_NAV = [
+  { to: "/admin/owners", label: "Danh sách đối tác", end: true },
+  { to: "/admin/owners/registrations", label: "Duyệt đăng ký" },
+  { to: "/admin/owners/commissions", label: "Hoa hồng & thanh toán" },
+  { to: "/admin/owners/contracts", label: "Hợp đồng đối tác" },
+];
+
 export const ADMIN_NAV_ITEMS = [
   { to: "/admin", label: "Bảng điều khiển", icon: "dashboard" },
   { to: "/admin/users", label: "Người dùng", icon: "users" },
-  { to: "/admin/owners", label: "Khu vực", icon: "owners" },
+  {
+    id: "partners",
+    label: "Chủ bãi / Đối tác",
+    icon: "owners",
+    children: ADMIN_PARTNER_NAV,
+  },
   { to: "/admin/parking-lots", label: "Bãi đỗ", icon: "parking" },
   { to: "/admin/bookings", label: "Đặt chỗ", icon: "booking" },
   { to: "/admin/revenue", label: "Doanh thu", icon: "revenue" },
-  { to: "/admin/commissions", label: "Hoa hồng", icon: "revenue" },
   { to: "/admin/analytics", label: "Phân tích", icon: "analytics" },
   { to: "/admin/settings", label: "Cài đặt", icon: "settings" },
 ];
@@ -20,8 +31,20 @@ export const ADMIN_ROUTE_META = {
     description: "Quản lý người dùng cuối, trạng thái tài khoản và hoạt động đặt chỗ.",
   },
   "/admin/owners": {
-    title: "Quản lý khu vực",
-    description: "Quản trị tài khoản chủ khu vực, khu vực đang phụ trách và hiệu suất vận hành.",
+    title: "Quản lý chủ bãi / đối tác",
+    description: "Quản lý tất cả chủ bãi và đối tác theo quận/huyện trên hệ thống.",
+  },
+  "/admin/owners/registrations": {
+    title: "Duyệt đăng ký đối tác",
+    description: "Xem xét và phê duyệt các yêu cầu đăng ký trở thành đối tác chủ bãi.",
+  },
+  "/admin/owners/commissions": {
+    title: "Hoa hồng & thanh toán",
+    description: "Quản lý hoa hồng, doanh thu và thanh toán cho đối tác.",
+  },
+  "/admin/owners/contracts": {
+    title: "Hợp đồng đối tác",
+    description: "Quản lý hợp đồng ký kết với các chủ bãi / đối tác.",
   },
   "/admin/parking-lots": {
     title: "Quản lý bãi đỗ",

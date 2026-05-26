@@ -6,8 +6,19 @@ import API from "../services/api";
 import useRealtimeRefresh from "../services/useRealtimeRefresh";
 import SidebarPromoCard from "../components/SidebarPromoCard";
 import "./admin.css";
+import "./AdminPartners.css";
 import "../owner/owner.css";
 import "../styles/sidebar-promo.css";
+
+function resolveAdminRouteMeta(pathname) {
+  if (ADMIN_ROUTE_META[pathname]) {
+    return ADMIN_ROUTE_META[pathname];
+  }
+  const matches = Object.entries(ADMIN_ROUTE_META)
+    .filter(([route]) => route !== "/admin" && pathname.startsWith(route))
+    .sort((a, b) => b[0].length - a[0].length);
+  return matches[0]?.[1] || ADMIN_ROUTE_META["/admin"];
+}
 
 export default function AdminLayout({ auth, onLogout }) {
   const location = useLocation();
@@ -16,7 +27,8 @@ export default function AdminLayout({ auth, onLogout }) {
   const [adminData, setAdminData] = useState(null);
   const [syncNote, setSyncNote] = useState("Đang tải dữ liệu admin");
   const [loading, setLoading] = useState(true);
-  const meta = ADMIN_ROUTE_META[location.pathname] || ADMIN_ROUTE_META["/admin"];
+  const meta = useMemo(() => resolveAdminRouteMeta(location.pathname), [location.pathname]);
+  const partnerSectionOpen = location.pathname.startsWith("/admin/owners");
   
   const [notificationStorageVersion, setNotificationStorageVersion] = useState(0);
 
@@ -226,18 +238,51 @@ export default function AdminLayout({ auth, onLogout }) {
           <div className="admin-sidebar-panel">
             <p className="admin-sidebar-title">Điều hướng hệ thống</p>
             <nav className="admin-menu">
-              {ADMIN_NAV_ITEMS.map((item) => (
-                <NavLink
-                  key={item.to}
-                  to={item.to}
-                  end={item.to === "/admin"}
-                  className={({ isActive }) => `admin-menu-link${isActive ? " active" : ""}`}
-                  onClick={() => setSidebarOpen(false)}
-                >
-                  <AdminIcon name={item.icon} className="admin-menu-icon" />
-                  <span>{item.label}</span>
-                </NavLink>
-              ))}
+              {ADMIN_NAV_ITEMS.map((item) => {
+                if (item.children) {
+                  return (
+                    <div key={item.id} className="admin-menu-group">
+                      <NavLink
+                        to="/admin/owners"
+                        end
+                        className={({ isActive }) =>
+                          `admin-menu-link admin-menu-group-toggle${isActive || partnerSectionOpen ? " active" : ""}`
+                        }
+                        onClick={() => setSidebarOpen(false)}
+                      >
+                        <AdminIcon name={item.icon} className="admin-menu-icon" />
+                        <span>{item.label}</span>
+                      </NavLink>
+                      {partnerSectionOpen
+                        ? item.children.map((child) => (
+                            <NavLink
+                              key={child.to}
+                              to={child.to}
+                              end={Boolean(child.end)}
+                              className={({ isActive }) => `admin-menu-link admin-menu-sublink${isActive ? " active" : ""}`}
+                              onClick={() => setSidebarOpen(false)}
+                            >
+                              <span>{child.label}</span>
+                            </NavLink>
+                          ))
+                        : null}
+                    </div>
+                  );
+                }
+
+                return (
+                  <NavLink
+                    key={item.to}
+                    to={item.to}
+                    end={item.to === "/admin"}
+                    className={({ isActive }) => `admin-menu-link${isActive ? " active" : ""}`}
+                    onClick={() => setSidebarOpen(false)}
+                  >
+                    <AdminIcon name={item.icon} className="admin-menu-icon" />
+                    <span>{item.label}</span>
+                  </NavLink>
+                );
+              })}
             </nav>
           </div>
 

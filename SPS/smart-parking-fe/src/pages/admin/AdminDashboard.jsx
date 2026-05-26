@@ -300,7 +300,7 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        <Link to="/admin/commissions" className="admin-stat-card-compact admin-stat-card-compact--link">
+        <Link to="/admin/owners/commissions" className="admin-stat-card-compact admin-stat-card-compact--link">
           <div className="admin-stat-card-icon">💰</div>
           <div className="admin-stat-card-content">
             <p className="admin-stat-card-label">Hoa hồng</p>
@@ -309,14 +309,14 @@ export default function AdminDashboard() {
           </div>
         </Link>
 
-        <div className="admin-stat-card-compact">
+        <Link to="/admin/owners" className="admin-stat-card-compact admin-stat-card-compact--link">
           <div className="admin-stat-card-icon">👥</div>
           <div className="admin-stat-card-content">
-            <p className="admin-stat-card-label">QL Quận</p>
+            <p className="admin-stat-card-label">Chủ bãi</p>
             <div className="admin-stat-card-value">{stats.totalOwners}</div>
-            <span className="admin-stat-card-meta">{adminData?.owners?.filter((o) => o.status === "active").length || 0} hoạt động</span>
+            <span className="admin-stat-card-meta">{adminData?.owners?.filter((o) => o.status === "active").length || 0} hoạt động • Quản lý</span>
           </div>
-        </div>
+        </Link>
 
         <div className="admin-stat-card-compact">
           <div className="admin-stat-card-icon">🅿️</div>

@@ -207,8 +207,8 @@ export default function AdminCommissions() {
             <section className="admin-commissions-card">
               <h3>Doanh thu & hoa hồng</h3>
               <p>{data?.range?.label || "Theo khoảng thời gian đã chọn"}</p>
-              <div style={{ width: "100%", height: 280 }}>
-                <ResponsiveContainer>
+              <div className="admin-commissions-line-chart" style={{ width: "100%", minHeight: 280, height: 280 }}>
+                <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                   <LineChart data={data?.charts?.revenueCommission || []}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#eef2f7" />
                     <XAxis dataKey="label" tick={{ fontSize: 12 }} />

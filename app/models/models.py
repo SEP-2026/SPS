@@ -387,3 +387,57 @@ class AdminSecurityEvent(Base):
     target_type = Column(String(50), nullable=False, default="user")
     level = Column(String(20), nullable=False, default="security")
     created_at = Column(DateTime, nullable=False, index=True)
+
+
+class PartnerRegistration(Base):
+    __tablename__ = "partner_registrations"
+
+    id = Column(Integer, primary_key=True, index=True)
+    registration_code = Column(String(32), unique=True, index=True, nullable=False)
+    business_name = Column(String(255), nullable=False)
+    contact_name = Column(String(255), nullable=False)
+    email = Column(String(255), nullable=False, index=True)
+    phone = Column(String(30), nullable=True)
+    address = Column(String(500), nullable=True)
+    district_id = Column(Integer, ForeignKey("districts.id"), nullable=True, index=True)
+    parking_lot_count = Column(Integer, default=1, nullable=False)
+    slot_count = Column(Integer, default=0, nullable=False)
+    lot_types = Column(String(255), nullable=True)
+    total_area_sqm = Column(Float, nullable=True)
+    operating_hours = Column(String(100), default="24/7")
+    services = Column(Text, nullable=True)
+    documents_json = Column(Text, nullable=True)
+    admin_notes = Column(Text, nullable=True)
+    status = Column(String(20), default="pending", nullable=False, index=True)
+    owner_id = Column(Integer, ForeignKey("users.id"), nullable=True, index=True)
+    reviewed_by = Column(Integer, ForeignKey("users.id"), nullable=True)
+    reviewed_at = Column(DateTime, nullable=True)
+    rejection_reason = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=vn_now, nullable=False)
+    updated_at = Column(DateTime, default=vn_now, onupdate=vn_now, nullable=False)
+
+    district = relationship("District", foreign_keys=[district_id])
+    owner = relationship("User", foreign_keys=[owner_id])
+
+
+class PartnerContract(Base):
+    __tablename__ = "partner_contracts"
+
+    id = Column(Integer, primary_key=True, index=True)
+    contract_code = Column(String(32), unique=True, index=True, nullable=False)
+    owner_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    district_id = Column(Integer, ForeignKey("districts.id"), nullable=True)
+    signed_at = Column(DateTime, nullable=False)
+    expires_at = Column(DateTime, nullable=False)
+    contract_value = Column(DECIMAL(14, 2), default=0, nullable=False)
+    commission_rate = Column(Float, default=10.0, nullable=False)
+    payment_method = Column(String(100), default="Chuyển khoản ngân hàng")
+    payment_cycle = Column(String(50), default="Hàng tháng")
+    terms_json = Column(Text, nullable=True)
+    attachments_json = Column(Text, nullable=True)
+    status = Column(String(20), default="active", nullable=False, index=True)
+    created_at = Column(DateTime, default=vn_now, nullable=False)
+    updated_at = Column(DateTime, default=vn_now, onupdate=vn_now, nullable=False)
+
+    owner = relationship("User", foreign_keys=[owner_id])
+    district = relationship("District", foreign_keys=[district_id])
