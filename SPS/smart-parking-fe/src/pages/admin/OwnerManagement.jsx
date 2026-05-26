@@ -108,6 +108,11 @@ export default function OwnerManagement() {
     });
   };
 
+  const closeDetailPanel = () => {
+    setSelectedId(null);
+    setDetail(null);
+  };
+
   const handleLockToggle = async () => {
     if (!selectedId || !detail) return;
     const nextStatus = detail.status === "locked" ? "active" : "suspended";
@@ -334,6 +339,15 @@ export default function OwnerManagement() {
 
         {selectedId ? (
           <aside className="admin-owners-detail">
+            <button
+              type="button"
+              className="admin-owners-detail-close"
+              onClick={closeDetailPanel}
+              aria-label="Đóng chi tiết chủ bãi"
+              title="Đóng"
+            >
+              ✕
+            </button>
             {detailLoading || !detail ? (
               <p>Đang tải chi tiết...</p>
             ) : (

@@ -315,11 +315,37 @@
   background: #fff;
   border: 1px solid #e5e7eb;
   border-radius: 14px;
-  padding: 16px;
+  padding: 16px 44px 16px 16px;
   position: sticky;
   top: 12px;
   max-height: calc(100dvh - 120px);
   overflow: auto;
+  isolation: isolate;
+}
+
+.admin-owners-detail-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 32px;
+  height: 32px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #fff;
+  color: #64748b;
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  z-index: 2;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.admin-owners-detail-close:hover {
+  background: #f8fafc;
+  color: #0f172a;
+  border-color: #cbd5e1;
 }
 
 .admin-owners-detail-head {
