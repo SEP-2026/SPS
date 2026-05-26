@@ -83,7 +83,7 @@ export default function OwnerParkingDetail() {
             <Map size={17} />
             Sơ đồ
           </button>
-          <button type="button" className="owner-management-primary" onClick={() => navigate(`/owner/settings?parkingId=${lot.id}`)}>
+          <button type="button" className="owner-management-primary" onClick={() => navigate(`/owner/settings?tab=parking&parkingId=${lot.id}`)}>
             <Settings size={17} />
             Cài đặt
           </button>

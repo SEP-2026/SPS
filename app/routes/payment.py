@@ -24,18 +24,21 @@ class PaymentMockSuccessRequest(BaseModel):
     booking_id: int = Field(gt=0)
 
 
-def _calculate_no_show_deposit(booking: Booking) -> float:
+def _calculate_no_show_deposit(booking: Booking, db: Session) -> float:
     if booking.status == "cancelled" and (booking.cancel_reason or "") == "no_show":
-        return round(float(booking.total_amount or 0) * 0.3, 2)
+        from app.services.owner_booking_config import deposit_amount_for_booking, get_parking_booking_config
+
+        config = get_parking_booking_config(db, booking.parking_id)
+        return deposit_amount_for_booking(booking, config)
     return 0.0
 
 
-def _get_effective_paid_amount(booking: Booking, payment: Payment | None) -> float:
+def _get_effective_paid_amount(booking: Booking, payment: Payment | None, db: Session) -> float:
     if booking.status == "cancelled" and (booking.cancel_reason or "") == "no_show":
         deposit_amount = float((payment.deposit_amount if payment else 0) or 0)
         if deposit_amount > 0:
             return round(deposit_amount, 2)
-        return _calculate_no_show_deposit(booking)
+        return _calculate_no_show_deposit(booking, db)
 
     if not payment:
         return 0.0
@@ -195,8 +198,12 @@ def mock_payment_success(
         if booking.status not in {"pending", "booked"}:
             raise HTTPException(status_code=400, detail="Booking không ở trạng thái có thể thanh toán")
 
+        from app.services.owner_booking_config import deposit_ratio, get_parking_booking_config
+
         total_amount = round(float(booking.total_amount or 0), 2)
-        upfront_amount = round(total_amount * 0.3, 2)
+        config = get_parking_booking_config(db, booking.parking_id)
+        ratio = deposit_ratio(config, booking.booking_mode)
+        upfront_amount = round(total_amount * ratio, 2)
         remaining_amount = round(max(0.0, total_amount - upfront_amount), 2)
 
         payment = db.query(Payment).filter(Payment.booking_id == booking.id).with_for_update().first()
@@ -228,7 +235,7 @@ def mock_payment_success(
             amount=upfront_amount,
             reference_type="booking_payment",
             reference_id=booking.id,
-            note="Giữ 30% khi mô phỏng thanh toán bằng ví nội bộ",
+            note="Giữ tiền cọc khi mô phỏng thanh toán bằng ví nội bộ",
         )
 
         payment.amount = total_amount
@@ -279,8 +286,8 @@ def payment_history(
     result = []
     for booking in bookings:
         payment = payment_map.get(booking.id)
-        paid_amount = _get_effective_paid_amount(booking, payment)
-        deposit_amount = _calculate_no_show_deposit(booking)
+        paid_amount = _get_effective_paid_amount(booking, payment, db)
+        deposit_amount = _calculate_no_show_deposit(booking, db)
         result.append(
             {
                 "booking_id": booking.id,

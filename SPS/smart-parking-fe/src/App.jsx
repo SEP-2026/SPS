@@ -17,7 +17,6 @@ import UserManagement from "./pages/admin/UserManagement";
 import OwnerActivityHistory from "./pages/owner/OwnerActivityHistory";
 import OwnerBookings from "./pages/owner/OwnerBookings";
 import OwnerCustomers from "./pages/owner/OwnerCustomers";
-import OwnerEmployees from "./pages/owner/OwnerEmployees";
 import OwnerNotifications from "./pages/owner/OwnerNotifications";
 import OwnerOverview from "./pages/owner/OwnerOverview";
 import OwnerParking from "./pages/owner/OwnerParking";
@@ -200,7 +199,7 @@ function AppBody({ auth, role, onLogin, onLogout }) {
         { to: "/profile", label: "Hồ sơ" },
         { to: "/scan", label: "Quét QR vào/ra" },
         { to: "/owner/reviews", label: "Đánh giá & phản hồi" },
-        { to: "/owner/settings", label: "Tạo nhân viên" },
+        { to: "/owner/settings?tab=parking-accounts", label: "Tạo nhân viên" },
       ],
       employee: [
         { to: "/employee", label: "Dashboard Employee" },
@@ -332,8 +331,8 @@ function AppBody({ auth, role, onLogin, onLogout }) {
           <Route path="review-replies" element={<Navigate to="/owner/reviews" replace />} />
           <Route path="notifications" element={<OwnerNotifications />} />
           <Route path="settings" element={<OwnerSettings />} />
-          <Route path="parking-accounts" element={<OwnerEmployees />} />
-          <Route path="employees" element={<OwnerEmployees />} />
+          <Route path="parking-accounts" element={<Navigate to="/owner/settings?tab=parking-accounts" replace />} />
+          <Route path="employees" element={<Navigate to="/owner/settings?tab=parking-accounts" replace />} />
         </Route>
         <Route
           path="/admin"

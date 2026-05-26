@@ -278,6 +278,17 @@ class EmployeeActivity(Base):
     booking = relationship("Booking")
 
 
+class OwnerBookingConfig(Base):
+    __tablename__ = "owner_booking_configs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    owner_id = Column(Integer, ForeignKey("users.id"), unique=True, nullable=False, index=True)
+    config_json = Column(Text, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    owner = relationship("User")
+
+
 class OwnerBalance(Base):
     __tablename__ = "owner_balances"
 

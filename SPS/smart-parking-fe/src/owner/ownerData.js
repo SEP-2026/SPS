@@ -18,7 +18,6 @@
   },
   { to: "/owner/reviews", label: "Đánh giá & phản hồi", icon: "reviews" },
   { to: "/owner/settings", label: "Cài đặt", icon: "settings" },
-  { to: "/owner/parking-accounts", label: "Tài khoản bãi xe", icon: "account" },
 ];
 
 export const OWNER_ROUTE_META = {
@@ -63,8 +62,8 @@ export const OWNER_ROUTE_META = {
     description: "Theo dõi chi tiết hoa hồng nền tảng được trừ từ doanh thu",
   },
   "/owner/settings": {
-    title: "Cài đặt & nhân viên",
-    description: "Quản lý thông tin owner, cấu hình bãi đỗ và tạo tài khoản nhân viên.",
+    title: "Cài đặt",
+    description: "Quản lý và cấu hình hệ thống Smart Parking.",
   },
   "/owner/reviews": {
     title: "Đánh giá & phản hồi",

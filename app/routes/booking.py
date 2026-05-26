@@ -769,8 +769,12 @@ def get_my_booking_detail(
     vehicle_profile = db.query(UserVehicle).filter(UserVehicle.user_id == current_user.id).first()
 
     payment_required = booking.status == "pending"
+    from app.services.owner_booking_config import deposit_ratio, get_parking_booking_config
+
     total_amount = round(float(booking.total_amount or 0), 2)
-    upfront_amount = round(total_amount * 0.3, 2)
+    config = get_parking_booking_config(db, booking.parking_id)
+    ratio = deposit_ratio(config, booking.booking_mode)
+    upfront_amount = round(total_amount * ratio, 2)
     remaining_amount = round(max(0.0, total_amount - upfront_amount), 2)
 
     return {
