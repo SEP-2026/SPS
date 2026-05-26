@@ -43,6 +43,7 @@ import EmployeeRevenue from "./pages/employee/EmployeeRevenue";
 import EmployeeVehicles from "./pages/employee/EmployeeVehicles";
 import API, { clearAuth, getAuth, saveAuth } from "./services/api";
 import useRealtimeNotifications from "./services/useRealtimeNotifications";
+import { WalletProvider } from "./context/WalletContext";
 import "./styles/layout.css";
 import "./styles/role-theme-sync.css";
 
@@ -128,7 +129,11 @@ function App() {
     return null;
   }
 
-  return <AppBody auth={auth} role={role} onLogin={setAuth} onLogout={handleLogout} />;
+  return (
+    <WalletProvider authToken={auth?.token} enabled={role === "user"}>
+      <AppBody auth={auth} role={role} onLogin={setAuth} onLogout={handleLogout} />
+    </WalletProvider>
+  );
 }
 
 function AppBody({ auth, role, onLogin, onLogout }) {
