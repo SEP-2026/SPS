@@ -14,11 +14,15 @@ import BookingManagement from "./pages/admin/BookingManagement";
 import OwnerManagement from "./pages/admin/OwnerManagement";
 import AdminOwnerRegistrations from "./pages/admin/AdminOwnerRegistrations";
 import AdminOwnerContracts from "./pages/admin/AdminOwnerContracts";
-import ParkingManagement from "./pages/admin/ParkingManagement";
+import ParkingLotManagement from "./pages/admin/ParkingLotManagement";
+import DistrictManagement from "./pages/admin/DistrictManagement";
+import DistrictDetail from "./pages/admin/DistrictDetail";
 import RevenuePage from "./pages/admin/RevenuePage";
 import AdminCommissions from "./pages/admin/AdminCommissions";
 import AdminPartnerLayout from "./admin/AdminPartnerLayout";
 import UserManagement from "./pages/admin/UserManagement";
+import UserDetail from "./pages/admin/UserDetail";
+import UserAdd from "./pages/admin/UserAdd";
 import OwnerActivityHistory from "./pages/owner/OwnerActivityHistory";
 import OwnerBookings from "./pages/owner/OwnerBookings";
 import OwnerCustomers from "./pages/owner/OwnerCustomers";
@@ -345,6 +349,8 @@ function AppBody({ auth, role, onLogin, onLogout }) {
         >
           <Route index element={<AdminDashboard />} />
           <Route path="users" element={<UserManagement />} />
+          <Route path="users/new" element={<UserAdd />} />
+          <Route path="users/:userId" element={<UserDetail />} />
           <Route path="owners" element={<AdminPartnerLayout />}>
             <Route index element={<OwnerManagement />} />
             <Route path="registrations" element={<AdminOwnerRegistrations />} />
@@ -352,7 +358,9 @@ function AppBody({ auth, role, onLogin, onLogout }) {
             <Route path="contracts" element={<AdminOwnerContracts />} />
           </Route>
           <Route path="commissions" element={<Navigate to="/admin/owners/commissions" replace />} />
-          <Route path="parking-lots" element={<ParkingManagement />} />
+          <Route path="parking-lots" element={<ParkingLotManagement />} />
+          <Route path="parking-lots/areas" element={<DistrictManagement />} />
+          <Route path="parking-lots/areas/:districtId" element={<DistrictDetail />} />
           <Route path="bookings" element={<BookingManagement />} />
           <Route path="revenue" element={<RevenuePage />} />
           <Route path="analytics" element={<AdminAnalytics />} />

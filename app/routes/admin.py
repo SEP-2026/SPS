@@ -13,6 +13,7 @@ from app.database import get_db
 from app.models.models import (
     AdminSecurityEvent,
     Booking,
+    District,
     EmployeeActivity,
     OwnerParking,
     ParkingLot,
@@ -25,7 +26,7 @@ from app.models.models import (
 from app.utils.timezone import isoformat_vn, vn_now
 from app.routes.auth import get_current_user
 from app.security.password_policy import ensure_strong_password
-from app.services import admin_commissions, admin_contracts, admin_owners, admin_registrations
+from app.services import admin_commissions, admin_contracts, admin_districts, admin_owners, admin_parking_lots, admin_registrations, admin_users
 from app.services.revenue_settings import ADMIN_RUNTIME_SETTINGS, get_commission_rate_percent, split_revenue
 import unicodedata
 
@@ -97,8 +98,12 @@ class ParkingLotCreateRequest(BaseModel):
     address: str = Field(min_length=1, max_length=255)
     phone: str | None = Field(default=None, max_length=30)
     owner: str | None = Field(default=None, max_length=255)
+    district_id: int | None = Field(default=None, alias="districtId")
     slot_count: int = Field(default=0, ge=0)
     status: str = Field(default="pending", pattern="^(pending|active|locked)$")
+
+    class Config:
+        allow_population_by_field_name = True
 
 
 class ParkingLotUpdateRequest(BaseModel):
@@ -106,7 +111,15 @@ class ParkingLotUpdateRequest(BaseModel):
     address: str | None = Field(default=None, max_length=255)
     phone: str | None = Field(default=None, max_length=30)
     owner: str | None = Field(default=None, max_length=255)
+    district_id: int | None = Field(default=None, alias="districtId")
     status: str | None = Field(default=None, pattern="^(pending|active|locked)$")
+
+    class Config:
+        allow_population_by_field_name = True
+
+
+class DistrictStatusUpdateRequest(BaseModel):
+    status: str = Field(pattern="^(active|paused|locked)$")
 
 
 class BookingStatusUpdateRequest(BaseModel):
@@ -1105,6 +1118,163 @@ def admin_bootstrap(
     return _serialize_bootstrap(db)
 
 
+class UserUpdateRequest(BaseModel):
+    name: str | None = None
+    email: str | None = None
+    phone: str | None = None
+
+
+class UserCreateRequest(BaseModel):
+    name: str = Field(min_length=1, max_length=255)
+    email: str = Field(min_length=3, max_length=255)
+    phone: str | None = Field(default=None, max_length=30)
+    password: str | None = Field(default=None, min_length=6, max_length=255)
+    role: str = Field(min_length=1, max_length=50)
+    status: str = Field(default="active", pattern="^(active|suspended|banned)$")
+    managedDistrictId: int | None = Field(default=None, alias="managed_district_id")
+    ownerId: int | None = Field(default=None, alias="owner_id")
+    parkingId: int | None = Field(default=None, alias="parking_id")
+    vehiclePlate: str | None = Field(default=None, max_length=30, alias="vehicle_plate")
+    vehicleColor: str | None = Field(default=None, max_length=50, alias="vehicle_color")
+
+    class Config:
+        allow_population_by_field_name = True
+
+
+@router.get("/users/form-options")
+def get_user_form_options(
+    _: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    return admin_users.build_user_form_options(db)
+
+
+@router.post("/users")
+def create_user_account(
+    payload: UserCreateRequest,
+    admin: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    temporary_password = payload.password.strip() if payload.password else _generate_strong_password()
+    ensure_strong_password(temporary_password)
+    try:
+        created = admin_users.create_managed_user(
+            db,
+            name=payload.name,
+            email=payload.email,
+            phone=payload.phone,
+            password=temporary_password,
+            role=payload.role,
+            status=payload.status,
+            managed_district_id=payload.managedDistrictId,
+            owner_id=payload.ownerId,
+            parking_id=payload.parkingId,
+            vehicle_plate=payload.vehiclePlate,
+            vehicle_color=payload.vehicleColor,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    now = vn_now()
+    actor_name = admin.name or admin.email or "Admin"
+    _record_security_event(
+        db,
+        event_key=f"user-create-{created['id']}-{int(now.timestamp())}",
+        actor=actor_name,
+        action=f"Tạo tài khoản {created['email']} ({created['roleLabel']})",
+        target=created["email"],
+        target_type="user",
+        level="system",
+        created_at=now,
+    )
+    db.commit()
+
+    return {
+        "message": "Tạo người dùng thành công",
+        "user": created,
+        "temporary_password": temporary_password,
+    }
+
+
+@router.get("/users/management")
+def get_users_management(
+    search: str | None = None,
+    role: str | None = None,
+    status: str | None = None,
+    districtId: int | None = None,
+    createdSort: str = "newest",
+    page: int = 1,
+    pageSize: int = 10,
+    _: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    return admin_users.build_user_management(
+        db,
+        search=search,
+        role=role,
+        status=status,
+        district_id=districtId,
+        created_sort=createdSort,
+        page=page,
+        page_size=pageSize,
+    )
+
+
+@router.get("/users/{user_id}/detail")
+def get_user_detail(
+    user_id: int,
+    _: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    detail = admin_users.build_user_detail(db, user_id)
+    if not detail:
+        raise HTTPException(status_code=404, detail="Không tìm thấy người dùng")
+    return detail
+
+
+@router.patch("/users/{user_id}")
+def update_managed_user(
+    user_id: int,
+    payload: UserUpdateRequest,
+    _: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    user = db.query(User).filter(User.id == user_id, User.role.in_(admin_users.MANAGED_ROLES)).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="Không tìm thấy người dùng")
+
+    if payload.name is not None:
+        user.name = payload.name.strip()
+    if payload.phone is not None:
+        user.phone = payload.phone.strip() or None
+    if payload.email is not None:
+        normalized = payload.email.lower().strip()
+        existing = db.query(User).filter(User.email == normalized, User.id != user.id).first()
+        if existing:
+            raise HTTPException(status_code=409, detail="Email đã tồn tại")
+        user.email = normalized
+
+    db.commit()
+    return {"message": "Cập nhật người dùng thành công"}
+
+
+@router.post("/users/{user_id}/reset-password")
+def reset_managed_user_password(
+    user_id: int,
+    _: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    user = db.query(User).filter(User.id == user_id, User.role.in_(admin_users.MANAGED_ROLES)).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="Không tìm thấy người dùng")
+
+    temp_password = _generate_strong_password()
+    user.password = "__legacy_disabled__"
+    user.password_hash = generate_password_hash(temp_password)
+    db.commit()
+    return {"message": "Đã đặt lại mật khẩu", "temporary_password": temp_password}
+
+
 @router.patch("/users/{user_id}/status")
 def update_user_status(
     user_id: int,
@@ -1112,7 +1282,7 @@ def update_user_status(
     admin: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
-    user = db.query(User).filter(User.id == user_id, User.role == "user").first()
+    user = db.query(User).filter(User.id == user_id, User.role.in_(admin_users.MANAGED_ROLES)).first()
     if not user:
         raise HTTPException(status_code=404, detail="Không tìm thấy người dùng")
 
@@ -1595,6 +1765,104 @@ def sync_employee_login_format(
     }
 
 
+def _resolve_district_id(db: Session, district_id: int | None) -> int | None:
+    if district_id is None:
+        return None
+    district = db.query(District).filter(District.id == district_id).first()
+    if not district:
+        raise HTTPException(status_code=404, detail="Không tìm thấy khu vực")
+    return int(district.id)
+
+
+@router.get("/parking-lots/management")
+def get_parking_lots_management(
+    search: str | None = None,
+    status: str | None = None,
+    districtId: int | None = None,
+    ownerId: int | None = None,
+    sort: str = "newest",
+    page: int = 1,
+    pageSize: int = 10,
+    _: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    return admin_parking_lots.build_parking_lot_management(
+        db,
+        search=search,
+        status=status,
+        district_id=districtId,
+        owner_id=ownerId,
+        sort=sort,
+        page=page,
+        page_size=pageSize,
+    )
+
+
+@router.get("/parking-lots/{lot_id}/detail")
+def get_parking_lot_detail(
+    lot_id: int,
+    _: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    detail = admin_parking_lots.build_parking_lot_detail(db, lot_id)
+    if not detail:
+        raise HTTPException(status_code=404, detail="Không tìm thấy bãi đỗ")
+    return detail
+
+
+@router.get("/districts/management")
+def get_districts_management(
+    search: str | None = None,
+    status: str | None = None,
+    sort: str = "newest",
+    page: int = 1,
+    pageSize: int = 10,
+    _: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    return admin_districts.build_district_management(
+        db,
+        search=search,
+        status=status,
+        sort=sort,
+        page=page,
+        page_size=pageSize,
+    )
+
+
+@router.get("/districts/{district_id}/detail")
+def get_district_detail(
+    district_id: int,
+    _: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    detail = admin_districts.build_district_detail(db, district_id)
+    if not detail:
+        raise HTTPException(status_code=404, detail="Không tìm thấy khu vực")
+    return detail
+
+
+@router.patch("/districts/{district_id}/status")
+def update_district_status(
+    district_id: int,
+    payload: DistrictStatusUpdateRequest,
+    _: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    district = db.query(District).filter(District.id == district_id).first()
+    if not district:
+        raise HTTPException(status_code=404, detail="Không tìm thấy khu vực")
+    lots = db.query(ParkingLot).filter(ParkingLot.district_id == district_id).all()
+    if payload.status == "active":
+        for lot in lots:
+            lot.is_active = 1
+    else:
+        for lot in lots:
+            lot.is_active = 0
+    db.commit()
+    return {"message": "Đã cập nhật trạng thái khu vực", "status": payload.status}
+
+
 @router.post("/parking-lots")
 def create_parking_lot(
     payload: ParkingLotCreateRequest,
@@ -1608,10 +1876,13 @@ def create_parking_lot(
     if duplicate_name:
         raise HTTPException(status_code=409, detail="Ten bai do da ton tai")
 
+    resolved_district_id = _resolve_district_id(db, payload.district_id) if payload.district_id else None
+
     lot = ParkingLot(
         name=payload.name.strip(),
         address=payload.address.strip(),
         phone=payload.phone.strip() if payload.phone else None,
+        district_id=resolved_district_id,
         latitude=10.0,
         longitude=106.0,
         has_roof=0,
@@ -1664,6 +1935,8 @@ def update_parking_lot(
             _assign_owner_parking(db, owner.id, lot.id)
     if payload.status is not None:
         lot.is_active = 1 if payload.status == "active" else 0
+    if payload.district_id is not None:
+        lot.district_id = _resolve_district_id(db, payload.district_id)
     db.commit()
     return {"message": "ÄÃ£ cáº­p nháº­t bÃ£i Ä‘á»—"}
 

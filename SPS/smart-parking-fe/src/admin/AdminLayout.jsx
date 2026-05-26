@@ -29,6 +29,8 @@ export default function AdminLayout({ auth, onLogout }) {
   const [loading, setLoading] = useState(true);
   const meta = useMemo(() => resolveAdminRouteMeta(location.pathname), [location.pathname]);
   const partnerSectionOpen = location.pathname.startsWith("/admin/owners");
+  const usersSectionOpen = location.pathname.startsWith("/admin/users");
+  const parkingSectionOpen = location.pathname.startsWith("/admin/parking-lots");
   
   const [notificationStorageVersion, setNotificationStorageVersion] = useState(0);
 
@@ -190,7 +192,7 @@ export default function AdminLayout({ auth, onLogout }) {
       refreshAdminData({ silent: false });
     },
     async updateParkingLot(id, payload) {
-      await actions.execWithRefresh(() => API.patch(`/admin/parking-lots/${id}`, payload));
+      return actions.execWithRefresh(() => API.patch(`/admin/parking-lots/${id}`, payload));
     },
     async addParkingLot(payload) {
       await actions.execWithRefresh(() => API.post("/admin/parking-lots", payload));
@@ -240,30 +242,46 @@ export default function AdminLayout({ auth, onLogout }) {
             <nav className="admin-menu">
               {ADMIN_NAV_ITEMS.map((item) => {
                 if (item.children) {
+                  const groupBase = item.id === "users"
+                    ? "/admin/users"
+                    : item.id === "parking"
+                      ? "/admin/parking-lots"
+                      : "/admin/owners";
+                  const groupOpen = item.id === "users"
+                    ? usersSectionOpen
+                    : item.id === "parking"
+                      ? parkingSectionOpen
+                      : partnerSectionOpen;
                   return (
                     <div key={item.id} className="admin-menu-group">
                       <NavLink
-                        to="/admin/owners"
+                        to={groupBase}
                         end
                         className={({ isActive }) =>
-                          `admin-menu-link admin-menu-group-toggle${isActive || partnerSectionOpen ? " active" : ""}`
+                          `admin-menu-link admin-menu-group-toggle${isActive || groupOpen ? " active" : ""}`
                         }
                         onClick={() => setSidebarOpen(false)}
                       >
                         <AdminIcon name={item.icon} className="admin-menu-icon" />
                         <span>{item.label}</span>
                       </NavLink>
-                      {partnerSectionOpen
+                      {groupOpen
                         ? item.children.map((child) => (
-                            <NavLink
-                              key={child.to}
-                              to={child.to}
-                              end={Boolean(child.end)}
-                              className={({ isActive }) => `admin-menu-link admin-menu-sublink${isActive ? " active" : ""}`}
-                              onClick={() => setSidebarOpen(false)}
-                            >
-                              <span>{child.label}</span>
-                            </NavLink>
+                            child.disabled ? (
+                              <span key={child.label} className="admin-menu-link admin-menu-sublink is-disabled" title="Sắp ra mắt">
+                                {child.label}
+                              </span>
+                            ) : (
+                              <NavLink
+                                key={child.to + child.label}
+                                to={child.to}
+                                end={Boolean(child.end)}
+                                className={({ isActive }) => `admin-menu-link admin-menu-sublink${isActive ? " active" : ""}`}
+                                onClick={() => setSidebarOpen(false)}
+                              >
+                                <span>{child.label}</span>
+                              </NavLink>
+                            )
                           ))
                         : null}
                     </div>
