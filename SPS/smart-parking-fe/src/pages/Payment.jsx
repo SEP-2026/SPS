@@ -2,8 +2,6 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import API from "../services/api";
 import { formatDateTimeVN } from "../utils/dateTime";
-import { formatCurrency } from "../features/gate/gateFormatters";
-import { useWallet } from "../context/WalletContext";
 import "./Payment.css";
 
 const formatMoney = (value) => Number(value || 0).toLocaleString("vi-VN");
@@ -23,11 +21,11 @@ const bookingStatusLabel = (status) => {
 export default function Payment() {
   const { bookingId } = useParams();
   const navigate = useNavigate();
-  const { wallet, loading: walletQueryLoading, error: walletQueryError, refreshWallet } = useWallet();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [booking, setBooking] = useState(null);
+  const [wallet, setWallet] = useState(null);
   const [successBookingId, setSuccessBookingId] = useState(null);
   const [countdownSeconds, setCountdownSeconds] = useState(10);
 
@@ -35,8 +33,12 @@ export default function Payment() {
   const remainingAmount = Math.max(0, Number(booking?.total_amount || 0) - Number(booking?.upfront_amount || 0));
 
   const refreshData = async () => {
-    const bookingRes = await API.get(`/booking/my/${numericBookingId}`);
+    const [bookingRes, walletRes] = await Promise.all([
+      API.get(`/booking/my/${numericBookingId}`),
+      API.get("/wallet/me"),
+    ]);
     setBooking(bookingRes.data);
+    setWallet(walletRes.data?.wallet || null);
   };
 
   useEffect(() => {
@@ -95,7 +97,6 @@ export default function Payment() {
       setError("");
       await API.post("/payment/mock-success", { booking_id: booking.booking_id });
       await refreshData();
-      await refreshWallet();
       setSuccessBookingId(booking.booking_id);
     } catch (err) {
       setError(err?.response?.data?.detail || "Không mô phỏng thanh toán được");
@@ -153,13 +154,7 @@ export default function Payment() {
             <p><strong>Tổng tiền booking:</strong> {formatMoney(booking.total_amount)}đ</p>
             <p><strong>Đã giữ 30%:</strong> {formatMoney(booking.upfront_amount)}đ</p>
             <p><strong>Còn lại khi checkout:</strong> {formatMoney(remainingAmount)}đ</p>
-            {walletQueryLoading ? (
-              <p><strong>Số dư ví:</strong> Đang tải...</p>
-            ) : walletQueryError ? (
-              <p><strong>Số dư ví:</strong> Không tải được số dư</p>
-            ) : wallet ? (
-              <p><strong>Số dư ví:</strong> {formatCurrency(wallet.balance)}</p>
-            ) : null}
+            {wallet ? <p><strong>Số dư ví:</strong> {formatMoney(wallet.balance)}đ</p> : null}
 
             <div className="payment-actions">
               <button type="button" className="btn-primary" onClick={handleMockPaid} disabled={submitting}>

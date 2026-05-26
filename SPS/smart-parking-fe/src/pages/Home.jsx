@@ -1,13 +1,9 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { createPortal } from "react-dom";
 import API from "../services/api";
-import { formatDateTimeVN, toDatetimeLocalValue } from "../utils/dateTime";
+import { formatDateTimeVN } from "../utils/dateTime";
 import "./Home.css";
-import NearbyParkingMap from "../components/NearbyParkingMap";
-import QuickBookingBar from "../components/home/QuickBookingBar";
-import { formatCurrency } from "../features/gate/gateFormatters";
-import { useWallet } from "../context/WalletContext";
-import { mergeParkingSearchWithOverview, searchNearbyByCurrentLocation } from "../services/parkingSearch";
 
 const OWNER_VISIBLE_BOOKING_STATUSES = new Set(["pending", "confirmed", "in_progress"]);
 
@@ -141,105 +137,14 @@ function mapOverviewLotToBookingLot(lot) {
   };
 }
 
-function formatDistance(distance) {
-  const parsed = Number(distance);
-  if (!Number.isFinite(parsed)) {
-    return "--";
-  }
-  if (parsed < 1) {
-    return parsed.toFixed(2);
-  }
-  return parsed.toFixed(1);
-}
-
-const PARKING_IMAGE_PALETTE = [
-  ["#0ea5e9", "#082f49"],
-  ["#14b8a6", "#123f3d"],
-  ["#f59e0b", "#7c2d12"],
-  ["#ef4444", "#57151a"],
-  ["#8b5cf6", "#2e1065"],
-  ["#22c55e", "#14532d"],
-];
-
-function escapeSvgText(value = "") {
-  return String(value)
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&apos;");
-}
-
-function hashString(value = "") {
-  let hash = 0;
-
-  for (let index = 0; index < value.length; index += 1) {
-    hash = ((hash * 31) + value.charCodeAt(index)) >>> 0;
-  }
-
-  return hash;
-}
-
-function getParkingImageSrc(lot = {}) {
-  const coverImage = String(lot.cover_image || "").trim();
-
-  if (coverImage) {
-    return coverImage;
-  }
-
-  const parkingId = Number(lot.parking_id ?? lot.id ?? 0);
-  const seed = `${lot.parking_id ?? lot.id ?? ""}-${lot.parking_name ?? lot.name ?? ""}`;
-  const hash = hashString(seed || "parking");
-  const [startColor, endColor] = PARKING_IMAGE_PALETTE[hash % PARKING_IMAGE_PALETTE.length];
-  const title = escapeSvgText((lot.parking_name || lot.name || "Bãi xe").trim());
-  const subtitle = escapeSvgText((lot.parking_address || lot.address || "Smart Parking").trim());
-  const label = parkingId > 0 ? `#${parkingId}` : `P${String((hash % 89) + 10)}`;
-
-  const svg = `
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 640" role="img" aria-label="${title}">
-      <defs>
-        <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stop-color="${startColor}" />
-          <stop offset="100%" stop-color="${endColor}" />
-        </linearGradient>
-        <linearGradient id="shine" x1="0%" y1="0%" x2="100%" y2="0%">
-          <stop offset="0%" stop-color="#ffffff" stop-opacity="0.22" />
-          <stop offset="100%" stop-color="#ffffff" stop-opacity="0" />
-        </linearGradient>
-      </defs>
-      <rect width="960" height="640" rx="48" fill="#08111f" />
-      <rect x="28" y="28" width="904" height="584" rx="40" fill="url(#bg)" />
-      <circle cx="790" cy="140" r="140" fill="#ffffff" fill-opacity="0.10" />
-      <circle cx="200" cy="510" r="110" fill="#ffffff" fill-opacity="0.08" />
-      <path d="M96 494c92-106 194-156 318-156 94 0 176 27 250 81 66 49 126 73 180 73" fill="none" stroke="url(#shine)" stroke-width="22" stroke-linecap="round" />
-      <rect x="84" y="84" width="124" height="54" rx="20" fill="#ffffff" fill-opacity="0.16" />
-      <text x="146" y="123" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="34" font-weight="700" fill="#ffffff">P</text>
-      <rect x="84" y="494" width="180" height="62" rx="18" fill="#000000" fill-opacity="0.18" />
-      <text x="110" y="535" font-family="Arial, Helvetica, sans-serif" font-size="28" font-weight="700" fill="#ffffff">${label}</text>
-      <text x="84" y="322" font-family="Arial, Helvetica, sans-serif" font-size="44" font-weight="700" fill="#ffffff">${title}</text>
-      <text x="84" y="372" font-family="Arial, Helvetica, sans-serif" font-size="24" fill="#e5f3ff" fill-opacity="0.92">${subtitle}</text>
-    </svg>
-  `;
-
-  return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
-}
-
 export default function Home({ role = "" }) {
   const navigate = useNavigate();
-  const { wallet, loading: walletLoading, error: walletError } = useWallet();
-  const [quickCheckinTime, setQuickCheckinTime] = useState(() => toDatetimeLocalValue(new Date(Date.now() + 60 * 60 * 1000)));
   const [parkingLots, setParkingLots] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [mapLoading, setMapLoading] = useState(true);
-  const [mapError, setMapError] = useState("");
-  const [mapSearchMeta, setMapSearchMeta] = useState(null);
-  const [mapNearbyLots, setMapNearbyLots] = useState([]);
-  const [selectedMapLotId, setSelectedMapLotId] = useState(null);
   const [selectedSlot, setSelectedSlot] = useState(null);
   const [expandedLots, setExpandedLots] = useState({});
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
-  const [walletPulse, setWalletPulse] = useState(false);
   const popoverRef = useRef(null);
 
   const isOwner = role === "owner";
@@ -260,90 +165,6 @@ export default function Home({ role = "" }) {
       return matchesSearch && matchesFilter;
     });
   }, [parkingLots, searchQuery, filterStatus]);
-
-  const enrichedMapLots = useMemo(
-    () => mergeParkingSearchWithOverview(mapNearbyLots, filteredLots),
-    [filteredLots, mapNearbyLots],
-  );
-
-  const mapPreviewLot = useMemo(
-    () => enrichedMapLots.find((lot) => Number(lot.id) === Number(selectedMapLotId)) || enrichedMapLots[0] || null,
-    [enrichedMapLots, selectedMapLotId],
-  );
-
-  const mapStats = useMemo(() => {
-    const totalLots = enrichedMapLots.length;
-    const highAvailabilityLots = enrichedMapLots.filter((lot) => {
-      const availablePercent = Math.round((Number(lot.available_slots || 0) / Math.max(1, Number(lot.total_slots || 1))) * 100);
-      return availablePercent > 50;
-    }).length;
-
-    return {
-      totalLots,
-      highAvailabilityLots,
-    };
-  }, [enrichedMapLots]);
-
-  const quickLocationValue = useMemo(() => {
-    if (mapLoading) {
-      return "Đang xác định vị trí";
-    }
-
-    if (mapError) {
-      return "Chưa xác định vị trí";
-    }
-
-    if (mapPreviewLot?.district) {
-      return mapPreviewLot.district;
-    }
-
-    const address = String(mapPreviewLot?.parking_address || mapPreviewLot?.address || "").trim();
-    if (address) {
-      const segments = address
-        .split(",")
-        .map((segment) => segment.trim())
-        .filter(Boolean);
-      if (segments.length >= 2) {
-        return `${segments[segments.length - 2]}, ${segments[segments.length - 1]}`;
-      }
-      return segments[0];
-    }
-
-    if (mapSearchMeta?.lat && mapSearchMeta?.lng) {
-      return `${Number(mapSearchMeta.lat).toFixed(4)}, ${Number(mapSearchMeta.lng).toFixed(4)}`;
-    }
-
-    return "Chưa xác định vị trí";
-  }, [mapError, mapLoading, mapPreviewLot?.address, mapPreviewLot?.district, mapPreviewLot?.parking_address, mapSearchMeta?.lat, mapSearchMeta?.lng]);
-
-  const handleQuickSearchToBooking = useCallback(() => {
-    navigate("/booking", {
-      state: {
-        quickSearch: {
-          checkinTime: quickCheckinTime,
-          coordinates:
-            mapSearchMeta && Number.isFinite(Number(mapSearchMeta.lat)) && Number.isFinite(Number(mapSearchMeta.lng))
-              ? {
-                  lat: Number(mapSearchMeta.lat),
-                  lng: Number(mapSearchMeta.lng),
-                }
-              : null,
-          locationLabel: quickLocationValue,
-          source: "home-quick-bar",
-        },
-      },
-    });
-  }, [mapSearchMeta, navigate, quickCheckinTime, quickLocationValue]);
-
-  useEffect(() => {
-    if (!wallet || !Number.isFinite(Number(wallet.balance))) {
-      return undefined;
-    }
-
-    setWalletPulse(true);
-    const pulseTimer = window.setTimeout(() => setWalletPulse(false), 240);
-    return () => window.clearTimeout(pulseTimer);
-  }, [wallet?.balance]);
 
   useEffect(() => {
     let active = true;
@@ -391,29 +212,6 @@ export default function Home({ role = "" }) {
       active = false;
     };
   }, [isOwner]);
-
-  const refreshNearbyMap = useCallback(async () => {
-    setMapLoading(true);
-    setMapError("");
-
-    try {
-      const payload = await searchNearbyByCurrentLocation({ limit: 10 });
-      setMapSearchMeta(payload.center);
-      setMapNearbyLots(payload.nearby);
-      setSelectedMapLotId(payload.nearby[0]?.id ?? null);
-    } catch (error) {
-      setMapSearchMeta(null);
-      setMapNearbyLots([]);
-      setSelectedMapLotId(null);
-      setMapError(error?.message || "Không thể tải bản đồ gần bạn");
-    } finally {
-      setMapLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    refreshNearbyMap();
-  }, [refreshNearbyMap]);
 
   useEffect(() => {
     if (!selectedSlot) {
@@ -567,354 +365,349 @@ export default function Home({ role = "" }) {
   };
 
   return (
-    <section className="parking-home">
-      <div className="home-grid">
+    <section className="page-wrap parking-home">
+      <div className="page-card parking-board">
+        <h1 className="parking-title">Danh sách bãi xe</h1>
 
-        {/* SIDEBAR */}
-        <aside className="home-sidebar">
-
-          <div className="sidebar-logo">
-            <img src="/assets/images/logo.png" alt="logo" />
-            <div>
-              <h2>Smart Parking</h2>
-              <span>Tìm chỗ đỗ xe dễ dàng</span>
-            </div>
-          </div>
-
-          <div className="sidebar-menu">
-
-            <div className="sidebar-item active">🏠 Trang chủ</div>
-            <div className="sidebar-item">🔍 Tìm bãi xe</div>
-            <div className="sidebar-item">📅 Đặt chỗ của tôi</div>
-            <div className="sidebar-item">🕘 Lịch sử đặt chỗ</div>
-            <div className="sidebar-item">💳 Ví của tôi</div>
-            <div className="sidebar-item">🚗 Phương tiện</div>
-            <div className="sidebar-item">🔔 Thông báo</div>
-            <div className="sidebar-item">⚙️ Cài đặt</div>
-
-          </div>
-
-          {/* WALLET SIDEBAR */}
-          <div className="sidebar-wallet">
-
-            <div className="sidebar-wallet-top">
-              <span>Số dư ví</span>
-
-              <button className="sidebar-wallet-add">
-                +
-              </button>
-            </div>
-
-            {walletLoading ? (
-              <div className="sidebar-wallet-skeleton" aria-label="Đang tải số dư" />
-            ) : walletError ? (
-              <p className="sidebar-wallet-error">Không tải được số dư</p>
-            ) : (
-              <h2 className={`sidebar-wallet-value${walletPulse ? " is-updated" : ""}`}>
-                {formatCurrency(wallet?.balance || 0)}
-              </h2>
-            )}
-
-          </div>
-
-          {/* SUPPORT */}
-          <div className="sidebar-support">
-
-            <h3>Hỗ trợ 24/7</h3>
-
-            <p>
-              Chúng tôi luôn sẵn sàng hỗ trợ bạn
-            </p>
-
-            <button>
-              Liên hệ ngay
-            </button>
-
-          </div>
-
-          {/* PROFILE */}
-          <div className="sidebar-profile">
-
-            <img
-              src="/assets/images/avatar.jpg"
-              alt="avatar"
+        <div className="parking-filters">
+          <div className="search-box">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="search-icon">
+              <circle cx="11" cy="11" r="8" />
+              <path d="m21 21-4.35-4.35" />
+            </svg>
+            <input
+              type="text"
+              placeholder="Tìm kiếm bãi xe..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="search-input"
             />
-
-            <div>
-              <strong>Nguyễn Văn An</strong>
-              <span>0901234567</span>
-            </div>
-
           </div>
-
-        </aside>
-
-        {/* MAIN */}
-        <main className="home-main">
-
-          {/* TOPBAR */}
-          <div className="topbar">
-
-            <div className="topbar-left">
-
-              <div className="location-box">
-                📍 TP. Hồ Chí Minh
-              </div>
-
-              <div className="search-box">
-                <span className="search-icon">🔍</span>
-                <input
-                  className="search-input"
-                  placeholder="Tìm bãi xe, địa điểm..."
-                />
-              </div>
-
-            </div>
-
-            <div className="topbar-right">
-
-              <div className="notification-btn">
-                🔔
-                <span className="notification-dot"></span>
-              </div>
-
-              <div className="user-box">
-                <img src="/assets/images/avatar.jpg" alt="" />
-              </div>
-
-            </div>
-
+          <div className="filter-buttons">
+            <button
+              type="button"
+              className={`filter-btn ${filterStatus === "all" ? "filter-btn--active" : ""}`}
+              onClick={() => setFilterStatus("all")}
+            >
+              Tất cả
+            </button>
+            <button
+              type="button"
+              className={`filter-btn ${filterStatus === "available" ? "filter-btn--active" : ""}`}
+              onClick={() => setFilterStatus("available")}
+            >
+              Còn trống
+            </button>
+            <button
+              type="button"
+              className={`filter-btn ${filterStatus === "full" ? "filter-btn--active" : ""}`}
+              onClick={() => setFilterStatus("full")}
+            >
+              Đầy chỗ
+            </button>
           </div>
+        </div>
 
-          {/* HERO */}
-          <div className="hero-card">
-
-            <div className="hero-left">
-
-              <h1>Tìm bãi xe phù hợp</h1>
-
-              <p className="hero-sub">
-                Nhanh chóng – Tiện lợi – An toàn
-              </p>
-
-              <div className="hero-controls">
-                <QuickBookingBar
-                  locationValue={quickLocationValue}
-                  isLocationLoading={mapLoading}
-                  dateTimeValue={quickCheckinTime}
-                  onDateTimeChange={setQuickCheckinTime}
-                  onRefreshLocation={refreshNearbyMap}
-                  onSearch={handleQuickSearchToBooking}
-                  disabled={mapLoading}
-                />
-
-              </div>
-
+        <div className="parking-legend">
+          <div className="legend-item">
+            <div className="legend-icon legend-available">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="12" cy="12" r="10" />
+                <path d="M12 6v6l4 2" />
+              </svg>
             </div>
-
-            <div className="hero-right">
-              <img src="/assets/images/hero-car.png" alt="" />
+            <span>Vị trí trống</span>
+          </div>
+          <div className="legend-item">
+            <div className="legend-icon legend-occupied">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <rect x="3" y="3" width="18" height="18" rx="2" />
+                <path d="M9 9h6v6H9z" />
+              </svg>
             </div>
-
+            <span>Vị trí đã có xe</span>
           </div>
-
-          {/* QUICK ACTION */}
-          <div className="quick-actions">
-
-            <button className="qa-btn">🔍<br />Tìm bãi xe</button>
-            <button className="qa-btn">📅<br />Đặt chỗ nhanh</button>
-            <button className="qa-btn">📷<br />Quét QR</button>
-            <button className="qa-btn">💳<br />Nạp tiền</button>
-            <button className="qa-btn">🎁<br />Ưu đãi</button>
-            <button className="qa-btn">🎧<br />Hỗ trợ</button>
-
+          <div className="legend-item">
+            <div className="legend-icon legend-reserved">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M12 2L2 7l10 5 10-5-10-5z" />
+                <path d="M2 17l10 5 10-5" />
+                <path d="M2 12l10 5 10-5" />
+              </svg>
+            </div>
+            <span>Giữ chỗ</span>
           </div>
+        </div>
 
-          {/* PARKING */}
-          <div className="page-card">
+        {loading ? (
+          <div className="parking-empty">Đang tải dữ liệu bãi xe...</div>
+        ) : null}
 
-            <h2 className="parking-title">Bãi xe gần bạn</h2>
-
-            <div className="featured-parking">
-
-              {filteredLots.slice(0, 4).map((lot) => (
-                <div
-                  key={lot.parking_id}
-                  className="featured-card"
+        {!loading && filteredLots.length === 0 ? (
+          <div className="parking-empty">
+            {searchQuery || filterStatus !== "all" ? (
+              <>
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="empty-icon">
+                  <circle cx="11" cy="11" r="8" />
+                  <path d="m21 21-4.35-4.35" />
+                </svg>
+                <p>Không tìm thấy bãi xe phù hợp với tìm kiếm của bạn.</p>
+                <button 
+                  type="button" 
+                  className="reset-filter-btn"
+                  onClick={() => {
+                    setSearchQuery("");
+                    setFilterStatus("all");
+                  }}
                 >
+                  Xóa bộ lọc
+                </button>
+              </>
+            ) : (
+              "Chưa có dữ liệu bãi xe để hiển thị."
+            )}
+          </div>
+        ) : null}
 
-                  <img
-                    src={getParkingImageSrc(lot)}
-                    alt={lot.parking_name}
-                  />
-
-                  <div className="featured-meta">
-
-                    <h3>{lot.parking_name}</h3>
-
-                    <p className="featured-sub">
-                      {lot.parking_address}
-                    </p>
-
-                    <div className="featured-row">
-
-                      <span className="badge">
-                        Còn trống {Math.round((lot.available_slots / lot.total_slots) * 100)}%
-                      </span>
-
-                      <strong className="price">
-                        {lot.price_per_hour}.000đ
-                      </strong>
-
+        <div className="parking-lot-list">
+          {filteredLots.map((lot) => (
+            <section key={lot.parking_id} className={`parking-lot-card${expandedLots[lot.parking_id] ? " is-expanded" : ""}`}>
+              <div className="parking-lot-head">
+                <div className="parking-lot-info">
+                  <h2 className="parking-lot-name">{lot.parking_name}</h2>
+                  <div className="parking-lot-rating">
+                    <div className="rating-stars">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <svg
+                          key={star}
+                          width="18"
+                          height="18"
+                          viewBox="0 0 24 24"
+                          fill={star <= Math.round(lot.avg_rating || 0) ? "currentColor" : "none"}
+                          stroke={star <= Math.round(lot.avg_rating || 0) ? "none" : "currentColor"}
+                          strokeWidth="2"
+                          className={star <= Math.round(lot.avg_rating || 0) ? "star-filled" : "star-empty"}
+                        >
+                          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                        </svg>
+                      ))}
                     </div>
-
-                    <button
-                      className="action-btn"
-                      onClick={() =>
-                        navigate(`/booking?lotId=${lot.parking_id}`)
-                      }
+                    <span className="rating-value">{Number(lot.avg_rating || 0).toFixed(1)}</span>
+                    <span className="rating-count">({lot.review_count || 0} đánh giá)</span>
+                  </div>
+                  <p className="parking-lot-address">{lot.parking_address}</p>
+                  {lot.district && <p className="parking-lot-district">{lot.district}</p>}
+                </div>
+                <div className="parking-lot-stats">
+                  <div className="stat-availability">
+                    <div className="availability-bar">
+                      <div 
+                        className="availability-fill" 
+                        style={{ width: `${(lot.available_slots / lot.total_slots) * 100}%` }}
+                      />
+                    </div>
+                    <span className="availability-text">{lot.available_slots}/{lot.total_slots} trống</span>
+                  </div>
+                  <div className="stat-chips">
+                    <span className="stat-chip stat-available">Trống: {lot.available_slots}</span>
+                    <span className="stat-chip stat-occupied">Giữ/Đã có xe: {lot.occupied_or_reserved_slots}</span>
+                  </div>
+                  <div className="parking-lot-actions">
+                    <button 
+                      type="button" 
+                      className="action-btn action-btn--primary"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate(`/booking?lotId=${lot.parking_id}`, {
+                          state: {
+                            selectedLot: mapOverviewLotToBookingLot(lot),
+                          },
+                        });
+                      }}
+                      disabled={lot.available_slots === 0}
                     >
                       Đặt chỗ
                     </button>
-
+                    <button 
+                      type="button" 
+                      className="action-btn action-btn--toggle"
+                      onClick={() => toggleLot(lot.parking_id)}
+                      aria-expanded={Boolean(expandedLots[lot.parking_id])}
+                    >
+                      {expandedLots[lot.parking_id] ? "−" : "+"}
+                    </button>
                   </div>
-
-                </div>
-              ))}
-
-            </div>
-
-          </div>
-
-          {/* MAP */}
-          <div className="map-card">
-
-            <div className="map-header">
-
-              <h3>Bản đồ bãi xe</h3>
-
-              <div className="map-header-actions">
-                <div className="map-stats">
-                  <span className="map-stat-pill">Gần bạn: {mapStats.totalLots}</span>
-                  <span className="map-stat-pill map-stat-pill--good">Còn trống tốt: {mapStats.highAvailabilityLots}</span>
-                </div>
-
-                <button
-                  type="button"
-                  className="map-refresh-btn"
-                  onClick={refreshNearbyMap}
-                  disabled={mapLoading}
-                >
-                  {mapLoading ? "Đang tải..." : "Lấy vị trí hiện tại"}
-                </button>
-
-                <div className="map-legend">
-                  <span className="legend available">Còn trống</span>
-                  <span className="legend warning">Sắp đầy</span>
-                  <span className="legend full">Đầy</span>
                 </div>
               </div>
 
+              <div className={`parking-lot-body${expandedLots[lot.parking_id] ? " is-open" : ""}`}>
+                <div className="parking-grid">
+                  {lot.slots.map((slot, slotIndex) => {
+                    const isAvailable = slot.status === "available";
+                    const isReserved = slot.status === "reserved";
+                    const isOccupied = slot.status === "occupied";
+                    const isMaintenance = slot.status === "maintenance";
+
+                    return (
+                      <article
+                        key={slot.id}
+                        className={`slot-card${isOwner ? " slot-card--interactive" : ""} slot-card--${slot.status}`}
+                        data-slot-anchor={slot.id}
+                        onClick={(event) => handleSlotClick(lot, slot, slotIndex, event)}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter" || event.key === " ") {
+                            event.preventDefault();
+                            handleSlotClick(lot, slot, slotIndex, event);
+                          }
+                        }}
+                        role={isOwner ? "button" : undefined}
+                        tabIndex={isOwner ? 0 : undefined}
+                      >
+                        <div className="slot-lane" />
+                        <div className={`slot-car slot-car--${slot.status}`}>
+                          {isAvailable && (
+                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="slot-icon">
+                              <circle cx="12" cy="12" r="10" />
+                              <path d="M12 6v6l4 2" />
+                            </svg>
+                          )}
+                          {isReserved && (
+                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="slot-icon">
+                              <path d="M12 2L2 7l10 5 10-5-10-5z" />
+                              <path d="M2 17l10 5 10-5" />
+                              <path d="M2 12l10 5 10-5" />
+                            </svg>
+                          )}
+                          {isOccupied && (
+                            <img
+                              src="/car-top-view.png"
+                              alt="Xe nhìn từ trên xuống - vị trí đã có xe"
+                              className="car-image"
+                            />
+                          )}
+                          {isMaintenance && (
+                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="slot-icon">
+                              <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
+                            </svg>
+                          )}
+                        </div>
+                        <div className="slot-badge slot-badge--${slot.status}">{slot.code}</div>
+                      </article>
+                    );
+                  })}
+                </div>
+              </div>
+            </section>
+          ))}
+        </div>
+      </div>
+
+      {selectedSlot && typeof document !== "undefined" ? createPortal(
+        <div
+          ref={popoverRef}
+          className={`parking-popover parking-popover--${popoverPosition.placement}${isCompactPopover ? " parking-popover--compact" : ""}`}
+          style={{
+            top: `${popoverPosition.top}px`,
+            left: `${popoverPosition.left}px`,
+            "--parking-arrow-offset": `${popoverPosition.arrowOffset}px`,
+            width: `${isCompactPopover ? Math.min(popoverPosition.width || 640, 420) : (popoverPosition.width || 640)}px`,
+          }}
+        >
+          <div className="parking-popover-arrow" />
+          <div
+            className="parking-modal"
+            style={popoverPosition.maxHeight ? { maxHeight: `${popoverPosition.maxHeight}px` } : undefined}
+          >
+            <div className="parking-modal-head parking-modal-head--compact">
+              <div>
+                <p className="parking-modal-kicker">Chi tiết vị trí</p>
+                <h2>{selectedSlot.slot.code}</h2>
+                <span>{selectedSlot.lot.parking_name}</span>
+              </div>
+              <button type="button" className="parking-modal-close" onClick={() => setSelectedSlot(null)}>×</button>
             </div>
 
-            <div className="map-wrapper">
-
-              {mapLoading ? (
-                <div className="map-empty-state map-empty-state--loading">
-                  <div className="map-empty-title">Đang định vị khu vực gần bạn</div>
-                  <p>Home đang dùng cùng nguồn dữ liệu bản đồ với Booking để lấy các bãi xe thật từ vị trí hiện tại.</p>
+            <div className={`parking-modal-grid${isCompactPopover ? " parking-modal-grid--compact" : ""}`}>
+              <div className="parking-modal-section">
+                <h3>Trạng thái bãi</h3>
+                <div className="parking-detail-list">
+                  <div><span>Bãi xe</span><strong>{detailParking?.name || selectedSlot.lot.parking_name}</strong></div>
+                  <div><span>Địa chỉ</span><strong>{detailParking?.address || selectedSlot.lot.parking_address}</strong></div>
+                  <div><span>Quận</span><strong>{detailParking?.district || selectedSlot.lot.district || "Chưa có"}</strong></div>
+                  <div><span>Mã ô</span><strong>{detailedSlot?.code || selectedSlot.slot.code}</strong></div>
+                  <div>
+                    <span>Trạng thái</span>
+                    <strong>
+                      <span className={`parking-status-pill parking-status-pill--${getStatusTone(detailedSlot?.status || selectedSlot.slot.status)}`}>
+                        {formatStatusLabel(detailedSlot?.status || selectedSlot.slot.status)}
+                      </span>
+                    </strong>
+                  </div>
+                  <div>
+                    <span>Quyền owner</span>
+                    <strong>
+                      <span className={`parking-status-pill parking-status-pill--${hasOwnerDetail ? "info" : "muted"}`}>
+                        {selectedSlot.detailLoading ? "Đang tải..." : hasOwnerDetail ? "Có dữ liệu chi tiết" : "Chỉ xem trạng thái chung"}
+                      </span>
+                    </strong>
+                  </div>
                 </div>
-              ) : mapError ? (
-                <div className="map-empty-state">
-                  <div className="map-empty-title">Không thể tải bản đồ gần bạn</div>
-                  <p>{mapError}</p>
-                  <button type="button" className="map-empty-btn" onClick={refreshNearbyMap}>
-                    Thử lại
-                  </button>
+              </div>
+
+              <div className="parking-modal-section">
+                <h3>Thông tin vị trí</h3>
+                {selectedSlot.detailLoading ? (
+                  <p className="parking-modal-note">Đang tải dữ liệu chi tiết từ hệ thống...</p>
+                ) : selectedSlot.detailError ? (
+                  <p className="parking-modal-note">{selectedSlot.detailError}</p>
+                ) : hasOwnerDetail && detailedSlot ? (
+                  <div className="parking-detail-list">
+                    <div><span>Khu vực</span><strong>{detailedSlot.zone}</strong></div>
+                    <div><span>Tầng</span><strong>{detailedSlot.level}</strong></div>
+                    <div><span>Loại xe</span><strong>{detailedSlot.type}</strong></div>
+                    <div><span>Cập nhật</span><strong>{formatDateTime(detailedSlot.updatedAt)}</strong></div>
+                  </div>
+                ) : (
+                  <p className="parking-modal-note">
+                    Ô này không thuộc bãi do owner hiện tại quản lý, nên chỉ hiển thị trạng thái chung như trang user.
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <div className="parking-modal-section">
+              <h3>Thông tin xe / booking</h3>
+              {selectedSlot.detailLoading ? (
+                <p className="parking-modal-note">Đang tải booking hiện tại của ô này...</p>
+              ) : detailBooking ? (
+                <div className="parking-detail-list">
+                  <div><span>Mã booking</span><strong>{detailBooking.code}</strong></div>
+                  <div>
+                    <span>Trạng thái booking</span>
+                    <strong>
+                      <span className={`parking-status-pill parking-status-pill--${getStatusTone(detailBooking.status)}`}>
+                        {formatStatusLabel(detailBooking.status)}
+                      </span>
+                    </strong>
+                  </div>
+                  <div><span>Chủ xe</span><strong>{detailBooking.user}</strong></div>
+                  <div><span>Biển số</span><strong>{detailBooking.plate}</strong></div>
+                  <div><span>Số điện thoại</span><strong>{detailBooking.phone}</strong></div>
+                  <div><span>Giờ vào</span><strong>{formatDateTime(detailBooking.startTime)}</strong></div>
+                  <div><span>Giờ ra</span><strong>{formatDateTime(detailBooking.endTime)}</strong></div>
                 </div>
               ) : (
-                <div className="map-shell">
-                  <div className="map-stage">
-                    <NearbyParkingMap
-                      searchMeta={mapSearchMeta}
-                      nearbyLots={enrichedMapLots}
-                      selectedLotId={selectedMapLotId}
-                      onSelectLot={(lot) => setSelectedMapLotId(lot.id)}
-                    />
-                  </div>
-
-                  <div className="map-overlay-layer">
-                    {mapPreviewLot ? (
-                      <div className="map-preview-card is-selected">
-
-                        <img
-                          src={getParkingImageSrc(mapPreviewLot)}
-                          alt=""
-                        />
-
-                        <div className="map-preview-content">
-
-                          <h4>{mapPreviewLot.parking_name || mapPreviewLot.name}</h4>
-
-                          <p>{mapPreviewLot.parking_address || mapPreviewLot.address}</p>
-
-                          <div className="map-preview-row">
-                            Khoảng cách: {formatDistance(mapPreviewLot.distance)} km
-                          </div>
-
-                          <div className="map-preview-row">
-                            🟢 Còn trống: {Math.round((Number(mapPreviewLot.available_slots || 0) / Math.max(1, Number(mapPreviewLot.total_slots || 1))) * 100)}%
-                          </div>
-
-                          <div className="map-preview-price">
-                            {mapPreviewLot.price_per_hour}.000đ/giờ
-                          </div>
-
-                          <button
-                            type="button"
-                            onClick={() => navigate(`/booking?lotId=${mapPreviewLot.parking_id}`)}
-                          >
-                            Xem chi tiết
-                          </button>
-
-                        </div>
-
-                      </div>
-                    ) : null}
-                  </div>
-
-                  {enrichedMapLots.length > 0 ? (
-                    <div className="map-nearby-list" role="list" aria-label="Danh sách bãi xe gần bạn">
-                      {enrichedMapLots.slice(0, 6).map((lot) => {
-                        const availablePercent = Math.round((Number(lot.available_slots || 0) / Math.max(1, Number(lot.total_slots || 1))) * 100);
-                        const isSelected = Number(lot.id) === Number(selectedMapLotId);
-
-                        return (
-                          <button
-                            key={lot.id}
-                            type="button"
-                            role="listitem"
-                            className={`map-nearby-item${isSelected ? " is-selected" : ""}`}
-                            onClick={() => setSelectedMapLotId(lot.id)}
-                          >
-                            <strong>{lot.parking_name || lot.name}</strong>
-                            <span>{formatDistance(lot.distance)} km</span>
-                            <span className="map-nearby-item-meta">{availablePercent}% chỗ trống</span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  ) : null}
-                </div>
+                <p className="parking-modal-note">
+                  {(detailedSlot?.status || selectedSlot.slot.status) === "available"
+                    ? "Ô này đang trống."
+                    : "Chưa có dữ liệu booking chi tiết cho ô này."}
+                </p>
               )}
-
             </div>
-
           </div>
-
-        </main>
-
-      </div>
+        </div>
+      , document.body) : null}
+      {pageSpacerHeight > 0 ? <div aria-hidden="true" style={{ height: `${pageSpacerHeight}px` }} /> : null}
     </section>
   );
 }

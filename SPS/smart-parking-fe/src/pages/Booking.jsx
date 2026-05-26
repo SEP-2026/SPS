@@ -6,7 +6,6 @@ import { formatDateOnlyVN, toDateInputValue, toDatetimeLocalValue, toVietnamIsoS
 import ParkingMap from "../components/ParkingMap";
 import NearbyParkingMap from "../components/NearbyParkingMap";
 import "./Booking.css";
-import { isValidCoordinate, normalizeParkingSearchLot, searchNearbyByCurrentLocation, searchParkingByAddress, searchParkingByCoords } from "../services/parkingSearch";
 
 const formatDisplayDate = (date) => {
   return formatDateOnlyVN(date, "");
@@ -32,6 +31,128 @@ const addMonths = (date, months) => {
   result.setDate(Math.min(currentDay, maxDay));
   return result;
 };
+
+const buildBookingWindow = (form) => {
+  const bookingMode = form.bookingMode || "hourly";
+
+  if (bookingMode === "hourly") {
+    const checkinDate = new Date(form.checkinTime);
+    const checkoutDate = new Date(form.checkoutTime);
+    if (Number.isNaN(checkinDate.getTime()) || Number.isNaN(checkoutDate.getTime())) {
+      return { ok: false, error: "Thời gian booking không hợp lệ" };
+    }
+    if (checkoutDate <= checkinDate) {
+      return { ok: false, error: "Thời gian ra phải sau thời gian vào" };
+    }
+    return {
+      ok: true,
+      bookingMode,
+      checkinDate,
+      checkoutDate,
+      monthCount: null,
+    };
+  }
+
+  if (bookingMode === "daily") {
+    const startDate = parseDateValue(form.startDate);
+    const endDate = parseDateValue(form.endDate);
+    if (!startDate || !endDate) {
+      return { ok: false, error: "Vui lòng chọn đầy đủ ngày bắt đầu và ngày kết thúc" };
+    }
+    if (endDate < startDate) {
+      return { ok: false, error: "Ngày kết thúc phải lớn hơn hoặc bằng ngày bắt đầu" };
+    }
+    const checkoutDate = new Date(endDate);
+    checkoutDate.setDate(checkoutDate.getDate() + 1);
+    return {
+      ok: true,
+      bookingMode,
+      checkinDate: startDate,
+      checkoutDate,
+      monthCount: null,
+    };
+  }
+
+  if (bookingMode === "monthly") {
+    const startDate = parseDateValue(form.startDate);
+    const monthCount = Number(form.monthCount);
+    if (!startDate) {
+      return { ok: false, error: "Vui lòng chọn ngày bắt đầu cho gói tháng" };
+    }
+    if (!Number.isInteger(monthCount) || monthCount < 1) {
+      return { ok: false, error: "Số tháng phải là số nguyên lớn hơn hoặc bằng 1" };
+    }
+    return {
+      ok: true,
+      bookingMode,
+      checkinDate: startDate,
+      checkoutDate: addMonths(startDate, monthCount),
+      monthCount,
+    };
+  }
+
+  return { ok: false, error: "Kiểu đặt chỗ không hợp lệ" };
+};
+
+const computeEstimatedCharge = (lot, window) => {
+  if (!lot || !window.ok) {
+    return {
+      amount: 0,
+      resolvedMode: "hourly",
+      billedUnits: 0,
+      billedUnit: "hour",
+      autoConvertedToDaily: false,
+    };
+  }
+
+  const pricePerHour = Number(lot.price_per_hour || 0);
+  const pricePerDay = Number(lot.price_per_day || 0);
+  const pricePerMonth = Number(lot.price_per_month || 0);
+  const durationHours = (window.checkoutDate.getTime() - window.checkinDate.getTime()) / (1000 * 60 * 60);
+
+  if (window.bookingMode === "monthly") {
+    const billedUnits = Number(window.monthCount || 1);
+    return {
+      amount: Math.round(billedUnits * pricePerMonth),
+      resolvedMode: "monthly",
+      billedUnits,
+      billedUnit: "tháng",
+      autoConvertedToDaily: false,
+    };
+  }
+
+  if (window.bookingMode === "daily") {
+    const billedUnits = Math.max(1, Math.ceil(durationHours / 24));
+    return {
+      amount: Math.round(billedUnits * pricePerDay),
+      resolvedMode: "daily",
+      billedUnits,
+      billedUnit: "ngày",
+      autoConvertedToDaily: false,
+    };
+  }
+
+  if (durationHours > 12) {
+    const billedUnits = Math.max(1, Math.ceil(durationHours / 24));
+    return {
+      amount: Math.round(billedUnits * pricePerDay),
+      resolvedMode: "daily",
+      billedUnits,
+      billedUnit: "ngày",
+      autoConvertedToDaily: true,
+    };
+  }
+
+  const billedUnits = Math.max(1, Math.ceil(durationHours));
+  return {
+    amount: Math.round(billedUnits * pricePerHour),
+    resolvedMode: "hourly",
+    billedUnits,
+    billedUnit: "giờ",
+    autoConvertedToDaily: false,
+  };
+};
+
 const BOOKING_MODE_OPTIONS = [
   {
     value: "hourly",
@@ -103,14 +224,20 @@ const formatSeats = (seatCount) => {
 };
 
 const normalizeSelectedLot = (lot) => {
-  const normalized = normalizeParkingSearchLot(lot);
-
-  if (!normalized || !normalized.id) {
+  if (!lot || !lot.id) {
     return null;
   }
 
   return {
-    ...normalized,
+    ...lot,
+    id: Number(lot.id),
+    name: lot.name || lot.parking_name || "",
+    address: lot.address || lot.parking_address || "",
+    has_roof: Boolean(lot.has_roof),
+    distance: lot.distance ?? "",
+    price_per_hour: Number(lot.price_per_hour || 0),
+    price_per_day: Number(lot.price_per_day || 0),
+    price_per_month: Number(lot.price_per_month || 0),
     priceLoaded: Boolean(lot.priceLoaded),
   };
 };
@@ -139,10 +266,8 @@ export default function Booking() {
   const [vehicleNotice, setVehicleNotice] = useState("");
   const [bookingResult, setBookingResult] = useState(null);
   const [profile, setProfile] = useState(() => auth?.user || null);
-  const [step, setStep] = useState(1);
   const [expandedLotId, setExpandedLotId] = useState(null);
   const [prefilledSlotName, setPrefilledSlotName] = useState("");
-  const quickSearchAppliedRef = useRef("");
   const bookingSectionRef = useRef(null);
   const bookingSubmitLockRef = useRef(false);
   const bookingWindow = useMemo(() => buildBookingWindow(bookingForm), [bookingForm]);
@@ -235,81 +360,6 @@ export default function Booking() {
       setBookingResult({ message: location.state.paymentNotice });
     }
   }, [location.state]);
-
-  useEffect(() => {
-    const quickSearch = location.state?.quickSearch;
-    if (!quickSearch) {
-      return;
-    }
-
-    if (quickSearchAppliedRef.current === location.key) {
-      return;
-    }
-
-    quickSearchAppliedRef.current = location.key;
-
-    const nextCheckinTime = String(quickSearch.checkinTime || "").trim();
-    if (nextCheckinTime) {
-      const checkinDate = new Date(nextCheckinTime);
-      const checkoutDate = Number.isNaN(checkinDate.getTime())
-        ? null
-        : new Date(checkinDate.getTime() + 2 * 60 * 60 * 1000);
-
-      setBookingForm((prev) => ({
-        ...prev,
-        bookingMode: "hourly",
-        checkinTime: nextCheckinTime,
-        checkoutTime: checkoutDate ? toDatetimeLocalValue(checkoutDate) : prev.checkoutTime,
-      }));
-    }
-
-    const runQuickSearch = async () => {
-      try {
-        setError("");
-        setSearching(true);
-
-        let payload = null;
-        const quickCoordinates = quickSearch.coordinates;
-
-        if (isValidCoordinate(quickCoordinates?.lat, quickCoordinates?.lng)) {
-          payload = await searchParkingByCoords({
-            lat: Number(quickCoordinates.lat),
-            lng: Number(quickCoordinates.lng),
-            limit: 5,
-            sortBy,
-            coveredOnly,
-          });
-        } else if (quickSearch.address && String(quickSearch.address).trim()) {
-          const normalizedAddress = String(quickSearch.address).trim();
-          setAddress(normalizedAddress);
-          payload = await searchParkingByAddress({
-            address: normalizedAddress,
-            limit: 5,
-            sortBy,
-            coveredOnly,
-          });
-        }
-
-        if (!payload) {
-          return;
-        }
-
-        applySearchResult({
-          query: payload.query,
-          center: payload.center,
-          nearest: payload.nearby,
-        });
-      } catch (err) {
-        setNearby([]);
-        setSearchMeta(null);
-        setError(normalizeError(err));
-      } finally {
-        setSearching(false);
-      }
-    };
-
-    runQuickSearch();
-  }, [coveredOnly, location.key, location.state, sortBy]);
 
   useEffect(() => {
     const lotIdParam = searchParams.get("lotId");
@@ -474,17 +524,15 @@ export default function Booking() {
     try {
       setError("");
       setSearching(true);
-      const payload = await searchParkingByAddress({
-        address: address.trim(),
-        limit: 5,
-        sortBy,
-        coveredOnly,
+      const res = await API.get("/search-parking", {
+        params: {
+          address: address.trim(),
+          limit: 5,
+          sort_by: sortBy,
+          covered_only: coveredOnly,
+        },
       });
-      applySearchResult({
-        query: payload.query,
-        center: payload.center,
-        nearest: payload.nearby,
-      });
+      applySearchResult(res.data);
     } catch (err) {
       setNearby([]);
       setSearchMeta(null);
@@ -495,30 +543,39 @@ export default function Booking() {
   };
 
   const handleUseCurrentLocation = () => {
-    const loadNearby = async () => {
-      try {
-        setError("");
-        setSearching(true);
-        const payload = await searchNearbyByCurrentLocation({
-          limit: 5,
-          sortBy,
-          coveredOnly,
-        });
-        applySearchResult({
-          query: payload.query,
-          center: payload.center,
-          nearest: payload.nearby,
-        });
-      } catch (err) {
-        setNearby([]);
-        setSearchMeta(null);
-        setError(normalizeError(err));
-      } finally {
-        setSearching(false);
-      }
-    };
+    if (!navigator.geolocation) {
+      setError("Trình duyệt không hỗ trợ lấy vị trí hiện tại");
+      return;
+    }
 
-    loadNearby();
+    navigator.geolocation.getCurrentPosition(
+      async ({ coords }) => {
+        try {
+          setError("");
+          setSearching(true);
+          const res = await API.get("/search-parking-by-coords", {
+            params: {
+              lat: coords.latitude,
+              lng: coords.longitude,
+              limit: 5,
+              sort_by: sortBy,
+              covered_only: coveredOnly,
+            },
+          });
+          applySearchResult(res.data);
+        } catch (err) {
+          setNearby([]);
+          setSearchMeta(null);
+          setError(normalizeError(err));
+        } finally {
+          setSearching(false);
+        }
+      },
+      () => {
+        setError("Không thể lấy vị trí hiện tại. Vui lòng cấp quyền vị trí.");
+      },
+      { enableHighAccuracy: true, timeout: 10000 },
+    );
   };
 
   const handleSelectLot = (lot) => {
@@ -722,215 +779,499 @@ export default function Booking() {
   if (!isBookingRoute) {
     return null;
   }
+
   return (
-    <div className="booking-dashboard page-wrap">
-      <div className="page-card booking-shell dashboard-card">
-        <header className="dashboard-topbar">
-          <div className="topbar-left">
-            <h1 className="page-title">Đặt chỗ - Smart Parking</h1>
-            <p className="page-subtitle">Nhanh • An toàn • Thuận tiện</p>
-          </div>
-          <div className="topbar-right">
-            <div className="global-search">
+    <section className="page-wrap">
+      <div className="page-card booking-shell">
+        <div className="booking-header">
+          <h1 className="page-title">Tìm bãi xe gần bạn</h1>
+          <p className="page-subtitle">Smart Parking Platform</p>
+        </div>
+
+        <section className="booking-search-section">
+          <h2 className="booking-subtitle">Tìm bãi xe gần bạn</h2>
+          <div className="booking-tools booking-tools--search">
+            <div className="input-with-clear">
               <input
-                className="global-search-input"
-                placeholder="Tìm địa chỉ, bãi xe, mã..."
+                className="booking-input"
+                aria-label="Địa chỉ tìm kiếm"
+                placeholder="Ví dụ: Nguyễn Văn Săng, Tân Phú"
                 value={address}
                 onChange={(e) => setAddress(e.target.value)}
               />
-              <button className="btn-ghost" onClick={handleSearchNearby} disabled={searching}>🔎</button>
+              {address && (
+                <button
+                  type="button"
+                  className="input-clear-btn"
+                  aria-label="Xóa địa chỉ"
+                  onClick={() => setAddress("")}
+                >
+                  ✕
+                </button>
+              )}
             </div>
-            <div className="top-controls">
-              <button className="icon-btn">🔔</button>
-              <button className="avatar-btn">👤</button>
-            </div>
+
+            <button type="button" className="btn-primary btn-primary--search" onClick={handleSearchNearby} disabled={searching}>
+              {searching ? (
+                <span className="btn-loading">⏳ Đang tìm...</span>
+              ) : (
+                "Tìm bãi xe gần bạn"
+              )}
+            </button>
+
+            <button type="button" className="btn-secondary" onClick={handleUseCurrentLocation} disabled={searching}>
+              📍 Dùng vị trí hiện tại
+            </button>
           </div>
-        </header>
 
-        <div className="dashboard-grid">
-          <aside className="dashboard-left">
-            <div className="panel panel--glass">
-              <div className="panel-head">
-                <strong>Tìm bãi xe</strong>
-                <div className="panel-actions">
-                  <button className="btn-ghost" onClick={() => { setStep(1); }}>Step 1</button>
-                  <button className="btn-ghost" onClick={() => { setStep(2); }}>Step 2</button>
-                </div>
-              </div>
+          <div className="filter-row">
+            <select className="filter-select" value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
+              <option value="nearest">Gần nhất</option>
+              <option value="cheapest">Giá rẻ nhất</option>
+            </select>
 
-              <div className="panel-body">
-                <div className="booking-tools booking-tools--search compact">
-                  <div className="input-with-clear">
-                    <input
-                      className="booking-input"
-                      aria-label="Địa chỉ tìm kiếm"
-                      placeholder="Ví dụ: Nguyễn Văn Săng, Tân Phú"
-                      value={address}
-                      onChange={(e) => setAddress(e.target.value)}
-                    />
-                    {address && (
-                      <button
-                        type="button"
-                        className="input-clear-btn"
-                        aria-label="Xóa địa chỉ"
-                        onClick={() => setAddress("")}
-                      >
-                        ✕
-                      </button>
-                    )}
-                  </div>
+            <label className="filter-checkbox">
+              <input
+                type="checkbox"
+                checked={coveredOnly}
+                onChange={(e) => setCoveredOnly(e.target.checked)}
+              />
+              Có mái che
+            </label>
+          </div>
 
-                  <div className="tools-row">
-                    <button type="button" className="btn-primary btn-primary--search" onClick={handleSearchNearby} disabled={searching}>
-                      {searching ? "Đang tìm..." : "Tìm"}
-                    </button>
-                    <button type="button" className="btn-secondary" onClick={handleUseCurrentLocation} disabled={searching}>
-                      📍 Vị trí hiện tại
-                    </button>
-                  </div>
+          {searchMeta && (
+            <p className="search-meta">
+              Tọa độ tìm kiếm: {searchMeta.lat}, {searchMeta.lng}
+            </p>
+          )}
 
-                  <div className="filter-row compact">
-                    <select className="filter-select" value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
-                      <option value="nearest">Gần nhất</option>
-                      <option value="cheapest">Giá rẻ nhất</option>
-                    </select>
-                    <label className="filter-checkbox">
-                      <input
-                        type="checkbox"
-                        checked={coveredOnly}
-                        onChange={(e) => setCoveredOnly(e.target.checked)}
-                      />
-                      Có mái che
-                    </label>
-                  </div>
-                </div>
-
-                <div className="parking-cards">
-                  {nearby.length === 0 && <div className="empty-note">Không có kết quả. Hãy thử tìm lại.</div>}
-                  {nearby.map((lot) => (
-                    <div
-                      key={lot.id}
-                      className={`parking-card ${selectedLot?.id === lot.id ? "is-selected" : ""}`}
-                      onClick={() => { handleSelectLot(lot); setStep(2); }}
-                    >
-                      <div className="card-media" style={{backgroundImage: `linear-gradient(135deg, rgba(20,120,255,0.12), rgba(60,180,255,0.06))`}}>
-                        <img alt={lot.name} src={lot.image || `/assets/parking-placeholder.jpg`} />
-                      </div>
-                      <div className="card-body">
-                        <h4 className="card-title">{lot.name}</h4>
-                        <p className="card-sub">{lot.address}</p>
-                        <div className="card-meta">
-                          <span>{lot.distance} km</span>
-                          <span>{lot.has_roof ? "Indoor" : "Outdoor"}</span>
-                          <span>⭐ {lot.rating || "—"}</span>
-                        </div>
-                        <div className="card-foot">
-                          <div className="occupancy">{Math.round((lot.occupied || 0) * 100) || 0}%</div>
-                          <div className="price">{Number(lot.price_per_hour || 0).toLocaleString("vi-VN")}₫/h</div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </aside>
-
-          <main className="dashboard-center">
-            <div className="map-hero panel panel--glass">
+          {nearby.length > 0 && (
+            <>
               <NearbyParkingMap
                 searchMeta={searchMeta}
                 nearbyLots={nearby}
-                onSelectLot={(lot) => { handleSelectLot(lot); setStep(2); }}
+                onSelectLot={handleSelectLot}
               />
-            </div>
 
-            {/* Mobile: quick step hint */}
-            <div className="mobile-steps">
-              <div className="step-pill">Bước {step} / 4</div>
-            </div>
-          </main>
-
-          <aside className="dashboard-right">
-            <div className="panel panel--sticky">
-              <div className="panel-head">
-                <strong>Booking Summary</strong>
-                <div className="stepper-compact">Bước {step} / 4</div>
+              <div className="nearby-list">
+                {nearby.map((lot) => (
+                  <article className="nearby-item" key={lot.id}>
+                    <h3>{lot.name}</h3>
+                    <p>📍 {lot.address}</p>
+                    <p>📏 {lot.distance} km</p>
+                    {expandedLotId === lot.id ? (
+                      <div className="lot-detail-box">
+                        <p><strong>ID bãi:</strong> {lot.id}</p>
+                        <p><strong>Địa chỉ:</strong> {lot.address || "Chưa có địa chỉ"}</p>
+                        <p><strong>Có mái che:</strong> {lot.has_roof ? "Có" : "Không"}</p>
+                        <p><strong>Giá theo giờ:</strong> {Number(lot.price_per_hour || 0).toLocaleString("vi-VN")}đ</p>
+                        <p><strong>Giá theo ngày:</strong> {Number(lot.price_per_day || 0).toLocaleString("vi-VN")}đ</p>
+                        <p><strong>Giá theo tháng:</strong> {Number(lot.price_per_month || 0).toLocaleString("vi-VN")}đ</p>
+                      </div>
+                    ) : null}
+                    <div className="lot-actions">
+                      <button type="button" className="btn-secondary" onClick={() => handleToggleLotDetail(lot.id)}>
+                        {expandedLotId === lot.id ? "Ẩn chi tiết" : "Xem chi tiết"}
+                      </button>
+                      <button type="button" className="btn-primary" onClick={() => handleSelectLot(lot)}>
+                        Đặt ngay
+                      </button>
+                    </div>
+                  </article>
+                ))}
               </div>
+            </>
+          )}
+        </section>
 
-              <div className="panel-body summary-body">
-                <div className="summary-row">
-                  <div className="summary-label">Bãi xe</div>
-                  <div className="summary-value">{selectedLot?.name || "Chưa chọn"}</div>
-                </div>
-                <div className="summary-row">
-                  <div className="summary-label">Thời gian</div>
-                  <div className="summary-value">{bookingWindow.ok ? `${estimatedCharge.billedUnits} ${estimatedCharge.billedUnit}` : "--"}</div>
-                </div>
-                <div className="summary-row">
-                  <div className="summary-label">Slot</div>
-                  <div className="summary-value">{prefilledSlotName || (availableSlots.find((s) => String(s.id) === String(selectedSlotId))?.code) || "--"}</div>
-                </div>
-                <div className="divider" />
-                <div className="summary-row">
-                  <div className="summary-label">Subtotal</div>
-                  <div className="summary-value">{estimatedCharge.amount.toLocaleString("vi-VN")} ₫</div>
-                </div>
-                <div className="summary-row small">
-                  <div className="summary-label">Deposit (10%)</div>
-                  <div className="summary-value">{Math.round(estimatedCharge.amount * 0.1).toLocaleString("vi-VN")} ₫</div>
-                </div>
-                <div className="summary-row small">
-                  <div className="summary-label">Service</div>
-                  <div className="summary-value">{Math.round(estimatedCharge.amount * 0.02).toLocaleString("vi-VN")} ₫</div>
-                </div>
-                <div className="divider" />
-                <div className="summary-total">
-                  <div className="summary-label">Tổng</div>
-                  <div className="summary-value total">{(estimatedCharge.amount + Math.round(estimatedCharge.amount * 0.02)).toLocaleString("vi-VN")} ₫</div>
-                </div>
-
-                <div className="summary-actions">
-                  <button className="btn-outline" onClick={() => setStep(Math.max(1, step - 1))}>Quay lại</button>
-                  <button className="btn-primary" onClick={() => {
-                    if (step < 3) { setStep(step + 1); } else { handleCreateBooking(); }
-                  }} disabled={bookingLoading}>
-                    {step < 3 ? "Tiếp tục" : (bookingLoading ? "Đang xử lý..." : "Xác nhận & Thanh toán")}
-                  </button>
-                </div>
+        {selectedLot && (
+          <section className="booking-search-section booking-form-section" ref={bookingSectionRef}>
+            {/* Progress Stepper */}
+            <div className="booking-stepper">
+              <div className="stepper-step stepper-step--completed">
+                <div className="stepper-number">✓</div>
+                <div className="stepper-label">Chọn bãi xe</div>
+              </div>
+              <div className="stepper-line"></div>
+              <div className="stepper-step stepper-step--active">
+                <div className="stepper-number">2</div>
+                <div className="stepper-label">Chi tiết đặt chỗ</div>
+              </div>
+              <div className="stepper-line"></div>
+              <div className="stepper-step stepper-step--pending">
+                <div className="stepper-number">3</div>
+                <div className="stepper-label">Xác nhận & Thanh toán</div>
               </div>
             </div>
-          </aside>
-        </div>
 
-        {/* Error / result notices and modal remain intact */}
-        {(bookingError || error) && <p className="booking-error global-error">{bookingError || error}</p>}
+            <div className="booking-form-headline">
+              <h2>ĐẶT BÃI XE ĐÃ CHỌN</h2>
+            </div>
 
-        {bookingResult && ReactDOM.createPortal(
-          <div className="qr-modal-overlay" onClick={() => setBookingResult(null)}>
-            <div className="qr-modal" onClick={(e) => e.stopPropagation()}>
-              <button className="qr-modal-close" onClick={() => setBookingResult(null)}>×</button>
-              <h2>Mã QR - Booking #{bookingResult.booking_id}</h2>
-              <div className="qr-modal-image">
-                <img src={`http://localhost:8000/${bookingResult.qr_code}`} alt="Mã QR đặt chỗ" />
-              </div>
-              <p className="booking-result-message">{bookingResult.message}</p>
-              <div style={{ marginTop: 12 }}>
-                <button className="qr-modal-download" onClick={() => {
-                  const url = `http://localhost:8000/${bookingResult.qr_code}`;
-                  const link = document.createElement('a');
-                  link.href = url;
-                  link.download = `booking-${bookingResult.booking_id}-qr.png`;
-                  document.body.appendChild(link);
-                  link.click();
-                  link.remove();
-                }}>Tải QR</button>
+            <div className="selected-lot-card selected-lot-card--modern">
+              <h3>Thông tin bãi đỗ xe</h3>
+              <p><strong>Bãi xe:</strong> {selectedLot.name}</p>
+              <p><strong>Địa chỉ:</strong> {selectedLot.address}</p>
+              <p><strong>Có mái che:</strong> {selectedLot.has_roof ? "Có" : "Không"}</p>
+              <p><strong>Giá theo giờ:</strong> {Number(selectedLot.price_per_hour || 0).toLocaleString("vi-VN")}đ</p>
+              <p><strong>Giá theo ngày:</strong> {Number(selectedLot.price_per_day || 0).toLocaleString("vi-VN")}đ</p>
+              <p><strong>Giá theo tháng:</strong> {Number(selectedLot.price_per_month || 0).toLocaleString("vi-VN")}đ</p>
+              <div className="selected-lot-meta">
+                <span>📍 Khoảng cách: {selectedLot.distance} km</span>
+                <span>✅ Slot trống: {availableSlots.length}</span>
               </div>
             </div>
-          </div>,
-          document.body
+
+            <ParkingMap
+              lotId={selectedLot.id}
+              lotName={selectedLot.name}
+              onSelectSlot={handleSlotSelectFromMap}
+            />
+
+            <div className="booking-form-sheet">
+              {/* Section 1: Thông tin người đặt */}
+              <div className="form-section">
+                <div className="form-section-header">
+                  <span className="section-icon">👤</span>
+                  <h3>Thông tin người đặt</h3>
+                  {profile && <span className="badge badge--account">Từ tài khoản</span>}
+                </div>
+                <div className="form-section-content">
+                  <div className="booking-form-grid booking-form-grid--two">
+                    <div className="field-wrap">
+                      <label>Họ tên</label>
+                      <input
+                        className="booking-input"
+                        placeholder="Nhập tên người đặt"
+                        value={bookingForm.ownerName}
+                        onChange={(e) => setBookingForm((prev) => ({ ...prev, ownerName: e.target.value }))}
+                      />
+                    </div>
+                    <div className="field-wrap">
+                      <label>Số điện thoại</label>
+                      <input
+                        className="booking-input"
+                        placeholder="Tự động lấy từ tài khoản"
+                        value={bookingForm.contactPhone}
+                        onChange={(e) => setBookingForm((prev) => ({ ...prev, contactPhone: e.target.value }))}
+                      />
+                    </div>
+                  </div>
+                  {profile && (
+                    <div className="profile-badge">
+                      <span className="profile-text">
+                        {profile.name} • {profile.phone} {profile.vehicle_plate ? `• ${profile.vehicle_plate}` : ""}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Section 2: Thông tin xe */}
+              <div className="form-section">
+                <div className="form-section-header">
+                  <span className="section-icon">🚗</span>
+                  <h3>Thông tin xe</h3>
+                </div>
+                <div className="form-section-content">
+                  <div className="booking-form-grid booking-form-grid--two">
+                    <div className="field-wrap">
+                      <label>Biển số xe</label>
+                      <input
+                        className="booking-input"
+                        placeholder="Nhập biển số xe"
+                        value={bookingForm.licensePlate}
+                        onChange={(e) => setBookingForm((prev) => ({ ...prev, licensePlate: e.target.value }))}
+                      />
+                    </div>
+                    <div className="field-wrap">
+                      <label>Thương hiệu</label>
+                      <input
+                        className="booking-input"
+                        placeholder="Ví dụ: Vinfast"
+                        value={bookingForm.brand}
+                        onChange={(e) => setBookingForm((prev) => ({ ...prev, brand: e.target.value }))}
+                      />
+                    </div>
+                  </div>
+                  <div className="booking-form-grid booking-form-grid--three">
+                    <div className="field-wrap">
+                      <label>Dòng xe</label>
+                      <input
+                        className="booking-input"
+                        placeholder="Ví dụ: vf4"
+                        value={bookingForm.vehicleType}
+                        onChange={(e) => setBookingForm((prev) => ({ ...prev, vehicleType: e.target.value }))}
+                      />
+                    </div>
+                    <div className="field-wrap">
+                      <label>Số chỗ ngồi</label>
+                      <input
+                        className="booking-input"
+                        placeholder="Ví dụ: 4 chỗ"
+                        value={bookingForm.seats}
+                        onChange={(e) => setBookingForm((prev) => ({ ...prev, seats: e.target.value }))}
+                      />
+                    </div>
+                    <div className="field-wrap">
+                      <label>Màu xe</label>
+                      <input
+                        className="booking-input"
+                        placeholder="Ví dụ: Đen"
+                        value={bookingForm.vehicleColor}
+                        onChange={(e) => setBookingForm((prev) => ({ ...prev, vehicleColor: e.target.value }))}
+                      />
+                    </div>
+                  </div>
+                  <div className="vehicle-save-action">
+                    <button
+                      type="button"
+                      className="btn-outline"
+                      onClick={handleSaveVehicleProfile}
+                      disabled={savingVehicle}
+                    >
+                      {savingVehicle ? "Đang lưu..." : "💾 Lưu thông tin xe"}
+                    </button>
+                    {vehicleNotice && <span className="vehicle-notice">{vehicleNotice}</span>}
+                  </div>
+                </div>
+              </div>
+
+              {/* Section 3: Chi tiết đặt chỗ */}
+              <div className="form-section">
+                <div className="form-section-header">
+                  <span className="section-icon">📅</span>
+                  <h3>Chi tiết đặt chỗ</h3>
+                </div>
+                <div className="form-section-content">
+
+                  <div className="booking-form-grid booking-form-grid--single">
+                    <div className="field-wrap">
+                      <label>
+                        Vị trí mong muốn
+                        <span className="label-hint" title="Chọn vị trí từ sơ đồ bãi xe hoặc từ danh sách slot trống">ℹ️</span>
+                      </label>
+                      {prefilledSlotName ? (
+                        <div className="prefilled-slot-display">
+                          <input
+                            className="booking-input"
+                            value={prefilledSlotName}
+                            readOnly
+                            disabled
+                          />
+                          <small className="slot-hint">Vị trí đã chọn từ sơ đồ bãi xe</small>
+                        </div>
+                      ) : (
+                        <select
+                          className="booking-input booking-slot-select"
+                          value={selectedSlotId}
+                          onChange={(e) => setSelectedSlotId(e.target.value)}
+                        >
+                          <option value="">Chọn slot trống</option>
+                          {availableSlots.map((slot) => (
+                            <option key={slot.id} value={slot.id}>
+                              {slot.code} {slot.slot_number ? `- ${slot.slot_number}` : ""}
+                            </option>
+                          ))}
+                        </select>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="booking-mode-section">
+                    <label>Hình thức đặt chỗ</label>
+                    <div className="booking-mode-cards" role="radiogroup" aria-label="Chọn hình thức đặt chỗ">
+                      {BOOKING_MODE_OPTIONS.map((modeOption) => {
+                        const price = modeOption.value === "hourly" 
+                          ? selectedLot.price_per_hour 
+                          : modeOption.value === "daily" 
+                          ? selectedLot.price_per_day 
+                          : selectedLot.price_per_month;
+                        const priceText = modeOption.value === "monthly" 
+                          ? `${Number(price || 0).toLocaleString("vi-VN")}đ/tháng`
+                          : `${Number(price || 0).toLocaleString("vi-VN")}đ/${modeOption.value === "hourly" ? "giờ" : "ngày"}`;
+                        return (
+                          <button
+                            key={modeOption.value}
+                            type="button"
+                            className={`booking-mode-card ${bookingForm.bookingMode === modeOption.value ? "is-active" : ""}`}
+                            role="radio"
+                            aria-checked={bookingForm.bookingMode === modeOption.value}
+                            onClick={() => handleBookingModeChange(modeOption.value)}
+                          >
+                            <div className="mode-card-header">
+                              <span className="mode-title">{modeOption.label}</span>
+                              <span className="mode-price">{priceText}</span>
+                            </div>
+                            <div className="mode-card-desc">{modeOption.description}</div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="time-picker-section">
+                    {bookingForm.bookingMode === "hourly" && (
+                      <div className="booking-form-grid booking-form-grid--two">
+                        <div className="field-wrap">
+                          <label>Thời gian vào</label>
+                          <input
+                            className="booking-input"
+                            type="datetime-local"
+                            value={bookingForm.checkinTime}
+                            onChange={(e) => setBookingForm((prev) => ({ ...prev, checkinTime: e.target.value }))}
+                          />
+                        </div>
+                        <div className="field-wrap">
+                          <label>Thời gian ra</label>
+                          <input
+                            className="booking-input"
+                            type="datetime-local"
+                            value={bookingForm.checkoutTime}
+                            onChange={(e) => setBookingForm((prev) => ({ ...prev, checkoutTime: e.target.value }))}
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {bookingForm.bookingMode === "daily" && (
+                      <div className="booking-form-grid booking-form-grid--two">
+                        <div className="field-wrap">
+                          <label>Đặt từ ngày</label>
+                          <input
+                            className="booking-input"
+                            type="date"
+                            min={toDateInputValue(getEarliestStartDate())}
+                            value={bookingForm.startDate}
+                            onChange={(e) => setBookingForm((prev) => ({ ...prev, startDate: e.target.value }))}
+                          />
+                        </div>
+                        <div className="field-wrap">
+                          <label>Đặt đến ngày</label>
+                          <input
+                            className="booking-input"
+                            type="date"
+                            min={bookingForm.startDate || toDateInputValue(getEarliestStartDate())}
+                            value={bookingForm.endDate}
+                            onChange={(e) => setBookingForm((prev) => ({ ...prev, endDate: e.target.value }))}
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {bookingForm.bookingMode === "monthly" && (
+                      <div className="booking-form-grid booking-form-grid--two">
+                        <div className="field-wrap">
+                          <label>Bắt đầu từ ngày</label>
+                          <input
+                            className="booking-input"
+                            type="date"
+                            min={toDateInputValue(getEarliestStartDate())}
+                            value={bookingForm.startDate}
+                            onChange={(e) => setBookingForm((prev) => ({ ...prev, startDate: e.target.value }))}
+                          />
+                        </div>
+                        <div className="field-wrap">
+                          <label>Số tháng đặt chỗ</label>
+                          <input
+                            className="booking-input"
+                            type="number"
+                            min={1}
+                            max={24}
+                            value={bookingForm.monthCount}
+                            onChange={(e) => setBookingForm((prev) => ({ ...prev, monthCount: e.target.value }))}
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="booking-estimate-box">
+                    {!bookingWindow.ok && <p className="booking-error">{bookingWindow.error}</p>}
+                    {bookingWindow.ok && (
+                      <>
+                        <p className="estimate-range">
+                          Từ {bookingRangePreview.start} đến {bookingRangePreview.end}
+                        </p>
+                        <p className="estimate-cost">
+                          Dự kiến tính phí: {estimatedCharge.billedUnits} {estimatedCharge.billedUnit} ({estimatedCharge.resolvedMode})
+                        </p>
+                        {estimatedCharge.autoConvertedToDaily && (
+                          <p className="booking-estimate-note">
+                            Booking theo giờ nhưng lớn hơn 12 giờ nên hệ thống tự động tính theo ngày.
+                          </p>
+                        )}
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Sticky Summary Bar (Mobile) / Summary Card (Desktop) */}
+            <div className="booking-summary-bar">
+              <div className="summary-info">
+                <div className="summary-item">
+                  <span className="summary-label">Bãi xe:</span>
+                  <span className="summary-value">{selectedLot.name}</span>
+                </div>
+                <div className="summary-item">
+                  <span className="summary-label">Thời gian:</span>
+                  <span className="summary-value">
+                    {bookingWindow.ok ? `${estimatedCharge.billedUnits} ${estimatedCharge.billedUnit}` : "--"}
+                  </span>
+                </div>
+                <div className="summary-item summary-item--total">
+                  <span className="summary-label">Tổng:</span>
+                  <span className="summary-value summary-value--price">
+                    {estimatedCharge.amount.toLocaleString("vi-VN")} ₫
+                  </span>
+                </div>
+              </div>
+              <button 
+                type="button" 
+                className="btn-primary btn-primary--summary" 
+                onClick={handleCreateBooking} 
+                disabled={bookingLoading}
+              >
+                {bookingLoading ? (
+                  <span className="btn-loading">⏳ Đang xử lý...</span>
+                ) : (
+                  <span>Xác nhận đặt chỗ</span>
+                )}
+              </button>
+            </div>
+
+            {(bookingError || error) && <p className="booking-error">{bookingError || error}</p>}
+
+            {bookingResult && ReactDOM.createPortal(
+              <div className="qr-modal-overlay" onClick={() => setBookingResult(null)}>
+                <div className="qr-modal" onClick={(e) => e.stopPropagation()}>
+                  <button className="qr-modal-close" onClick={() => setBookingResult(null)}>×</button>
+                  <h2>Mã QR - Booking #{bookingResult.booking_id}</h2>
+                  <div className="qr-modal-image">
+                    <img src={`http://localhost:8000/${bookingResult.qr_code}`} alt="Mã QR đặt chỗ" />
+                  </div>
+                  <p className="booking-result-message">{bookingResult.message}</p>
+                  <div style={{ marginTop: 12 }}>
+                    <button className="qr-modal-download" onClick={() => {
+                      const url = `http://localhost:8000/${bookingResult.qr_code}`;
+                      const link = document.createElement('a');
+                      link.href = url;
+                      link.download = `booking-${bookingResult.booking_id}-qr.png`;
+                      document.body.appendChild(link);
+                      link.click();
+                      link.remove();
+                    }}>Tải QR</button>
+                  </div>
+                </div>
+              </div>,
+              document.body
+            )}
+          </section>
         )}
       </div>
-    </div>
+    </section>
   );
 }

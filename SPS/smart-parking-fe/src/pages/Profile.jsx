@@ -1,9 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import API, { getAuth, saveAuth } from "../services/api";
 import { buildDynamicVietQrUrl } from "../features/gate/gateFormatters";
-import { formatCurrency } from "../features/gate/gateFormatters";
 import { isStrongPassword, PASSWORD_POLICY_TEXT } from "../services/passwordPolicy";
-import { useWallet } from "../context/WalletContext";
 import "./Profile.css";
 
 const normalizeError = (err, fallback) => {
@@ -55,7 +53,6 @@ export default function Profile({ onAuthUpdated }) {
   const isWalletAvailable = role === "user";
   const isOwner = role === "owner";
   const isAdmin = role === "admin";
-  const { wallet, loading: walletQueryLoading, error: walletQueryError, refreshWallet } = useWallet();
   const [activeSection, setActiveSection] = useState("personal");
 
   const [loading, setLoading] = useState(true);
@@ -112,6 +109,10 @@ export default function Profile({ onAuthUpdated }) {
     managedLotsCount: 0,
     totalSlots: 0,
     occupiedSlots: 0,
+  });
+  const [walletInfo, setWalletInfo] = useState({
+    balance: 0,
+    reserved_balance: 0,
   });
   const [walletTopUpAmount, setWalletTopUpAmount] = useState("");
   const [walletPendingAmount, setWalletPendingAmount] = useState(null);
@@ -242,6 +243,27 @@ export default function Profile({ onAuthUpdated }) {
 
     loadProfile();
   }, [isAdmin, isOwner, isVehicleProfileAvailable]);
+
+  useEffect(() => {
+    const loadWallet = async () => {
+      if (!auth?.token || !isWalletAvailable) {
+        setWalletInfo({ balance: 0, reserved_balance: 0 });
+        return;
+      }
+
+      try {
+        setWalletLoading(true);
+        const res = await API.get("/wallet/me");
+        setWalletInfo(res.data?.wallet || { balance: 0, reserved_balance: 0 });
+      } catch {
+        setWalletInfo({ balance: 0, reserved_balance: 0 });
+      } finally {
+        setWalletLoading(false);
+      }
+    };
+
+    loadWallet();
+  }, [auth?.token, isWalletAvailable]);
 
   const handleSavePersonal = async (event) => {
     event.preventDefault();
@@ -464,11 +486,11 @@ export default function Profile({ onAuthUpdated }) {
 
     try {
       setWalletLoading(true);
-      await API.post("/wallet/topup", {
+      const res = await API.post("/wallet/topup", {
         amount: walletPendingAmount,
         note: "Nạp ví qua QR chuyển khoản",
       });
-      await refreshWallet();
+      setWalletInfo(res.data?.wallet || { balance: 0, reserved_balance: 0 });
       setWalletTopUpAmount("");
       setWalletPendingAmount(null);
       setWalletTopUpQrUrl("");
@@ -675,23 +697,11 @@ export default function Profile({ onAuthUpdated }) {
                 <div className="profile-manager-grid">
                   <article className="profile-manager-stat">
                     <span className="profile-manager-label">Số dư khả dụng</span>
-                    {walletQueryLoading ? (
-                      <strong>Đang tải...</strong>
-                    ) : walletQueryError ? (
-                      <strong>Không tải được số dư</strong>
-                    ) : (
-                      <strong>{formatCurrency(wallet?.balance || 0)}</strong>
-                    )}
+                    <strong>{Number(walletInfo.balance || 0).toLocaleString("vi-VN")} đ</strong>
                   </article>
                   <article className="profile-manager-stat">
                     <span className="profile-manager-label">Đang giữ chỗ</span>
-                    {walletQueryLoading ? (
-                      <strong>Đang tải...</strong>
-                    ) : walletQueryError ? (
-                      <strong>Không tải được số dư</strong>
-                    ) : (
-                      <strong>{formatCurrency(wallet?.reserved_balance || 0)}</strong>
-                    )}
+                    <strong>{Number(walletInfo.reserved_balance || 0).toLocaleString("vi-VN")} đ</strong>
                   </article>
                 </div>
 
@@ -732,7 +742,7 @@ export default function Profile({ onAuthUpdated }) {
                   />
                 </div>
 
-                <button className="profile-action-btn" type="submit" disabled={walletLoading || walletQueryLoading}>
+                <button className="profile-action-btn" type="submit" disabled={walletLoading}>
                   {walletLoading ? "Đang xử lý..." : "→ Nạp tiền"}
                 </button>
 
@@ -742,10 +752,10 @@ export default function Profile({ onAuthUpdated }) {
                       <>
                         <p>Xác nhận tạo QR chuyển khoản {walletPendingAmount.toLocaleString("vi-VN")} đ để nạp ví?</p>
                         <div className="profile-topup-confirm-actions">
-                          <button type="button" className="profile-action-btn profile-action-confirm" onClick={confirmTopUpWallet} disabled={walletLoading || walletQueryLoading}>
+                          <button type="button" className="profile-action-btn profile-action-confirm" onClick={confirmTopUpWallet} disabled={walletLoading}>
                             Tạo QR chuyển khoản
                           </button>
-                          <button type="button" className="profile-action-btn profile-action-cancel" onClick={cancelTopUpWallet} disabled={walletLoading || walletQueryLoading}>
+                          <button type="button" className="profile-action-btn profile-action-cancel" onClick={cancelTopUpWallet} disabled={walletLoading}>
                             Hủy
                           </button>
                         </div>
@@ -757,10 +767,10 @@ export default function Profile({ onAuthUpdated }) {
                           <img src={walletTopUpQrUrl} alt="QR topup wallet" />
                         </div>
                         <div className="profile-topup-confirm-actions">
-                          <button type="button" className="profile-action-btn profile-action-confirm" onClick={completeTopUpWallet} disabled={walletLoading || walletQueryLoading}>
+                          <button type="button" className="profile-action-btn profile-action-confirm" onClick={completeTopUpWallet} disabled={walletLoading}>
                             {walletLoading ? "Đang xử lý..." : "Tôi đã chuyển khoản thành công"}
                           </button>
-                          <button type="button" className="profile-action-btn profile-action-cancel" onClick={cancelTopUpWallet} disabled={walletLoading || walletQueryLoading}>
+                          <button type="button" className="profile-action-btn profile-action-cancel" onClick={cancelTopUpWallet} disabled={walletLoading}>
                             Hủy
                           </button>
                         </div>
