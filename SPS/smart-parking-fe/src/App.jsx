@@ -8,6 +8,7 @@ import Home from "./pages/Home";
 import Login from "./pages/Login";
 import AdminAnalytics from "./pages/admin/AdminAnalytics";
 import AdminDashboard from "./pages/admin/AdminDashboard";
+import AdminNotifications from "./pages/admin/AdminNotifications";
 import AdminSettings from "./pages/admin/AdminSettings";
 import BookingManagement from "./pages/admin/BookingManagement";
 import OwnerManagement from "./pages/admin/OwnerManagement";
@@ -345,6 +346,7 @@ function AppBody({ auth, role, onLogin, onLogout }) {
           <Route path="bookings" element={<BookingManagement />} />
           <Route path="revenue" element={<RevenuePage />} />
           <Route path="analytics" element={<AdminAnalytics />} />
+          <Route path="notifications" element={<AdminNotifications />} />
           <Route path="settings" element={<AdminSettings />} />
         </Route>
         <Route path="*" element={<Navigate to={auth ? defaultAuthedRoute : "/login"} replace />} />

@@ -20,14 +20,33 @@ export default function AdminDashboard() {
   const [dashboardStats, setDashboardStats] = useState(null);
   const [statsLoading, setStatsLoading] = useState(true);
   const [selectedRange, setSelectedRange] = useState("7days");
-  const [dateFrom, setDateFrom] = useState("");
-  const [dateTo, setDateTo] = useState("");
+  
+  // Initialize default date range (today - 6 days to today)
+  const getDefaultDateFrom = () => {
+    const today = new Date();
+    const sevenDaysAgo = new Date(today);
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
+    return sevenDaysAgo.toISOString().split('T')[0];
+  };
+  
+  const getDefaultDateTo = () => {
+    const today = new Date();
+    return today.toISOString().split('T')[0];
+  };
+  
+  const [dateFrom, setDateFrom] = useState(getDefaultDateFrom());
+  const [dateTo, setDateTo] = useState(getDefaultDateTo());
 
   // Load dashboard stats from backend
   useEffect(() => {
     const fetchDashboardStats = async () => {
       try {
-        const response = await API.get("/admin/dashboard-stats");
+        const params = new URLSearchParams();
+        params.append("range", selectedRange);
+        if (selectedRange === "custom" && dateFrom) params.append("dateFrom", dateFrom);
+        if (selectedRange === "custom" && dateTo) params.append("dateTo", dateTo);
+        
+        const response = await API.get(`/admin/dashboard-stats?${params.toString()}`);
         setDashboardStats(response.data);
       } catch (error) {
         console.error("Failed to load dashboard stats:", error);
@@ -37,7 +56,7 @@ export default function AdminDashboard() {
     };
 
     fetchDashboardStats();
-  }, []);
+  }, [selectedRange, dateFrom, dateTo]);
 
   // Use data from dashboard-stats API, fallback to computed values
   const stats = useMemo(() => {
@@ -81,7 +100,7 @@ export default function AdminDashboard() {
       totalRevenue: totalGross,
       totalCommission,
     };
-  }, [dashboardStats, adminData]);
+  }, [dashboardStats, adminData, selectedRange]);
 
   const revenueSeries = useMemo(() => {
     // Use backend daily revenue series if available
@@ -89,7 +108,7 @@ export default function AdminDashboard() {
       return dashboardStats.dailyRevenueSeries;
     }
     return [];
-  }, [dashboardStats]);
+  }, [dashboardStats, selectedRange]);
 
   const bookingSeries = useMemo(() => {
     const normalized = normalizeSeries(adminData?.systemRevenue?.bookings);
@@ -198,7 +217,7 @@ export default function AdminDashboard() {
       commissionChangePercent: 0,
       bookingChangePercent: 0,
     };
-  }, [dashboardStats]);
+  }, [dashboardStats, selectedRange]);
 
   const rangeOptions = useMemo(() => [
     { value: "7days", label: "7 ngày" },
@@ -220,7 +239,7 @@ export default function AdminDashboard() {
       { label: "Hoa hồng tuần này", value: formatCurrency(dashboardStats.revenue.thisWeekCommission), note: "" },
       { label: "Giao dịch đã thanh toán", value: formatCurrency(stats.totalRevenue), note: "" },
     ];
-  }, [dashboardStats, stats]);
+  }, [dashboardStats, stats, selectedRange]);
 
   const activities = useMemo(() => {
     if (!adminData?.logs) return [];
@@ -269,144 +288,178 @@ export default function AdminDashboard() {
   return (
     <div className="admin-dashboard">
 
-      {/* Row 1: 2 Big Cards */}
-      <div className="admin-big-cards">
-        <div className="admin-big-card admin-big-card--blue">
-          <div className="admin-card-header">
-            <span className="admin-card-icon">📊</span>
-            <h2>DOANH THU NỀN TẢNG</h2>
-          </div>
-          <div className="admin-card-amount">{formatCurrency(stats.totalRevenue)}</div>
-          <p className="admin-card-label">Doanh thu tổng</p>
-          <div 
-            className="admin-card-trend" 
-            title={`Tuần này: ${formatCurrency(dashboardStats?.revenue?.thisWeekRevenue || 0)} vs Tuần trước: ${formatCurrency(dashboardStats?.revenue?.lastWeekRevenue || 0)}`}
-            style={{ cursor: "help" }}
-          >
-            📈 {trends.revenueChange} so với tuần trước
-          </div>
-          <div className="admin-card-chart">
-            <LineChart data={revenueSeries.length ? revenueSeries : [{ label: "--", amount: 0 }]} />
+      {/* SECTION 1: KPI Cards Row - 6 Cards */}
+      <div className="admin-section-1">
+        <div className="admin-stat-card-compact">
+          <div className="admin-stat-card-icon">📊</div>
+          <div className="admin-stat-card-content">
+            <p className="admin-stat-card-label">Doanh thu</p>
+            <div className="admin-stat-card-value">{formatCurrency(stats.totalRevenue)}</div>
+            <span className="admin-stat-card-meta">{trends.revenueChange}</span>
           </div>
         </div>
 
-        <div className="admin-big-card admin-big-card--green">
-          <div className="admin-card-header">
-            <span className="admin-card-icon">💰</span>
-            <h2>HOA HỒNG HỢP ĐƯỢC</h2>
-          </div>
-          <div className="admin-card-amount">{formatCurrency(stats.totalCommission)}</div>
-          <p className="admin-card-label">Hoa hồng admin</p>
-          <div 
-            className="admin-card-trend" 
-            title={`Tuần này: ${formatCurrency(dashboardStats?.revenue?.thisWeekCommission || 0)} vs Tuần trước: ${formatCurrency(dashboardStats?.revenue?.lastWeekCommission || 0)}`}
-            style={{ cursor: "help" }}
-          >
-            📈 {trends.commissionChange} so với tuần trước
-          </div>
-          <div className="admin-card-chart-icon">💵💵💵</div>
-        </div>
-      </div>
-
-      {/* Row 2: 4 KPI Cards */}
-      <div className="admin-kpi-grid">
-        <div className="admin-kpi-card admin-kpi-card--purple">
-          <div className="admin-kpi-icon">👥</div>
-          <h3>TỔNG QUẢN LÝ QUẬN</h3>
-          <div className="admin-kpi-value">{stats.totalOwners}</div>
-          <p className="admin-kpi-sub">Tài khoản managers</p>
-          <div className="admin-kpi-badge">{adminData?.owners?.filter((o) => o.status === "active").length || 0} hoạt động</div>
-        </div>
-
-        <div className="admin-kpi-card admin-kpi-card--blue">
-          <div className="admin-kpi-icon">🅿️</div>
-          <h3>TỔNG BÃI ĐỖ</h3>
-          <div className="admin-kpi-value">{stats.totalParkingLots}</div>
-          <p className="admin-kpi-sub">Bãi đang được quản lý</p>
-          <div className="admin-kpi-badge">{adminData?.parkingLots?.filter((p) => p.status === "pending").length || 0} chờ duyệt</div>
-        </div>
-
-        <div className="admin-kpi-card admin-kpi-card--teal">
-          <div className="admin-kpi-icon">⏰</div>
-          <h3>TỔNG CHẾ ĐỘ</h3>
-          <div className="admin-kpi-value">{stats.totalBookings}</div>
-          <p className="admin-kpi-sub">Đặt chỗ toàn hệ thống</p>
-          <div 
-            className="admin-kpi-badge"
-            title={`Tuần này: ${dashboardStats?.bookings?.thisWeekBookings || 0} vs Tuần trước: ${dashboardStats?.bookings?.lastWeekBookings || 0}`}
-            style={{ cursor: "help" }}
-          >
-            {trends.bookingChange} {adminData?.bookings?.filter((b) => b.status === "in_progress").length || 0} đang diễn ra
+        <div className="admin-stat-card-compact">
+          <div className="admin-stat-card-icon">💰</div>
+          <div className="admin-stat-card-content">
+            <p className="admin-stat-card-label">Hoa hồng</p>
+            <div className="admin-stat-card-value">{formatCurrency(stats.totalCommission)}</div>
+            <span className="admin-stat-card-meta">{trends.commissionChange}</span>
           </div>
         </div>
 
-        <div className="admin-kpi-card admin-kpi-card--gold">
-          <div className="admin-kpi-icon">✅</div>
-          <h3>TỔNG BOOKING</h3>
-          <div className="admin-kpi-value">{stats.totalBookings}</div>
-          <p className="admin-kpi-sub">Booking thành công</p>
-          <div className="admin-kpi-badge">{adminData?.bookings?.filter((b) => b.status === "completed").length || 0} hoàn tất</div>
+        <div className="admin-stat-card-compact">
+          <div className="admin-stat-card-icon">👥</div>
+          <div className="admin-stat-card-content">
+            <p className="admin-stat-card-label">QL Quận</p>
+            <div className="admin-stat-card-value">{stats.totalOwners}</div>
+            <span className="admin-stat-card-meta">{adminData?.owners?.filter((o) => o.status === "active").length || 0} hoạt động</span>
+          </div>
+        </div>
+
+        <div className="admin-stat-card-compact">
+          <div className="admin-stat-card-icon">🅿️</div>
+          <div className="admin-stat-card-content">
+            <p className="admin-stat-card-label">Tổng bãi</p>
+            <div className="admin-stat-card-value">{stats.totalParkingLots}</div>
+            <span className="admin-stat-card-meta">{adminData?.parkingLots?.filter((p) => p.status === "pending").length || 0} chờ duyệt</span>
+          </div>
+        </div>
+
+        <div className="admin-stat-card-compact">
+          <div className="admin-stat-card-icon">⏰</div>
+          <div className="admin-stat-card-content">
+            <p className="admin-stat-card-label">Chế độ</p>
+            <div className="admin-stat-card-value">{stats.totalBookings}</div>
+            <span className="admin-stat-card-meta">{trends.bookingChange}</span>
+          </div>
+        </div>
+
+        <div className="admin-stat-card-compact">
+          <div className="admin-stat-card-icon">✅</div>
+          <div className="admin-stat-card-content">
+            <p className="admin-stat-card-label">Booking</p>
+            <div className="admin-stat-card-value">{stats.totalBookings}</div>
+            <span className="admin-stat-card-meta">{adminData?.bookings?.filter((b) => b.status === "completed").length || 0} hoàn tất</span>
+          </div>
         </div>
       </div>
 
-      {/* Row 3: Doanh thu theo ngày + Người dùng online */}
-      <div className="owner-two-col">
-        <RevenueSystemChart
-          data={revenueSeries.length ? revenueSeries.map(item => ({
-            label: item.date || item.label,
-            revenue: item.revenue || item.amount || 0,
-            commission: item.commission || 0
-          })) : []}
-          totalRevenue={stats.totalRevenue}
-          growthLabel={trends.revenueChange}
-          summary={revenueSummary}
-          isEmpty={!revenueSeries.length}
-          subtitle="Thống kê doanh thu theo ngày"
-          rangeOptions={rangeOptions}
-          selectedRange={selectedRange}
-          onRangeChange={setSelectedRange}
-          dateFrom={dateFrom}
-          dateTo={dateTo}
-          onDateFromChange={setDateFrom}
-          onDateToChange={setDateTo}
-        />
-        <SectionCard title="Người dùng online" subtitle="Các loại người dùng đang hoạt động">
-          <div style={{display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "16px"}}>
-            <div style={{textAlign: "center", padding: "16px", borderRadius: "12px", background: "rgba(59, 130, 246, 0.08)"}}>
-              <div style={{fontSize: "24px", fontWeight: "800", color: "#0f172a"}}>{usersOnlineStats.users}</div>
-              <p style={{margin: "8px 0 0", fontSize: "13px", color: "#64748b", fontWeight: "600"}}>Người dùng</p>
-            </div>
-            <div style={{textAlign: "center", padding: "16px", borderRadius: "12px", background: "rgba(34, 197, 94, 0.08)"}}>
-              <div style={{fontSize: "24px", fontWeight: "800", color: "#0f172a"}}>{usersOnlineStats.owners}</div>
-              <p style={{margin: "8px 0 0", fontSize: "13px", color: "#64748b", fontWeight: "600"}}>Chủ bãi</p>
-            </div>
-            <div style={{textAlign: "center", padding: "16px", borderRadius: "12px", background: "rgba(249, 115, 22, 0.08)"}}>
-              <div style={{fontSize: "24px", fontWeight: "800", color: "#0f172a"}}>{usersOnlineStats.employees}</div>
-              <p style={{margin: "8px 0 0", fontSize: "13px", color: "#64748b", fontWeight: "600"}}>Nhân viên</p>
-            </div>
-          </div>
-        </SectionCard>
+      {/* SECTION 2: 70/30 Layout - Chart + Activities */}
+      <div className="admin-section-2">
+        {/* 70% - Revenue Chart */}
+        <div className="admin-section-2-left">
+          <RevenueSystemChart
+            data={revenueSeries.length ? revenueSeries.map(item => ({
+              label: item.date || item.label,
+              revenue: item.revenue || item.amount || 0,
+              commission: item.commission || 0
+            })) : []}
+            totalRevenue={stats.totalRevenue}
+            growthLabel={trends.revenueChange}
+            summary={revenueSummary}
+            isEmpty={!revenueSeries.length}
+            subtitle="Thống kê doanh thu theo ngày"
+            rangeOptions={rangeOptions}
+            selectedRange={selectedRange}
+            onRangeChange={setSelectedRange}
+            dateFrom={dateFrom}
+            dateTo={dateTo}
+            onDateFromChange={setDateFrom}
+            onDateToChange={setDateTo}
+          />
+        </div>
+
+        {/* 30% - Recent Activities */}
+        <div className="admin-section-2-right">
+          <RecentActivities activities={activities} />
+        </div>
       </div>
 
-      {/* Row 4: Hoạt động hệ thống */}
-      <RecentActivities activities={activities} />
-
-      {/* Row 5: Top chủ bãi */}
-      {topOwners.length > 0 && (
-        <SectionCard title="Top chủ bãi theo doanh thu" subtitle="5 chủ bãi có doanh thu cao nhất">
-          <div className="owner-activity-list">
-            {topOwners.map((owner, idx) => (
-              <article key={idx} className="owner-activity-item">
-                <div>
-                  <span className="owner-badge owner-badge--success">{idx + 1}</span>
-                  <h3>{owner.name}</h3>
+      {/* SECTION 3: 50/50 Layout - Top Owners + Online Users */}
+      <div className="admin-section-3">
+        {/* 50% - Top Owners */}
+        <div className="admin-section-3-left">
+          {topOwners.length > 0 && (() => {
+            const maxRevenue = Math.max(...topOwners.map((item) => item.gross), 1);
+            return (
+              <section className="admin-top-owners-card">
+                <div className="admin-section-header">
+                  <h2>Top chủ bãi theo doanh thu</h2>
+                  <p>5 chủ bãi có doanh thu cao nhất</p>
                 </div>
-                <strong>{formatCurrency(owner.gross)}</strong>
-              </article>
-            ))}
-          </div>
-        </SectionCard>
-      )}
+
+                <div className="admin-top-owners-list">
+                  {topOwners.map((owner, index) => {
+                    const percentage = Math.round((owner.gross / maxRevenue) * 100);
+                    // Bar color changes based on percentage: high% = dark cyan, low% = light cyan
+                    let barColor = "#0ea5e9"; // default
+                    if (percentage >= 75) {
+                      barColor = "#06b6d4"; // bright cyan for high revenue
+                    } else if (percentage >= 50) {
+                      barColor = "#22d3ee"; // lighter cyan
+                    } else if (percentage >= 25) {
+                      barColor = "#67e8f9"; // even lighter
+                    } else {
+                      barColor = "#a5f3fc"; // very light cyan for low revenue
+                    }
+                    return (
+                      <article key={owner.name} className="admin-top-owner-row">
+                        <span className="admin-top-owner-rank">{index + 1}</span>
+                        <div className="admin-top-owner-info">
+                          <strong>{owner.name}</strong>
+                          <div className="admin-top-owner-bar">
+                            <span style={{ width: `${percentage}%`, background: barColor }} />
+                          </div>
+                        </div>
+                        <span className="admin-top-owner-revenue">
+                          {formatCurrency(owner.gross)}
+                        </span>
+                      </article>
+                    );
+                  })}
+                </div>
+              </section>
+            );
+          })()}
+        </div>
+
+        {/* 50% - Online Users Stats */}
+        <div className="admin-section-3-right">
+          <section className="admin-online-users-card">
+            <div className="admin-section-header">
+              <h2>Người dùng online</h2>
+              <p>Thống kê người dùng hoạt động</p>
+            </div>
+
+            <div className="admin-online-users-grid">
+              <div className="admin-online-user-stat">
+                <div className="admin-online-user-icon">👤</div>
+                <div className="admin-online-user-content">
+                  <p className="admin-online-user-label">Người dùng</p>
+                  <div className="admin-online-user-value">{usersOnlineStats.users}</div>
+                </div>
+              </div>
+
+              <div className="admin-online-user-stat">
+                <div className="admin-online-user-icon">🏢</div>
+                <div className="admin-online-user-content">
+                  <p className="admin-online-user-label">Chủ bãi</p>
+                  <div className="admin-online-user-value">{usersOnlineStats.owners}</div>
+                </div>
+              </div>
+
+              <div className="admin-online-user-stat">
+                <div className="admin-online-user-icon">👨‍💼</div>
+                <div className="admin-online-user-content">
+                  <p className="admin-online-user-label">Nhân viên</p>
+                  <div className="admin-online-user-value">{usersOnlineStats.employees}</div>
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+      </div>
 
     </div>
   );

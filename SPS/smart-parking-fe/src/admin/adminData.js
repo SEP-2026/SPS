@@ -42,6 +42,10 @@ export const ADMIN_ROUTE_META = {
     title: "Nhật ký & Bảo mật",
     description: "Theo dõi log hệ thống, lịch sử đăng nhập và cấu hình bảo mật quản trị.",
   },
+  "/admin/notifications": {
+    title: "Thông báo hệ thống",
+    description: "Theo dõi cảnh báo bảo mật, lỗi và sự kiện quan trọng trên toàn hệ thống.",
+  },
 };
 
 export const createAdminSeedData = () => ({

@@ -1,5 +1,5 @@
 ﻿import { useCallback, useEffect, useMemo, useState } from "react";
-import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
+import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { ADMIN_NAV_ITEMS, ADMIN_ROUTE_META } from "./adminData";
 import { AdminIcon } from "./AdminIcons";
 import API from "../services/api";
@@ -11,12 +11,51 @@ import "../styles/sidebar-promo.css";
 
 export default function AdminLayout({ auth, onLogout }) {
   const location = useLocation();
+  const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [adminData, setAdminData] = useState(null);
   const [syncNote, setSyncNote] = useState("Đang tải dữ liệu admin");
   const [loading, setLoading] = useState(true);
   const meta = ADMIN_ROUTE_META[location.pathname] || ADMIN_ROUTE_META["/admin"];
-  const notificationsCount = adminData?.notifications?.length || adminData?.logs?.length || 0;
+  
+  const [notificationStorageVersion, setNotificationStorageVersion] = useState(0);
+
+  useEffect(() => {
+    const handleStorageChange = (event) => {
+      if (event.key === "admin_read_notifications") {
+        setNotificationStorageVersion((value) => value + 1);
+      }
+    };
+    const handleNotificationsUpdate = () => {
+      setNotificationStorageVersion((value) => value + 1);
+    };
+
+    window.addEventListener("storage", handleStorageChange);
+    window.addEventListener("admin_notifications_updated", handleNotificationsUpdate);
+    return () => {
+      window.removeEventListener("storage", handleStorageChange);
+      window.removeEventListener("admin_notifications_updated", handleNotificationsUpdate);
+    };
+  }, []);
+
+  // Filter only high-priority notifications for admin: errors, security issues, warnings
+  const highPriorityNotifications = useMemo(() => {
+    if (!adminData?.notifications) return [];
+    return adminData.notifications.filter((n) => {
+      const level = (n.level || "").toLowerCase();
+      return ["error", "critical", "security", "warning"].includes(level);
+    });
+  }, [adminData?.notifications]);
+
+  const unreadNotificationsCount = useMemo(() => {
+    try {
+      const stored = localStorage.getItem("admin_read_notifications");
+      const readIds = stored ? new Set(JSON.parse(stored)) : new Set();
+      return highPriorityNotifications.filter((n) => !readIds.has(n.id)).length;
+    } catch {
+      return highPriorityNotifications.length;
+    }
+  }, [highPriorityNotifications, notificationStorageVersion]);
   const adminDisplayName = auth?.user?.full_name || auth?.user?.name || auth?.user?.email || "Admin";
 
   const refreshAdminData = useCallback(async ({ silent = false } = {}) => {
@@ -224,10 +263,16 @@ export default function AdminLayout({ auth, onLogout }) {
             </div>
           </div>
           <div className="admin-topbar-tools">
-            <div className="admin-notify-pill">
+            <button
+              type="button"
+              className="admin-notify-pill"
+              onClick={() => navigate("/admin/notifications")}
+              aria-label="Thông báo hệ thống"
+              title="Thông báo quan trọng của admin"
+            >
               <AdminIcon name="bell" className="admin-menu-icon" />
-              <span>{notificationsCount}</span>
-            </div>
+              {unreadNotificationsCount > 0 ? <span>{unreadNotificationsCount}</span> : null}
+            </button>
             <div className="admin-role-pill">Trung tâm vận hành</div>
             <div className="admin-avatar">
               <div className="admin-avatar-mark">{adminDisplayName.slice(0, 1).toUpperCase()}</div>
