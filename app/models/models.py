@@ -374,3 +374,16 @@ class CashReconciliationItem(Base):
     slip = relationship("CashReconciliationSlip", back_populates="items")
     payment = relationship("Payment")
     booking = relationship("Booking")
+
+
+class AdminSecurityEvent(Base):
+    __tablename__ = "admin_security_events"
+
+    id = Column(Integer, primary_key=True, index=True)
+    event_key = Column(String(120), unique=True, index=True, nullable=False)
+    actor = Column(String(255), nullable=False, default="system")
+    action = Column(String(500), nullable=False)
+    target = Column(String(255), nullable=False)
+    target_type = Column(String(50), nullable=False, default="user")
+    level = Column(String(20), nullable=False, default="security")
+    created_at = Column(DateTime, nullable=False, index=True)

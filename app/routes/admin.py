@@ -10,7 +10,19 @@ from sqlalchemy.orm import Session
 from werkzeug.security import generate_password_hash
 
 from app.database import get_db
-from app.models.models import Booking, EmployeeActivity, OwnerParking, ParkingLot, ParkingPrice, ParkingSlot, Payment, RevokedToken, User
+from app.models.models import (
+    AdminSecurityEvent,
+    Booking,
+    EmployeeActivity,
+    OwnerParking,
+    ParkingLot,
+    ParkingPrice,
+    ParkingSlot,
+    Payment,
+    RevokedToken,
+    User,
+)
+from app.utils.timezone import isoformat_vn, vn_now
 from app.routes.auth import get_current_user
 from app.security.password_policy import ensure_strong_password
 from app.services.revenue_settings import ADMIN_RUNTIME_SETTINGS, get_commission_rate_percent, split_revenue
@@ -396,8 +408,8 @@ def _build_monthly_revenue_series(
     return revenue, commission, bookings_series
 
 
-def _evaluate_user_spam(users: list[User], bookings: list[Booking]) -> tuple[dict[int, dict], list[dict]]:
-    now = datetime.utcnow()
+def _evaluate_user_spam(db: Session, users: list[User], bookings: list[Booking]) -> tuple[dict[int, dict], list[dict]]:
+    now = vn_now()
     user_meta: dict[int, dict] = {}
     auto_lock_events: list[dict] = []
 
@@ -436,20 +448,95 @@ def _evaluate_user_spam(users: list[User], bookings: list[Booking]) -> tuple[dic
         if is_spam and user.is_active == 1 and (not user.status or user.status.lower() != "banned"):
             user.status = "banned"
             user.is_active = 0
-            auto_lock_events.append({
-                "id": f"spam-{user.id}-{int(now.timestamp())}",
-                "actor": "system",
-                "action": f"Tu dong khoa user {user.email} do hanh vi spam",
-                "target": user.email,
-                "targetType": "user",
-                "time": now.isoformat(),
-                "type": "security",
-            })
+            event_key = f"spam-lock-{user.id}-{int(now.timestamp())}"
+            auto_lock_events.append(
+                _record_security_event(
+                    db,
+                    event_key=event_key,
+                    actor="Hệ thống",
+                    action=f"Tài khoản {user.email} đang bị khóa (tự động do hành vi spam)",
+                    target=user.email,
+                    target_type="user",
+                    level="security",
+                    created_at=now,
+                )
+            )
 
     return user_meta, auto_lock_events
 
 
-def _build_activity_logs(bookings: list[Booking], users: list[User], parking_lots: list[ParkingLot]) -> list[dict]:
+def _record_security_event(
+    db: Session,
+    *,
+    event_key: str,
+    action: str,
+    target: str,
+    target_type: str = "user",
+    actor: str = "system",
+    level: str = "security",
+    created_at: datetime | None = None,
+) -> dict:
+    timestamp = created_at or vn_now()
+    existing = db.query(AdminSecurityEvent).filter(AdminSecurityEvent.event_key == event_key).first()
+    if existing:
+        return {
+            "id": f"security-{existing.id}",
+            "actor": existing.actor,
+            "action": existing.action,
+            "target": existing.target,
+            "targetType": existing.target_type,
+            "time": isoformat_vn(existing.created_at, fallback_now=True),
+            "type": existing.level,
+        }
+
+    row = AdminSecurityEvent(
+        event_key=event_key,
+        actor=actor,
+        action=action,
+        target=target,
+        target_type=target_type,
+        level=level,
+        created_at=timestamp,
+    )
+    db.add(row)
+    db.flush()
+    return {
+        "id": f"security-{row.id}",
+        "actor": actor,
+        "action": action,
+        "target": target,
+        "targetType": target_type,
+        "time": isoformat_vn(timestamp, fallback_now=True),
+        "type": level,
+    }
+
+
+def _fetch_security_events(db: Session, limit: int = 30) -> list[dict]:
+    rows = (
+        db.query(AdminSecurityEvent)
+        .order_by(AdminSecurityEvent.created_at.desc(), AdminSecurityEvent.id.desc())
+        .limit(limit)
+        .all()
+    )
+    return [
+        {
+            "id": f"security-{row.id}",
+            "actor": row.actor,
+            "action": row.action,
+            "target": row.target,
+            "targetType": row.target_type,
+            "time": isoformat_vn(row.created_at, fallback_now=True),
+            "type": row.level,
+        }
+        for row in rows
+    ]
+
+
+def _build_activity_logs(
+    db: Session,
+    bookings: list[Booking],
+    parking_lots: list[ParkingLot],
+) -> list[dict]:
     logs = []
     for booking in sorted(bookings, key=lambda item: item.created_at or datetime.min, reverse=True)[:6]:
         actor = booking.user.name if booking.user else "Hệ thống"
@@ -462,21 +549,9 @@ def _build_activity_logs(bookings: list[Booking], users: list[User], parking_lot
             "action": action_label,
             "target": booking_code,
             "targetType": "booking",
-            "time": booking.created_at.isoformat() if booking.created_at else datetime.utcnow().isoformat(),
+            "time": isoformat_vn(booking.created_at, fallback_now=True),
             "type": "booking",
         })
-
-    for user in users:
-        if _to_status_label(user) == "banned":
-            logs.append({
-                "id": f"user-{user.id}",
-                "actor": "Hệ thống",
-                "action": f"Tài khoản {user.email} đang bị khóa",
-                "target": user.email,
-                "targetType": "user",
-                "time": datetime.utcnow().isoformat(),
-                "type": "security",
-            })
 
     for lot in parking_lots:
         if _lot_status(lot) == "locked":
@@ -486,12 +561,13 @@ def _build_activity_logs(bookings: list[Booking], users: list[User], parking_lot
                 "action": f"Bãi {lot.name} đang bị khóa vận hành",
                 "target": lot.name,
                 "targetType": "parking_lot",
-                "time": datetime.utcnow().isoformat(),
+                "time": isoformat_vn(fallback_now=True),
                 "type": "warning",
             })
 
+    logs.extend(_fetch_security_events(db))
     logs.sort(key=lambda item: item.get("time") or "", reverse=True)
-    return logs[:12]
+    return logs[:20]
 
 
 def _build_login_history(db: Session) -> list[dict]:
@@ -772,7 +848,7 @@ def _serialize_bootstrap(db: Session) -> dict:
     bookings = db.query(Booking).all()
     slots = db.query(ParkingSlot).all()
     payments = db.query(Payment).all()
-    spam_meta, spam_events = _evaluate_user_spam(users, bookings)
+    spam_meta, spam_events = _evaluate_user_spam(db, users, bookings)
     if spam_events:
         db.commit()
         users = db.query(User).all()
@@ -920,8 +996,8 @@ def _serialize_bootstrap(db: Session) -> dict:
     prev_growth = growth_values[-2]["amount"] if len(growth_values) > 1 else 0
     current_growth = growth_values[-1]["amount"] if growth_values else 0
     growth_percent = int(round(((current_growth - prev_growth) / prev_growth) * 100)) if prev_growth > 0 else (100 if current_growth > 0 else 0)
-    activity_logs = _build_activity_logs(bookings, users, parking_lots)
-    combined_logs = (spam_events + activity_logs)[:12]
+    activity_logs = _build_activity_logs(db, bookings, parking_lots)
+    combined_logs = activity_logs[:20]
 
     notifications = [
         {
@@ -994,15 +1070,43 @@ def admin_bootstrap(
 def update_user_status(
     user_id: int,
     payload: UserStatusUpdateRequest,
-    _: User = Depends(require_admin),
+    admin: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
     user = db.query(User).filter(User.id == user_id, User.role == "user").first()
     if not user:
         raise HTTPException(status_code=404, detail="Không tìm thấy người dùng")
 
+    previous_status = _to_status_label(user)
     user.status = payload.status
     user.is_active = 1 if payload.status == "active" else 0
+
+    if previous_status != payload.status:
+        now = vn_now()
+        actor_name = admin.name or admin.email or "Admin"
+        if payload.status == "banned":
+            _record_security_event(
+                db,
+                event_key=f"user-lock-{user.id}-{int(now.timestamp())}",
+                actor=actor_name,
+                action=f"Tài khoản {user.email} đang bị khóa",
+                target=user.email,
+                target_type="user",
+                level="security",
+                created_at=now,
+            )
+        else:
+            _record_security_event(
+                db,
+                event_key=f"user-unlock-{user.id}-{int(now.timestamp())}",
+                actor=actor_name,
+                action=f"Tài khoản {user.email} đã được mở khóa",
+                target=user.email,
+                target_type="user",
+                level="success",
+                created_at=now,
+            )
+
     db.commit()
     return {"message": "Cập nhật trạng thái người dùng thành công"}
 
@@ -1142,15 +1246,43 @@ def update_owner(
 def update_owner_status(
     owner_id: int,
     payload: OwnerStatusUpdateRequest,
-    _: User = Depends(require_admin),
+    admin: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
     owner = db.query(User).filter(User.id == owner_id, User.role == "owner").first()
     if not owner:
         raise HTTPException(status_code=404, detail="Không tìm thấy chủ khu vực")
 
+    previous_status = "active" if _to_status_label(owner) == "active" else "suspended"
     owner.status = "active" if payload.status == "active" else "banned"
     owner.is_active = 1 if payload.status == "active" else 0
+
+    if previous_status != payload.status:
+        now = vn_now()
+        actor_name = admin.name or admin.email or "Admin"
+        if payload.status == "suspended":
+            _record_security_event(
+                db,
+                event_key=f"owner-lock-{owner.id}-{int(now.timestamp())}",
+                actor=actor_name,
+                action=f"Tài khoản chủ khu vực {owner.email} đang bị khóa",
+                target=owner.email,
+                target_type="owner",
+                level="security",
+                created_at=now,
+            )
+        else:
+            _record_security_event(
+                db,
+                event_key=f"owner-unlock-{owner.id}-{int(now.timestamp())}",
+                actor=actor_name,
+                action=f"Tài khoản chủ khu vực {owner.email} đã được mở khóa",
+                target=owner.email,
+                target_type="owner",
+                level="success",
+                created_at=now,
+            )
+
     db.commit()
     return {"message": "Cập nhật trạng thái chủ khu vực thành công"}
 

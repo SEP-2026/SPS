@@ -43,7 +43,7 @@ export default function AdminLayout({ auth, onLogout }) {
     if (!adminData?.notifications) return [];
     return adminData.notifications.filter((n) => {
       const level = (n.level || "").toLowerCase();
-      return ["error", "critical", "security", "warning"].includes(level);
+      return ["error", "critical", "security", "warning", "success"].includes(level);
     });
   }, [adminData?.notifications]);
 

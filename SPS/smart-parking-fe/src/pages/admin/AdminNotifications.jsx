@@ -3,11 +3,14 @@ import { useOutletContext } from "react-router-dom";
 import { formatDateTime } from "../../owner/OwnerUI";
 import "./AdminNotifications.css";
 
+const HIGH_PRIORITY_LEVELS = ["error", "critical", "security", "warning", "success"];
+
 const NOTIFICATION_TYPES = {
   security: { label: "Security", tone: "danger", icon: "security" },
   warning: { label: "Cảnh báo", tone: "warning", icon: "warning" },
   critical: { label: "Tới hạn", tone: "danger", icon: "critical" },
   error: { label: "Lỗi", tone: "error", icon: "error" },
+  success: { label: "Thành công", tone: "success", icon: "success" },
 };
 
 const STORAGE_KEY = "admin_read_notifications";
@@ -40,6 +43,12 @@ function NotificationTypeIcon({ name }) {
         <path d="m15 9-6 6M9 9l6 6" />
       </>
     ),
+    success: (
+      <>
+        <circle cx="12" cy="12" r="10" />
+        <path d="m9 12 2 2 4-4" />
+      </>
+    ),
   };
 
   return (
@@ -49,10 +58,22 @@ function NotificationTypeIcon({ name }) {
   );
 }
 
+function useVietnamClockTick(intervalMs = 30000) {
+  const [tick, setTick] = useState(() => Date.now());
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setTick(Date.now()), intervalMs);
+    return () => window.clearInterval(timer);
+  }, [intervalMs]);
+
+  return tick;
+}
+
 export default function AdminNotifications() {
   const { adminData } = useOutletContext() || {};
   const [filterType, setFilterType] = useState("all");
   const [sortBy, setSortBy] = useState("newest");
+  const vietnamClockTick = useVietnamClockTick();
 
   // Initialize from localStorage
   const [readNotificationIds, setReadNotificationIds] = useState(() => {
@@ -75,9 +96,9 @@ export default function AdminNotifications() {
     if (!adminData?.notifications) return [];
 
     return (adminData.notifications || [])
-      .filter(n => {
+      .filter((n) => {
         const level = (n.level || "").toLowerCase();
-        return ["error", "critical", "security", "warning"].includes(level);
+        return HIGH_PRIORITY_LEVELS.includes(level);
       })
       .map((notif) => ({
         id: notif.id,
@@ -88,7 +109,7 @@ export default function AdminNotifications() {
         priority: ["security", "critical", "error"].includes(notif.level) ? "high" : "normal",
       }))
       .sort((a, b) => new Date(b.time) - new Date(a.time));
-  }, [adminData?.notifications]);
+  }, [adminData?.notifications, vietnamClockTick]);
 
   // Add isRead property
   const notificationsWithReadStatus = useMemo(() => {
