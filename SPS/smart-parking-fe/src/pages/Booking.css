@@ -75,11 +75,100 @@
   border: none;
 }
 
+/* When sidebar is expanded (not collapsed) use dark text to match light panel designs */
+.booking-sidebar:not(.is-collapsed) {
+  color: var(--booking-text);
+  background: linear-gradient(180deg, rgba(248,250,252,0.9), rgba(255,255,255,0.96));
+  box-shadow: 0 8px 20px rgba(15,23,42,0.06);
+  border: 1px solid var(--booking-line);
+}
+
 .booking-sidebar.is-collapsed {
   width: 64px;
   padding: 12px 8px;
   overflow: visible;
 }
+
+/* Polished compact rail appearance to match Image 1 */
+.booking-sidebar.is-collapsed {
+  background: linear-gradient(180deg, #021428, #042034);
+  border-radius: 14px;
+  box-shadow: 0 14px 40px rgba(2,6,23,0.6);
+}
+
+.booking-brand-mark {
+  width: 44px;
+  height: 44px;
+  font-size: 16px;
+}
+
+.booking-sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.booking-sidebar-nav .nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: transparent;
+  color: rgba(255,255,255,0.92);
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  font-weight: 700;
+  transition: background 160ms ease, color 160ms ease, transform 120ms ease;
+}
+
+/* Darken nav text when expanded */
+.booking-sidebar:not(.is-collapsed) .booking-sidebar-nav .nav-item {
+  color: var(--booking-text);
+}
+
+.booking-sidebar:not(.is-collapsed) .booking-sidebar-nav .nav-item .nav-label {
+  color: var(--booking-text);
+}
+
+.booking-sidebar-nav .nav-item:hover,
+.booking-sidebar-nav .nav-item:focus {
+  background: rgba(255,255,255,0.03);
+  transform: translateX(2px);
+}
+
+/* Active indicator for selected item */
+.booking-sidebar-nav .nav-item.is-active {
+  background: linear-gradient(90deg, rgba(37,99,235,0.12), rgba(6,182,212,0.06));
+  color: var(--booking-primary);
+  box-shadow: 0 8px 18px rgba(21,109,255,0.06);
+}
+
+.booking-sidebar-nav .nav-item.is-active .nav-icon svg {
+  fill: var(--booking-primary);
+}
+
+.booking-sidebar.is-collapsed .booking-sidebar-nav .nav-item {
+  justify-content: center;
+  padding: 10px 6px;
+  border-radius: 10px;
+}
+
+.booking-sidebar.is-collapsed .booking-sidebar-nav .nav-item.is-active {
+  box-shadow: none;
+  background: transparent;
+}
+
+.booking-sidebar.is-collapsed .booking-sidebar-nav .nav-item::before {
+  content: '';
+  position: absolute;
+}
+
+.booking-sidebar-nav .nav-item { position: relative; }
+
+.booking-sidebar-nav .nav-item .nav-label { color: rgba(255,255,255,0.95); }
 
 .booking-brand-card {
   display: flex;
@@ -109,6 +198,13 @@
   background: rgba(255, 255, 255, 0.14);
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
   transition: transform 0.2s ease, background 0.2s ease;
+}
+
+/* Toggle appearance when sidebar is expanded */
+.booking-sidebar:not(.is-collapsed) .booking-sidebar-toggle {
+  color: var(--booking-text);
+  background: rgba(15,23,42,0.04);
+  box-shadow: none;
 }
 
 .booking-sidebar-toggle:hover {
@@ -214,15 +310,30 @@
   font-weight: 700;
 }
 .booking-sidebar-nav .nav-item.is-active {
-  background: linear-gradient(90deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02));
-  box-shadow: 0 8px 20px rgba(2,6,23,0.24);
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
+  color: #fff;
+  box-shadow: 0 12px 30px rgba(37, 99, 235, 0.12);
+  transform: translateX(2px);
+  border-radius: 16px;
+}
+
+.booking-sidebar-nav .nav-item.is-active .nav-label {
+  color: #fff;
 }
 
 .booking-sidebar-nav .nav-icon {
-  font-size: 20px;
   width: 28px;
+  height: 28px;
   display: inline-flex;
   justify-content: center;
+  align-items: center;
+}
+
+.booking-sidebar-nav .nav-icon svg {
+  width: 20px;
+  height: 20px;
+  display: block;
+  fill: currentColor;
 }
 
 .booking-sidebar-nav .nav-label {
@@ -315,6 +426,77 @@
   }
 }
 
+/* Mobile: hide sidebar and allow content to use full width; sidebar can be toggled later */
+@media (max-width: 880px) {
+  .booking-dashboard {
+    grid-template-columns: 1fr;
+  }
+
+  .booking-sidebar {
+    display: none;
+  }
+
+  .booking-topbar {
+    position: relative;
+    padding: 12px 14px;
+  }
+
+  .booking-hero {
+    padding: 18px 12px;
+  }
+}
+
+/* Very small screens: compact hero and font sizes */
+@media (max-width: 480px) {
+  .booking-hero-title {
+    font-size: 20px;
+  }
+
+  .booking-topbar-search-field {
+    min-width: 100%;
+  }
+}
+
+/* Drawer overlay styles (desktop only) */
+.booking-drawer-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(3, 10, 18, 0.4);
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-start;
+  z-index: 1200;
+  padding: 28px;
+}
+
+.booking-drawer {
+  width: 320px;
+  max-width: 92%;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 20px 50px rgba(2,6,23,0.2);
+  padding: 18px;
+  position: relative;
+}
+
+.booking-drawer-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  border: none;
+  background: transparent;
+  font-size: 22px;
+  cursor: pointer;
+}
+
+.booking-drawer-nav { display: grid; gap: 8px; }
+
+.booking-drawer-nav .nav-item { display:flex; align-items:center; gap:10px; padding:10px; border-radius:10px; }
+
+@media (max-width: 880px) {
+  .booking-drawer-overlay { display: none; }
+}
+
 .booking-wallet .btn-primary {
   padding: 10px 12px;
   border-radius: 12px;
@@ -340,18 +522,8 @@
   border: 1px solid rgba(15,23,42,0.04);
 }
 
-/* Sidebar footer/support */
-.booking-sidebar-footer {
-  margin-top: 18px;
-}
-.booking-sidebar-support p {
-  margin: 8px 0 0;
-  color: rgba(255,255,255,0.88);
-}
-.booking-sidebar-userfoot .booking-user-chip {
-  background: rgba(255,255,255,0.06);
-  border: none;
-}
+/* Sidebar footer/support - removed (UI cleaned) */
+/* Support card and user footer intentionally removed from UI; no styles required. */
 
 /* Parking badges */
 .parking-badge {

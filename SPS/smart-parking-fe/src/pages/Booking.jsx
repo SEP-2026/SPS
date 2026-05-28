@@ -1027,6 +1027,8 @@ export default function Booking() {
     return null;
   }
 
+  const [drawerOpen, setDrawerOpen] = useState(false);
+
   const summaryReady = Boolean(selectedLot && selectedSlotId && bookingWindow.ok);
 
   return (
@@ -1056,35 +1058,75 @@ export default function Booking() {
 
           <nav className="booking-sidebar-nav" role="navigation" aria-label="Main navigation">
             <button type="button" className="nav-item" title="Trang chủ" aria-label="Trang chủ" onFocus={() => setSidebarHover(true)} onBlur={() => setSidebarHover(false)} onClick={() => navigate('/')}>
-              <span className="nav-icon">🏠</span>
+              <span className="nav-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                  <path d="M3 10.5L12 4l9 6.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1V10.5z" />
+                </svg>
+              </span>
               <span className="nav-label">Trang chủ</span>
             </button>
-            <button type="button" className="nav-item" title="Tìm bãi xe" aria-label="Tìm bãi xe" onFocus={() => setSidebarHover(true)} onBlur={() => setSidebarHover(false)} onClick={() => navigate('/booking')}>
-              <span className="nav-icon">🔎</span>
+            <button type="button" className={`nav-item ${location.pathname === '/booking' ? 'is-active' : ''}`} title="Tìm bãi xe" aria-label="Tìm bãi xe" onFocus={() => setSidebarHover(true)} onBlur={() => setSidebarHover(false)} onClick={() => navigate('/booking')}>
+              <span className="nav-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                  <path d="M21 21l-4.35-4.35" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+                  <circle cx="11" cy="11" r="6" fill="none" stroke="currentColor" strokeWidth="2" />
+                </svg>
+              </span>
               <span className="nav-label">Tìm bãi xe</span>
             </button>
-            <button type="button" className="nav-item" title="Đặt chỗ của tôi" aria-label="Đặt chỗ của tôi" onFocus={() => setSidebarHover(true)} onBlur={() => setSidebarHover(false)} onClick={() => navigate('/my-bookings')}>
-              <span className="nav-icon">📥</span>
+            <button type="button" className={`nav-item ${location.pathname === '/my-bookings' ? 'is-active' : ''}`} title="Đặt chỗ của tôi" aria-label="Đặt chỗ của tôi" onFocus={() => setSidebarHover(true)} onBlur={() => setSidebarHover(false)} onClick={() => navigate('/my-bookings')}>
+              <span className="nav-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                  <path d="M12 3v12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+                  <path d="M21 15v4a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+                </svg>
+              </span>
               <span className="nav-label">Đặt chỗ của tôi</span>
             </button>
-            <button type="button" className="nav-item" title="Lịch sử đặt chỗ" aria-label="Lịch sử đặt chỗ" onFocus={() => setSidebarHover(true)} onBlur={() => setSidebarHover(false)} onClick={() => navigate('/booking-history')}>
-              <span className="nav-icon">📜</span>
+            <button type="button" className={`nav-item ${location.pathname === '/booking-history' ? 'is-active' : ''}`} title="Lịch sử đặt chỗ" aria-label="Lịch sử đặt chỗ" onFocus={() => setSidebarHover(true)} onBlur={() => setSidebarHover(false)} onClick={() => navigate('/booking-history')}>
+              <span className="nav-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                  <path d="M3 6h18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+                  <path d="M8 6v12a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2V6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+                </svg>
+              </span>
               <span className="nav-label">Lịch sử</span>
             </button>
-            <button type="button" className="nav-item" title="Ví của tôi" aria-label="Ví của tôi" onFocus={() => setSidebarHover(true)} onBlur={() => setSidebarHover(false)} onClick={() => navigate('/wallet')}>
-              <span className="nav-icon">💰</span>
+            <button type="button" className={`nav-item ${location.pathname === '/wallet' ? 'is-active' : ''}`} title="Ví của tôi" aria-label="Ví của tôi" onFocus={() => setSidebarHover(true)} onBlur={() => setSidebarHover(false)} onClick={() => navigate('/wallet')}>
+              <span className="nav-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                  <path d="M2 7h20v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V7z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+                  <circle cx="18" cy="12" r="1.2" fill="currentColor" />
+                </svg>
+              </span>
               <span className="nav-label">Ví</span>
             </button>
-            <button type="button" className="nav-item" title="Phương tiện" aria-label="Phương tiện" onFocus={() => setSidebarHover(true)} onBlur={() => setSidebarHover(false)} onClick={() => navigate('/vehicles')}>
-              <span className="nav-icon">🚗</span>
+            <button type="button" className={`nav-item ${location.pathname === '/vehicles' ? 'is-active' : ''}`} title="Phương tiện" aria-label="Phương tiện" onFocus={() => setSidebarHover(true)} onBlur={() => setSidebarHover(false)} onClick={() => navigate('/vehicles')}>
+              <span className="nav-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                  <path d="M3 13l1.5-4.5A2 2 0 0 1 6.4 7h11.2a2 2 0 0 1 1.9 1.5L21 13" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+                  <circle cx="7.5" cy="17" r="1.5" fill="currentColor" />
+                  <circle cx="17.5" cy="17" r="1.5" fill="currentColor" />
+                </svg>
+              </span>
               <span className="nav-label">Phương tiện</span>
             </button>
             <button type="button" className="nav-item" title="Thông báo" aria-label="Thông báo" onFocus={() => setSidebarHover(true)} onBlur={() => setSidebarHover(false)} onClick={() => navigate('/notifications')}>
-              <span className="nav-icon">🔔</span>
+              <span className="nav-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                  <path d="M15 17h5l-1.4-2.8A2 2 0 0 0 16.8 13H7.2a2 2 0 0 0-1.8 1.2L4 17h11z" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+                  <path d="M9 13V9a3 3 0 1 1 6 0v4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+                </svg>
+              </span>
               <span className="nav-label">Thông báo</span>
             </button>
             <button type="button" className="nav-item" title="Cài đặt" aria-label="Cài đặt" onFocus={() => setSidebarHover(true)} onBlur={() => setSidebarHover(false)} onClick={() => navigate('/settings')}>
-              <span className="nav-icon">⚙️</span>
+              <span className="nav-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                  <path d="M12 15.5A3.5 3.5 0 1 0 12 8.5a3.5 3.5 0 0 0 0 7z" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+                  <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.25a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06A2 2 0 1 1 2.3 17.88l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.25c.63 0 1.2-.37 1.51-1a1.65 1.65 0 0 0-.33-1.82l-.06-.06A2 2 0 1 1 6.88 2.3l.06.06c.45.45 1.06.65 1.66.52.55-.11 1.08-.17 1.6-.17H12c.52 0 1.05.06 1.6.17.6.13 1.21-.07 1.66-.52l.06-.06A2 2 0 1 1 19.4 4.6l-.06.06c-.45.45-.65 1.06-.52 1.66.11.55.17 1.08.17 1.6V12c0 .52-.06 1.05-.17 1.6-.13.6.07 1.21.52 1.66z" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+                </svg>
+              </span>
               <span className="nav-label">Cài đặt</span>
             </button>
           </nav>
@@ -1233,6 +1275,9 @@ export default function Booking() {
                   <span>{profile?.phone || auth?.user?.phone || "Dashboard booking"}</span>
                 </div>
               </div>
+              <button type="button" className="booking-icon-btn topbar-sidebar-toggle" onClick={() => setDrawerOpen(true)} aria-label="Mở menu">
+                ☰
+              </button>
             </div>
           </header>
 
@@ -1727,36 +1772,36 @@ export default function Booking() {
                 {(bookingError || error) && <p className="booking-error booking-error--card">{bookingError || error}</p>}
               </div>
             </aside>
-            <div className="booking-sidebar-footer" style={{marginTop:12}}>
-              <div className="booking-sidebar-support booking-sidebar-card">
-                <div className="booking-sidebar-card-head">
-                  <span>Hỗ trợ</span>
-                  <strong>Online</strong>
-                </div>
-                <p style={{marginTop:8}}>Gặp sự cố khi dùng dịch vụ? <a href="mailto:support@smartparking.example">support@smartparking.example</a></p>
-                <div style={{marginTop:10}}>
-                  <button type="button" className="btn-secondary">Mở ticket</button>
-                  <button type="button" className="btn-primary" style={{marginLeft:8}}>Chat ngay</button>
-                </div>
-              </div>
-
-              <div className="booking-sidebar-userfoot" style={{marginTop:12}}>
-                <div className="booking-user-chip">
-                  <div className="booking-user-avatar">{(profile?.name || auth?.user?.name || "SP").slice(0,1).toUpperCase()}</div>
-                  <div>
-                    <strong>{profile?.name || auth?.user?.name || "Smart Parking"}</strong>
-                    <span>{profile?.phone || auth?.user?.phone || "-"}</span>
-                  </div>
-                </div>
-                <div style={{marginTop:10, display:'flex', gap:8}}>
-                  <button type="button" className="btn-secondary">Tài khoản</button>
-                  <button type="button" className="btn-outline" onClick={handleLogout}>Đăng xuất</button>
-                </div>
-              </div>
-            </div>
+            {/* Support card and user footer removed per design request */}
           </div>
         </div>
       </div>
+
+      {drawerOpen && ReactDOM.createPortal(
+        <div className="booking-drawer-overlay" onClick={() => setDrawerOpen(false)}>
+          <aside className="booking-drawer" onClick={(e) => e.stopPropagation()}>
+            <button className="booking-drawer-close" onClick={() => setDrawerOpen(false)} aria-label="Đóng menu">×</button>
+            <nav className="booking-drawer-nav">
+              <button type="button" className={`nav-item ${location.pathname === '/' ? 'is-active' : ''}`} title="Trang chủ" aria-label="Trang chủ" onClick={() => { setDrawerOpen(false); navigate('/'); }}>
+                <span className="nav-icon" aria-hidden="true">🏠</span>
+                <span className="nav-label">Trang chủ</span>
+              </button>
+              <button type="button" className={`nav-item ${location.pathname === '/booking' ? 'is-active' : ''}`} title="Tìm bãi xe" aria-label="Tìm bãi xe" onClick={() => { setDrawerOpen(false); navigate('/booking'); }}>
+                <span className="nav-icon" aria-hidden="true">🔍</span>
+                <span className="nav-label">Tìm bãi xe</span>
+              </button>
+              <button type="button" className={`nav-item ${location.pathname === '/my-bookings' ? 'is-active' : ''}`} title="Đặt chỗ của tôi" aria-label="Đặt chỗ của tôi" onClick={() => { setDrawerOpen(false); navigate('/my-bookings'); }}>
+                <span className="nav-icon" aria-hidden="true">📌</span>
+                <span className="nav-label">Đặt chỗ của tôi</span>
+              </button>
+              <button type="button" className={`nav-item ${location.pathname === '/booking-history' ? 'is-active' : ''}`} title="Lịch sử đặt chỗ" aria-label="Lịch sử đặt chỗ" onClick={() => { setDrawerOpen(false); navigate('/booking-history'); }}>
+                <span className="nav-icon" aria-hidden="true">🕘</span>
+                <span className="nav-label">Lịch sử đặt chỗ</span>
+              </button>
+            </nav>
+          </aside>
+        </div>, document.body
+      )}
 
       {bookingResult && ReactDOM.createPortal(
         <div className="qr-modal-overlay" onClick={() => setBookingResult(null)}>

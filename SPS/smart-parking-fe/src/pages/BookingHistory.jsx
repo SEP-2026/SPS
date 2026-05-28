@@ -7,13 +7,12 @@ import useRealtimeRefresh from "../services/useRealtimeRefresh";
 import { formatDateTimeVN, parseVietnamDate, toDatetimeLocalValue, toVietnamIsoString } from "../utils/dateTime";
 import "./BookingHistory.css";
 
-const ACTIVE_STATUSES = ["pending", "booked", "checked_in", "checked_out", "completed"];
+const ACTIVE_STATUSES = ["pending", "booked", "checked_in", "checked_out", "completed", "cancelled"];
 const BOOKING_TABS = [
   { key: "all", label: "Tất cả" },
-  { key: "not_checked_in", label: "Chưa check in" },
-  { key: "checked_in", label: "Đang check in" },
-  { key: "checked_out", label: "Đã check out" },
-  { key: "review", label: "Đánh giá" },
+  { key: "upcoming", label: "Sắp tới" },
+  { key: "completed", label: "Đã hoàn thành" },
+  { key: "cancelled", label: "Đã hủy" },
 ];
 
 const SORT_OPTIONS = [
@@ -21,6 +20,13 @@ const SORT_OPTIONS = [
   { key: "date_asc", label: "Cũ nhất" },
   { key: "amount_desc", label: "Giá cao nhất" },
   { key: "amount_asc", label: "Giá thấp nhất" },
+];
+
+const HISTORY_NAV_ITEMS = [
+  { to: "/", label: "Trang chủ", icon: "🏠" },
+  { to: "/booking", label: "Tìm bãi xe", icon: "🔍" },
+  { to: "/my-bookings", label: "Đặt chỗ của tôi", icon: "📌" },
+  { to: "/booking-history", label: "Lịch sử đặt chỗ", icon: "🕘" },
 ];
 
 const fmtDateTime = (value) => {
@@ -77,7 +83,7 @@ const renderBookingStateDetails = (item) => {
     pending: {
       className: "is-pending",
       title: "Chờ thanh toán",
-      description: "Booking đã tạo nhưng chưa thanh toán giữ chỗ.",
+      description: "Đặt chỗ đã tạo nhưng chưa thanh toán giữ chỗ.",
       firstLabel: "Check-in dự kiến",
       firstValue: fmtDateTime(item.checkin_time),
       secondLabel: "Check-out dự kiến",
@@ -88,7 +94,7 @@ const renderBookingStateDetails = (item) => {
     booked: {
       className: "is-booked",
       title: "Chưa check-in",
-      description: "Booking đã được giữ chỗ, xe chưa vào bãi.",
+      description: "Đặt chỗ đã được giữ, xe chưa vào bãi.",
       firstLabel: "Check-in dự kiến",
       firstValue: fmtDateTime(item.checkin_time),
       secondLabel: "Check-out dự kiến",
@@ -167,6 +173,75 @@ const buildGoogleMapsLinks = (parking) => {
     directionsUrl: `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(destinationText)}`,
     mapUrl: `https://www.google.com/maps/search/${encodeURIComponent(searchText)}`,
   };
+};
+
+const hashParkingKey = (value) => {
+  const text = `${value || ""}`;
+  let hash = 0;
+
+  for (let index = 0; index < text.length; index += 1) {
+    hash = (hash * 31 + text.charCodeAt(index)) >>> 0;
+  }
+
+  return hash;
+};
+
+const buildParkingVirtualImage = (parking) => {
+  const id = parking?.id ? String(parking.id) : "";
+  const name = `${parking?.name || "Bãi xe"}`.trim();
+  const address = `${parking?.address || ""}`.trim();
+  const key = `${id}-${name}-${address}`;
+  const hue = hashParkingKey(key) % 360;
+  const accentHue = (hue + 38) % 360;
+  const secondaryHue = (hue + 190) % 360;
+  const svg = `
+    <svg width="640" height="360" viewBox="0 0 640 360" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="bg" x1="56" y1="24" x2="584" y2="336" gradientUnits="userSpaceOnUse">
+          <stop stop-color="hsl(${hue} 65% 28%)" />
+          <stop offset="1" stop-color="hsl(${secondaryHue} 60% 20%)" />
+        </linearGradient>
+        <linearGradient id="glow" x1="128" y1="88" x2="504" y2="280" gradientUnits="userSpaceOnUse">
+          <stop stop-color="hsl(${accentHue} 90% 68%)" />
+          <stop offset="1" stop-color="hsl(${secondaryHue} 85% 60%)" />
+        </linearGradient>
+      </defs>
+      <rect width="640" height="360" rx="28" fill="url(#bg)" />
+      <circle cx="548" cy="84" r="88" fill="hsl(${accentHue} 90% 62%)" fill-opacity="0.16" />
+      <circle cx="86" cy="282" r="114" fill="hsl(${secondaryHue} 80% 60%)" fill-opacity="0.1" />
+      <rect x="60" y="62" width="520" height="236" rx="26" fill="#08111F" fill-opacity="0.62" stroke="hsl(${accentHue} 90% 72%)" stroke-opacity="0.22" />
+      <rect x="104" y="106" width="214" height="144" rx="20" fill="url(#glow)" fill-opacity="0.14" stroke="hsl(${accentHue} 90% 70%)" stroke-opacity="0.42" />
+      <path d="M168 220V140C168 132.268 174.268 126 182 126H236C254.778 126 270 141.222 270 160C270 178.778 254.778 194 236 194H194V220H168ZM194 170H230C235.523 170 240 165.523 240 160C240 154.477 235.523 150 230 150H194V170Z" fill="#F8FAFC" />
+      <rect x="336" y="110" width="180" height="20" rx="10" fill="#F8FAFC" fill-opacity="0.76" />
+      <rect x="336" y="144" width="156" height="14" rx="7" fill="#E2E8F0" fill-opacity="0.34" />
+      <rect x="336" y="170" width="168" height="14" rx="7" fill="#E2E8F0" fill-opacity="0.34" />
+      <rect x="336" y="196" width="124" height="14" rx="7" fill="#E2E8F0" fill-opacity="0.34" />
+      <rect x="336" y="230" width="148" height="36" rx="18" fill="#09111F" stroke="hsl(${accentHue} 90% 70%)" stroke-opacity="0.52" />
+      <text x="410" y="253" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="14" fill="#F8FAFC">${name.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")}</text>
+      <text x="336" y="300" font-family="Arial, Helvetica, sans-serif" font-size="13" fill="#D6E4FF">${(address || `Parking ${id || ""}`).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")}</text>
+      <path d="M104 282H536" stroke="hsl(${accentHue} 90% 72%)" stroke-width="2" stroke-dasharray="8 10" opacity="0.45" />
+    </svg>
+  `;
+
+  return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
+};
+
+const getParkingImageSrc = (parking) => {
+  const name = `${parking?.name || ""}`.toLowerCase();
+
+  if (name.includes("quốc lộ 22") || name.includes("ql 22") || name.includes("quoc lo 22")) {
+    return "/assets/images/parking-qlo22.svg";
+  }
+
+  if (name.includes("trường chinh") || name.includes("truong chinh")) {
+    return "/assets/images/parking-truongchinh.svg";
+  }
+
+  if (parking?.thumbnail_url || parking?.image_url) {
+    return parking.thumbnail_url || parking.image_url;
+  }
+
+  return buildParkingVirtualImage(parking);
 };
 
 const timelineSegments = (oldStartRaw, oldEndRaw, newStartRaw, newEndRaw) => {
@@ -335,34 +410,23 @@ export default function BookingHistory() {
     return () => window.clearInterval(timer);
   }, [bookings]);
 
-  const activeBookings = useMemo(
-    () => bookings.filter((item) => ACTIVE_STATUSES.includes(item.status)),
-    [bookings],
-  );
-
   const filteredBookings = useMemo(() => {
-    let filtered = activeBookings;
-    
-    if (activeTab === "all") filtered = activeBookings;
-    else if (activeTab === "not_checked_in") {
-      filtered = activeBookings.filter((item) => ["pending", "booked"].includes(lifecycleStatus(item)));
-    } else if (activeTab === "checked_in") {
-      filtered = activeBookings.filter((item) => lifecycleStatus(item) === "checked_in");
-    } else if (activeTab === "checked_out" || activeTab === "review") {
-      filtered = activeBookings.filter((item) => {
-        const isCheckedOut = isCheckedOutBooking(item);
-        if (activeTab === "review") {
-          return isCheckedOut && Boolean(item.has_review);
-        }
-        return isCheckedOut;
-      });
+    let filtered = bookings || [];
+
+    if (activeTab === "all") filtered = bookings;
+    else if (activeTab === "upcoming") {
+      filtered = bookings.filter((item) => ["pending", "booked", "checked_in"].includes(lifecycleStatus(item)));
+    } else if (activeTab === "completed") {
+      filtered = bookings.filter((item) => isCheckedOutBooking(item) || ["completed", "checked_out"].includes(lifecycleStatus(item)));
+    } else if (activeTab === "cancelled") {
+      filtered = bookings.filter((item) => (String(item.status || "").toLowerCase() === "cancelled") || lifecycleStatus(item) === "cancelled");
     }
 
     // Search filter
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter((item) =>
-        String(item.booking_id).includes(query) ||
+        String(item.booking_id).toLowerCase().includes(query) ||
         (item.parking?.name || "").toLowerCase().includes(query) ||
         (item.parking?.address || "").toLowerCase().includes(query) ||
         (item.vehicle?.license_plate || "").toLowerCase().includes(query) ||
@@ -387,7 +451,7 @@ export default function BookingHistory() {
     });
 
     return filtered;
-  }, [activeBookings, activeTab, searchQuery, sortBy]);
+  }, [bookings, activeTab, searchQuery, sortBy]);
 
   const segments = useMemo(() => {
     if (!conflictingBooking || !requestedBooking) {
@@ -606,72 +670,100 @@ export default function BookingHistory() {
 
   return (
     <section className="page-wrap booking-history-wrap">
-      <div className="page-card booking-history-shell">
-        <header className="booking-history-head">
-          <h1 className="page-title">Lịch sử booking</h1>
-          <p className="page-subtitle">Theo dõi booking hiện tại và xử lý booking bị trùng nhanh chóng</p>
-        </header>
-
-        {notice && <p className="booking-history-notice">{notice}</p>}
-        {error && <p className="booking-history-error">{error}</p>}
-
-        {conflictContext && conflictingBooking && requestedBooking && (
-          <section className="conflict-panel">
-            <h2>Thông báo lỗi booking bị trùng</h2>
-            <p className="conflict-message">
-              {conflictContext.message || "Booking mới của bạn bị trùng với booking hiện tại."}
-            </p>
-
-            <div className="conflict-grid">
-              <article className="conflict-card old-booking">
-                <h3>Booking đang gây xung đột</h3>
-                <p><strong>Mã booking:</strong> #{conflictingBooking.booking_id}</p>
-                <p><strong>Bãi xe:</strong> {conflictingBooking.parking_name || "N/A"}</p>
-                <p><strong>Vị trí:</strong> {conflictingBooking.slot_code || conflictingBooking.slot_id}</p>
-                <p><strong>Biển số:</strong> {conflictingBooking.license_plate || "N/A"}</p>
-                <p><strong>Check-in:</strong> {fmtDateTime(conflictingBooking.checkin_time)}</p>
-                <p><strong>Check-out:</strong> {fmtDateTime(conflictingBooking.checkout_time)}</p>
-                <p>
-                  <strong>Trạng thái:</strong>{" "}
-                  <span className={`status-chip ${statusClass(conflictingBooking.status)}`}>
-                    {statusText(conflictingBooking.status)}
-                  </span>
-                </p>
-              </article>
-
-              <article className="conflict-card new-booking">
-                <h3>Booking mới bạn vừa nhập</h3>
-                <p><strong>Bãi xe mới:</strong> {requestedBooking.parking_name || requestedBooking.parking_id || "N/A"}</p>
-                <p><strong>Vị trí mới:</strong> {requestedBooking.slot_code || requestedBooking.slot_id || "N/A"}</p>
-                <p><strong>Check-in mới:</strong> {fmtDateTime(requestedBooking.checkin_time)}</p>
-                <p><strong>Check-out mới:</strong> {fmtDateTime(requestedBooking.checkout_time)}</p>
-                <p><strong>Giá dự kiến:</strong> {Number(requestedBooking.estimated_total_amount || 0).toLocaleString("vi-VN")}đ</p>
-              </article>
+      <div className="booking-history-dashboard">
+        <aside className="booking-history-sidebar" aria-label="Điều hướng lịch sử đặt chỗ">
+          <div className="booking-history-brand-card">
+            <div className="booking-history-brand-mark">SP</div>
+            <div className="booking-history-brand-copy">
+              <strong>Smart Parking</strong>
+              <span>Quản lý đặt chỗ</span>
             </div>
+          </div>
+          <nav className="booking-history-nav" aria-label="Điều hướng chính">
+            {HISTORY_NAV_ITEMS.map((item) => {
+              const isActive = location.pathname === item.to;
+              return (
+                <button
+                  key={item.to}
+                  type="button"
+                  className={`booking-history-nav-item ${isActive ? "is-active" : ""}`}
+                  aria-current={isActive ? "page" : undefined}
+                  onClick={() => navigate(item.to)}
+                >
+                  <span className="booking-history-nav-icon" aria-hidden="true">{item.icon}</span>
+                  <span className="booking-history-nav-label">{item.label}</span>
+                </button>
+              );
+            })}
+          </nav>
+        </aside>
 
-            {segments && (
-              <div className="timeline-box">
-                <h3>Lịch / timeline trực quan</h3>
-                <div className="timeline-track">
-                  <div className="timeline-bar timeline-old" style={{ left: `${segments.old.left}%`, width: `${segments.old.width}%` }} />
-                  <div className="timeline-bar timeline-new" style={{ left: `${segments.requested.left}%`, width: `${segments.requested.width}%` }} />
-                  {segments.overlap && (
-                    <div className="timeline-bar timeline-overlap" style={{ left: `${segments.overlap.left}%`, width: `${segments.overlap.width}%` }} />
-                  )}
-                </div>
-                <div className="timeline-legend">
-                  <span><i className="dot old" /> Xanh = booking cũ</span>
-                  <span><i className="dot overlap" /> Đỏ = phần bị trùng</span>
-                  <span><i className="dot requested" /> Vàng = booking mới</span>
-                </div>
+        <div className="page-card booking-history-shell">
+          <header className="booking-history-head">
+            <h1 className="page-title">Lịch sử đặt chỗ</h1>
+            <p className="page-subtitle">Theo dõi và quản lý các đơn đặt chỗ bãi xe của bạn</p>
+          </header>
+
+          {notice && <p className="booking-history-notice">{notice}</p>}
+          {error && <p className="booking-history-error">{error}</p>}
+
+          {conflictContext && conflictingBooking && requestedBooking && (
+            <section className="conflict-panel">
+              <h2>Thông báo lỗi booking bị trùng</h2>
+              <p className="conflict-message">
+                {conflictContext.message || "Booking mới của bạn bị trùng với booking hiện tại."}
+              </p>
+
+              <div className="conflict-grid">
+                <article className="conflict-card old-booking">
+                  <h3>Booking đang gây xung đột</h3>
+                  <p><strong>Mã booking:</strong> #{conflictingBooking.booking_id}</p>
+                  <p><strong>Bãi xe:</strong> {conflictingBooking.parking_name || "N/A"}</p>
+                  <p><strong>Vị trí:</strong> {conflictingBooking.slot_code || conflictingBooking.slot_id}</p>
+                  <p><strong>Biển số:</strong> {conflictingBooking.license_plate || "N/A"}</p>
+                  <p><strong>Check-in:</strong> {fmtDateTime(conflictingBooking.checkin_time)}</p>
+                  <p><strong>Check-out:</strong> {fmtDateTime(conflictingBooking.checkout_time)}</p>
+                  <p>
+                    <strong>Trạng thái:</strong>{" "}
+                    <span className={`status-chip ${statusClass(conflictingBooking.status)}`}>
+                      {statusText(conflictingBooking.status)}
+                    </span>
+                  </p>
+                </article>
+
+                <article className="conflict-card new-booking">
+                  <h3>Booking mới bạn vừa nhập</h3>
+                  <p><strong>Bãi xe mới:</strong> {requestedBooking.parking_name || requestedBooking.parking_id || "N/A"}</p>
+                  <p><strong>Vị trí mới:</strong> {requestedBooking.slot_code || requestedBooking.slot_id || "N/A"}</p>
+                  <p><strong>Check-in mới:</strong> {fmtDateTime(requestedBooking.checkin_time)}</p>
+                  <p><strong>Check-out mới:</strong> {fmtDateTime(requestedBooking.checkout_time)}</p>
+                  <p><strong>Giá dự kiến:</strong> {Number(requestedBooking.estimated_total_amount || 0).toLocaleString("vi-VN")}đ</p>
+                </article>
               </div>
-            )}
 
-            <div className="action-cards">
-              <button type="button" className="action-card" onClick={handleKeepOldBooking} disabled={processing}>
-                <strong>Giữ booking cũ</strong>
-                <span>Hủy thao tác đặt mới và quay về danh sách booking</span>
-              </button>
+              {segments && (
+                <div className="timeline-box">
+                  <h3>Lịch / timeline trực quan</h3>
+                  <div className="timeline-track">
+                    <div className="timeline-bar timeline-old" style={{ left: `${segments.old.left}%`, width: `${segments.old.width}%` }} />
+                    <div className="timeline-bar timeline-new" style={{ left: `${segments.requested.left}%`, width: `${segments.requested.width}%` }} />
+                    {segments.overlap && (
+                      <div className="timeline-bar timeline-overlap" style={{ left: `${segments.overlap.left}%`, width: `${segments.overlap.width}%` }} />
+                    )}
+                  </div>
+                  <div className="timeline-legend">
+                    <span><i className="dot old" /> Xanh = booking cũ</span>
+                    <span><i className="dot overlap" /> Đỏ = phần bị trùng</span>
+                    <span><i className="dot requested" /> Vàng = booking mới</span>
+                  </div>
+                </div>
+              )}
+
+              <div className="action-cards">
+                <button type="button" className="action-card" onClick={handleKeepOldBooking} disabled={processing}>
+                  <strong>Giữ booking cũ</strong>
+                  <span>Hủy thao tác đặt mới và quay về danh sách booking</span>
+                </button>
 
               <button
                 type="button"
@@ -689,18 +781,18 @@ export default function BookingHistory() {
               </button>
             </div>
 
-            {editMode && (
-              <div className="edit-panel">
-                <h3>Chỉnh sửa booking cũ</h3>
-                <div className="edit-grid">
-                  <label>
-                    Thời gian check-in
-                    <input
-                      type="datetime-local"
-                      value={editForm.checkin_time}
-                      onChange={(event) => setEditForm((prev) => ({ ...prev, checkin_time: event.target.value }))}
-                    />
-                  </label>
+              {editMode && (
+                <div className="edit-panel">
+                  <h3>Chỉnh sửa booking cũ</h3>
+                  <div className="edit-grid">
+                    <label>
+                      Thời gian check-in
+                      <input
+                        type="datetime-local"
+                        value={editForm.checkin_time}
+                        onChange={(event) => setEditForm((prev) => ({ ...prev, checkin_time: event.target.value }))}
+                      />
+                    </label>
                   <label>
                     Thời gian check-out
                     <input
@@ -727,60 +819,61 @@ export default function BookingHistory() {
                   {processing ? "Đang xử lý..." : "Lưu booking cũ và tạo lại booking mới"}
                 </button>
               </div>
-            )}
-          </section>
-        )}
+                )}
+            </section>
+          )}
 
-        <section className="history-panel">
-          <h2>Thông tin booking hiện tại</h2>
-          <div className="history-controls">
-            <div className="history-tabs" role="tablist" aria-label="Bộ lọc lịch sử booking">
-              {BOOKING_TABS.map((tab) => (
-                <button
-                  key={tab.key}
-                  type="button"
-                  role="tab"
-                  className={`history-tab ${activeTab === tab.key ? "active" : ""}`}
-                  aria-selected={activeTab === tab.key}
-                  onClick={() => setActiveTab(tab.key)}
-                >
-                  {tab.label}
-                </button>
-              ))}
-            </div>
-            <div className="history-filters">
-              <div className="search-box">
-                <svg className="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <circle cx="11" cy="11" r="8" />
-                  <path d="m21 21-4.35-4.35" />
-                </svg>
-                <input
-                  type="text"
-                  placeholder="Tìm kiếm..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="search-input"
-                />
-              </div>
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                className="sort-select"
-              >
-                {SORT_OPTIONS.map((option) => (
-                  <option key={option.key} value={option.key}>
-                    {option.label}
-                  </option>
+          <section className="history-panel">
+            <h2>Danh sách đặt chỗ</h2>
+            <div className="history-controls">
+              <div className="history-tabs" role="tablist" aria-label="Bộ lọc lịch sử booking">
+                {BOOKING_TABS.map((tab) => (
+                  <button
+                    key={tab.key}
+                    type="button"
+                    role="tab"
+                    className={`history-tab ${activeTab === tab.key ? "active" : ""}`}
+                    aria-selected={activeTab === tab.key}
+                    onClick={() => setActiveTab(tab.key)}
+                  >
+                    {tab.label}
+                  </button>
                 ))}
-              </select>
+              </div>
+              <div className="history-filters">
+                <div className="search-box">
+                  <svg className="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <circle cx="11" cy="11" r="8" />
+                    <path d="m21 21-4.35-4.35" />
+                  </svg>
+                  <input
+                    type="text"
+                    placeholder="Tìm kiếm theo bãi xe, địa điểm..."
+                    aria-label="Tìm kiếm đặt chỗ"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="search-input"
+                  />
+                </div>
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+                  className="sort-select"
+                >
+                  {SORT_OPTIONS.map((option) => (
+                    <option key={option.key} value={option.key}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
-          </div>
-          {loading ? (
-            <div className="loading-state">
-              <div className="loading-spinner" />
-              <p>Đang tải danh sách booking...</p>
-            </div>
-          ) : null}
+            {loading ? (
+              <div className="loading-state">
+                <div className="loading-spinner" />
+                <p>Đang tải danh sách đặt chỗ...</p>
+              </div>
+            ) : null}
 
           {!loading && filteredBookings.length === 0 && (
             <div className="empty-state">
@@ -791,22 +884,27 @@ export default function BookingHistory() {
                 <line x1="3" y1="10" x2="21" y2="10" />
               </svg>
               <p>
-                {activeTab === "review"
-                  ? "Chưa có booking nào đã được đánh giá."
+                {activeTab === "completed"
+                  ? "Chưa có đặt chỗ nào đã hoàn thành."
                   : searchQuery
-                  ? "Không tìm thấy booking nào phù hợp."
-                  : "Không có booking trong tab này."}
+                  ? "Không tìm thấy đặt chỗ phù hợp."
+                  : "Bạn chưa có lịch sử đặt chỗ nào."}
               </p>
+              <button type="button" className="empty-cta" onClick={() => navigate('/booking')}>Tìm bãi xe ngay</button>
             </div>
           )}
 
           <div className="history-list">
             {filteredBookings.map((item) => (
               <article key={item.booking_id} className="history-item">
+                <div className="history-thumb">
+                  <img src={getParkingImageSrc(item.parking)} alt={item.parking?.name || 'Bãi xe'} />
+                </div>
                 {(() => {
                   const { directionsUrl, mapUrl } = buildGoogleMapsLinks(item.parking);
                   return (
                     <>
+                <div className="history-body">
                 <header>
                   <div className="booking-header-left">
                     <h3>#{item.booking_id}</h3>
@@ -989,13 +1087,15 @@ export default function BookingHistory() {
                     )}
                   </div>
                 )}
+                </div>
                     </>
                   );
                 })()}
               </article>
             ))}
           </div>
-        </section>
+          </section>
+        </div>
       </div>
 
       {/* QR Code Modal */}

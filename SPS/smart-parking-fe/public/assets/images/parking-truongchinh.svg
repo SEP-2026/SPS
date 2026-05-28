@@ -1,0 +1,28 @@
+<svg width="640" height="360" viewBox="0 0 640 360" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">Bãi xe Trường Chinh</title>
+  <desc id="desc">Ảnh minh họa riêng cho bãi xe Trường Chinh</desc>
+  <defs>
+    <linearGradient id="bg" x1="42" y1="20" x2="598" y2="338" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#1F1147" />
+      <stop offset="1" stop-color="#5B2C83" />
+    </linearGradient>
+    <linearGradient id="accent" x1="124" y1="92" x2="500" y2="274" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F472B6" />
+      <stop offset="1" stop-color="#38BDF8" />
+    </linearGradient>
+  </defs>
+  <rect width="640" height="360" rx="28" fill="url(#bg)" />
+  <circle cx="550" cy="88" r="90" fill="#F472B6" fill-opacity="0.15" />
+  <circle cx="88" cy="274" r="122" fill="#38BDF8" fill-opacity="0.08" />
+  <rect x="60" y="62" width="520" height="236" rx="26" fill="#160B2A" fill-opacity="0.65" stroke="#C084FC" stroke-opacity="0.24" />
+  <rect x="104" y="106" width="214" height="144" rx="20" fill="url(#accent)" fill-opacity="0.13" stroke="#F472B6" stroke-opacity="0.38" />
+  <path d="M162 218V140C162 132.268 168.268 126 176 126H228C246.778 126 262 141.222 262 160C262 177.687 248.637 192.214 231.5 193.899V218H162ZM188 170H222C227.523 170 232 165.523 232 160C232 154.477 227.523 150 222 150H188V170Z" fill="#F8FAFC" />
+  <rect x="336" y="112" width="176" height="20" rx="10" fill="#F8FAFC" fill-opacity="0.74" />
+  <rect x="336" y="146" width="150" height="14" rx="7" fill="#E9D5FF" fill-opacity="0.32" />
+  <rect x="336" y="172" width="168" height="14" rx="7" fill="#E9D5FF" fill-opacity="0.32" />
+  <rect x="336" y="198" width="128" height="14" rx="7" fill="#E9D5FF" fill-opacity="0.32" />
+  <rect x="336" y="232" width="140" height="36" rx="18" fill="#160B2A" stroke="#F472B6" stroke-opacity="0.5" />
+  <text x="406" y="255" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="14" fill="#F8FAFC">Trường Chinh</text>
+  <text x="336" y="300" font-family="Arial, Helvetica, sans-serif" font-size="13" fill="#E9D5FF">Ảnh đại diện riêng cho bãi xe Trường Chinh</text>
+  <path d="M104 282H536" stroke="#F472B6" stroke-width="2" stroke-dasharray="8 10" opacity="0.45" />
+</svg>
