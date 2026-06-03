@@ -232,6 +232,31 @@
   align-items: center;
 }
 
+.history-date {
+  padding: 8px 10px;
+  border: 1px solid rgba(20,57,93,0.15);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.history-select {
+  padding: 8px 10px;
+  border: 1px solid rgba(20,57,93,0.15);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.btn-detail, .btn-rebook {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(20,57,93,0.08);
+  background: #fff;
+  cursor: pointer;
+}
+
 .search-box {
   position: relative;
   flex: 1;

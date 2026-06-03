@@ -519,6 +519,37 @@ export default function Booking() {
     }
   }, [location.state]);
 
+  // Prefill booking form when coming from "Đặt lại" (rebook)
+  useEffect(() => {
+    const rebook = location.state?.rebook;
+    if (!rebook) return;
+
+    const lot = normalizeSelectedLot(rebook.parking || rebook.parking_lot || {});
+    if (lot && lot.id) setSelectedLot(lot);
+
+    setBookingForm((prev) => {
+      const next = { ...prev };
+      try {
+        if (rebook.checkin_time) next.checkinTime = toDatetimeLocalValue(new Date(rebook.checkin_time));
+        if (rebook.checkout_time) next.checkoutTime = toDatetimeLocalValue(new Date(rebook.checkout_time));
+      } catch (e) {
+        // ignore
+      }
+      if (rebook.vehicle?.license_plate || rebook.vehicle?.plate) {
+        next.licensePlate = rebook.vehicle.license_plate || rebook.vehicle?.plate;
+      }
+      return next;
+    });
+
+    if (rebook.slot?.id || rebook.slot_id) {
+      setSelectedSlotId(String(rebook.slot?.id || rebook.slot_id));
+      setPrefilledSlotName(rebook.slot?.code || rebook.slot_code || "");
+    }
+
+    // remove rebook state so it doesn't reapply
+    try { navigate(location.pathname, { replace: true, state: {} }); } catch (e) {}
+  }, [location.state]);
+
   useEffect(() => {
     const quickSearch = location.state?.quickSearch;
     if (!quickSearch) {

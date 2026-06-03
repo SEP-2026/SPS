@@ -303,6 +303,7 @@ export default function BookingHistory() {
   const [notice, setNotice] = useState("");
   const [qrModal, setQrModal] = useState({ isOpen: false, bookingId: null, qrUrl: null, loading: false });
   const [reviewModal, setReviewModal] = useState({ isOpen: false, booking: null, review: null, loading: false, error: "" });
+  const [detailModal, setDetailModal] = useState({ isOpen: false, booking: null, loading: false, error: "" });
 
   const initialConflict = location.state?.conflictContext || null;
   const [conflictContext, setConflictContext] = useState(initialConflict);
@@ -312,6 +313,10 @@ export default function BookingHistory() {
   const [activeTab, setActiveTab] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState("date_desc");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+  const [parkingFilter, setParkingFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all");
 
   const conflictingBooking = conflictContext?.conflicting_booking || null;
   const requestedBooking = conflictContext?.requested_booking_view || conflictContext?.requested_booking || null;
@@ -434,6 +439,33 @@ export default function BookingHistory() {
       );
     }
 
+    // Date range filter (based on checkin_time)
+    if (dateFrom || dateTo) {
+      filtered = filtered.filter((item) => {
+        const t = new Date(item.checkin_time);
+        if (Number.isNaN(t.getTime())) return false;
+        if (dateFrom) {
+          const from = new Date(`${dateFrom}T00:00:00`);
+          if (t < from) return false;
+        }
+        if (dateTo) {
+          const to = new Date(`${dateTo}T23:59:59`);
+          if (t > to) return false;
+        }
+        return true;
+      });
+    }
+
+    // Parking filter
+    if (parkingFilter && parkingFilter !== "all") {
+      filtered = filtered.filter((item) => (item.parking?.name || "") === parkingFilter);
+    }
+
+    // Status filter
+    if (statusFilter && statusFilter !== "all") {
+      filtered = filtered.filter((item) => lifecycleStatus(item) === statusFilter || String(item.status || "").toLowerCase() === statusFilter);
+    }
+
     // Sort
     filtered = [...filtered].sort((a, b) => {
       switch (sortBy) {
@@ -464,6 +496,14 @@ export default function BookingHistory() {
       requestedBooking.checkout_time,
     );
   }, [conflictingBooking, requestedBooking]);
+
+  const parkingOptions = useMemo(() => {
+    const set = new Set();
+    (bookings || []).forEach((b) => {
+      if (b.parking?.name) set.add(b.parking.name);
+    });
+    return Array.from(set).sort((a, b) => a.localeCompare(b, "vi"));
+  }, [bookings]);
 
   const retryCreatePending = async () => {
     if (!pendingCreatePayload) {
@@ -511,6 +551,23 @@ export default function BookingHistory() {
 
   const closeQrModal = () => {
     setQrModal({ isOpen: false, bookingId: null, qrUrl: null, loading: false });
+  };
+
+  const handleViewDetail = async (bookingId) => {
+    setDetailModal({ isOpen: true, booking: null, loading: true, error: "" });
+    try {
+      const res = await API.get(`/booking/my/${bookingId}`);
+      setDetailModal({ isOpen: true, booking: res.data, loading: false, error: "" });
+    } catch (err) {
+      setDetailModal({ isOpen: true, booking: null, loading: false, error: err?.response?.data?.detail || "Không tải được chi tiết" });
+    }
+  };
+
+  const closeDetailModal = () => setDetailModal({ isOpen: false, booking: null, loading: false, error: "" });
+
+  const handleRebook = (item) => {
+    // Navigate to booking page with prefill state for convenience
+    navigate('/booking', { state: { rebook: item } });
   };
 
   const openReviewModal = async (booking, mode = "view") => {
@@ -855,6 +912,24 @@ export default function BookingHistory() {
                     className="search-input"
                   />
                 </div>
+
+                <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="history-date" />
+                <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="history-date" />
+
+                <select value={parkingFilter} onChange={(e) => setParkingFilter(e.target.value)} className="history-select">
+                  <option value="all">Tất cả bãi xe</option>
+                  {parkingOptions.map((p) => (
+                    <option key={p} value={p}>{p}</option>
+                  ))}
+                </select>
+
+                <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="history-select">
+                  <option value="all">Tất cả trạng thái</option>
+                  {ACTIVE_STATUSES.map((s) => (
+                    <option key={s} value={s}>{statusText(s)}</option>
+                  ))}
+                </select>
+
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value)}
@@ -1013,6 +1088,20 @@ export default function BookingHistory() {
                         <span>QR</span>
                       </button>
                     )}
+                    <button type="button" className="btn-detail" onClick={() => handleViewDetail(item.booking_id)}>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <circle cx="12" cy="12" r="3" />
+                        <path d="M2 12s4-8 10-8 10 8 10 8-4 8-10 8-10-8-10-8z" />
+                      </svg>
+                      <span>Xem chi tiết</span>
+                    </button>
+                    <button type="button" className="btn-rebook" onClick={() => handleRebook(item)}>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <polyline points="1 4 1 10 7 10" />
+                        <path d="M3 10a9 9 0 1 0 9-9" />
+                      </svg>
+                      <span>Đặt lại</span>
+                    </button>
                     {item.status === "pending" && (
                       <button
                         type="button"
@@ -1182,6 +1271,35 @@ export default function BookingHistory() {
           </div>
         </div>,
         document.body
+      )}
+      {detailModal.isOpen && ReactDOM.createPortal(
+        <div className="history-qr-modal-overlay" onClick={closeDetailModal}>
+          <div className="history-qr-modal" onClick={(e) => e.stopPropagation()}>
+            <button className="history-qr-modal-close" onClick={closeDetailModal}>×</button>
+            {detailModal.loading ? <p>Đang tải chi tiết booking...</p> : null}
+            {detailModal.error ? <p className="history-qr-modal-error">{detailModal.error}</p> : null}
+            {detailModal.booking ? (
+              <div className="booking-detail-modal">
+                <h2>Chi tiết booking #{detailModal.booking.booking_id}</h2>
+                <p><strong>Bãi xe:</strong> {detailModal.booking.parking?.name || "-"}</p>
+                <p><strong>Địa chỉ:</strong> {detailModal.booking.parking?.address || "-"}</p>
+                <p><strong>Vị trí:</strong> {detailModal.booking.slot?.code || detailModal.booking.slot?.id || "-"}</p>
+                <p><strong>Biển số:</strong> {detailModal.booking.vehicle?.license_plate || "-"}</p>
+                <p><strong>Thời gian:</strong> {fmtDateTime(detailModal.booking.checkin_time)} - {fmtDateTime(detailModal.booking.checkout_time)}</p>
+                <p><strong>Tổng tiền:</strong> {Number(detailModal.booking.total_amount || detailModal.booking.payment?.amount || 0).toLocaleString("vi-VN")}đ</p>
+                <p><strong>Trạng thái thanh toán:</strong> {detailModal.booking.payment?.payment_status || "N/A"}</p>
+                <div style={{ marginTop: 12 }}>
+                  <button className="history-qr-modal-download" onClick={() => handleViewQr(detailModal.booking.booking_id)}>Xem QR</button>
+                  <button className="history-qr-modal-download" onClick={() => handleRebook(detailModal.booking)}>Đặt lại</button>
+                  {(["pending", "booked"].includes(lifecycleStatus(detailModal.booking))) ? (
+                    <button className="history-qr-modal-download" onClick={() => handleCancelBooking(detailModal.booking.booking_id)}>Hủy</button>
+                  ) : null}
+                </div>
+              </div>
+            ) : null}
+          </div>
+        </div>,
+        document.body,
       )}
     </section>
   );
