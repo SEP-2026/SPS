@@ -4,6 +4,7 @@ import { ArrowLeft, CircleParking, Map, Settings, WalletCards } from "lucide-rea
 import { formatCurrency, StatusBadge } from "../../owner/OwnerUI";
 import { useOwnerContext } from "../../owner/useOwnerContext";
 import { formatTimeVN } from "../../utils/dateTime";
+import buildGoogleMapsLinks from "../../utils/maps";
 
 function buildSummary(slots) {
   const total = slots.length;
@@ -95,6 +96,20 @@ export default function OwnerParkingDetail() {
           <span>Bãi đỗ #{lot.id}</span>
           <h2>{lot.name}</h2>
           <p>{[lot.address, lot.district].filter(Boolean).join(" • ") || "Chưa có địa chỉ"}</p>
+          {(() => {
+            const { directionsUrl } = buildGoogleMapsLinks(lot);
+            if (!directionsUrl) return null;
+            return (
+              <a
+                className="owner-parking-directions"
+                href={directionsUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Chỉ đường
+              </a>
+            );
+          })()}
         </div>
         <strong>{summary.occupancy}% lấp đầy</strong>
       </section>

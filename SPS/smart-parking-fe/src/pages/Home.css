@@ -66,6 +66,11 @@
   transition: 0.25s ease;
   color: rgba(255,255,255,0.85);
   font-weight: 600;
+  background: transparent;
+  border: none;
+  width: 100%;
+  text-align: left;
+  font: inherit;
 }
 
 .sidebar-item:hover {
@@ -1040,6 +1045,38 @@
   color: white;
   font-weight: 700;
   cursor: pointer;
+}
+
+.map-preview-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.map-preview-directions {
+  display: inline-block;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: #eef7ff;
+  color: #0f5f9d;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.map-nearby-select {
+  background: transparent;
+  border: none;
+  padding: 0;
+  text-align: left;
+  width: 100%;
+}
+
+.map-nearby-directions {
+  margin-top: 8px;
+  display: inline-block;
+  color: #0f5f9d;
+  font-weight: 700;
+  text-decoration: none;
 }
 
 .leaflet-container {

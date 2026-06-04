@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
-import { Navigate, NavLink, Route, Routes, useLocation } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Navigate, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 
 import Booking from "./pages/Booking";
 import BookingHistory from "./pages/BookingHistory";
@@ -30,7 +30,6 @@ import Payment from "./pages/Payment";
 import PaymentSuccess from "./pages/PaymentSuccess";
 import Profile from "./pages/Profile";
 import Scan from "./pages/Scan";
-import NotificationBell from "./components/NotificationBell";
 import AdminLayout from "./admin/AdminLayout";
 import EmployeeLayout from "./employee/EmployeeLayout";
 import OwnerLayout from "./owner/OwnerLayout";
@@ -42,29 +41,121 @@ import EmployeeQrScanner from "./pages/employee/EmployeeQrScanner";
 import EmployeeRevenue from "./pages/employee/EmployeeRevenue";
 import EmployeeVehicles from "./pages/employee/EmployeeVehicles";
 import API, { clearAuth, getAuth, saveAuth } from "./services/api";
-import useRealtimeNotifications from "./services/useRealtimeNotifications";
-import { WalletProvider } from "./context/WalletContext";
+import { WalletProvider, useWallet } from "./context/WalletContext";
 import "./styles/layout.css";
 import "./styles/role-theme-sync.css";
 
-const NOTIFICATIONS_KEY = "smart-parking.notifications";
+const CURRENCY_FORMATTER = new Intl.NumberFormat("vi-VN", {
+  style: "currency",
+  currency: "VND",
+  maximumFractionDigits: 0,
+});
 
-function formatTimeLabel(value) {
-  try {
-    return new Date(value).toLocaleString("vi-VN");
-  } catch {
-    return "";
-  }
+const SHARED_NAV_ITEMS = [
+  { key: "home", label: "Trang chủ", icon: "🏠", to: "/" },
+  { key: "booking", label: "Tìm bãi xe", icon: "🔍", to: "/booking" },
+  { key: "payment-history", label: "Lịch sử thanh toán", icon: "🧾", to: "/payment-history" },
+  { key: "booking-history", label: "Lịch sử đặt chỗ", icon: "🕘", to: "/booking-history" },
+  { key: "wallet", label: "Ví của tôi", icon: "💳", to: "/profile#wallet", hash: "#wallet" },
+  { key: "vehicles", label: "Phương tiện", icon: "🚗", to: "/profile#vehicles", hash: "#vehicles" },
+  { key: "notifications", label: "Thông báo", icon: "🔔", to: "/profile#notifications", hash: "#notifications" },
+  { key: "support", label: "Hỗ trợ", icon: "🛟", to: "/profile#support", hash: "#support" },
+  { key: "settings", label: "Cài đặt", icon: "⚙️", to: "/profile#settings", hash: "#settings" },
+];
+
+function formatCurrency(value) {
+  return CURRENCY_FORMATTER.format(Number(value || 0));
 }
 
-function loadNotifications() {
-  try {
-    const raw = localStorage.getItem(NOTIFICATIONS_KEY);
-    const parsed = raw ? JSON.parse(raw) : [];
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
+function getSidebarItemActive(item, location) {
+  if (item.key === "wallet") {
+    return location.pathname === "/profile" && (location.hash === "#wallet" || location.hash === "");
   }
+
+  if (item.hash) {
+    return location.pathname === "/profile" && location.hash === item.hash;
+  }
+
+  return location.pathname === item.to;
+}
+
+function getSidebarAvatarLabel(displayName) {
+  return `${displayName || "SP"}`.trim().charAt(0).toUpperCase() || "SP";
+}
+
+function SharedSidebar({ auth, displayName, location }) {
+  const navigate = useNavigate();
+  const { wallet, loading: walletLoading, error: walletError } = useWallet();
+  const avatarLabel = getSidebarAvatarLabel(displayName);
+  const avatarSrc = auth?.user?.avatar_url || auth?.user?.avatar || auth?.user?.photo_url || "";
+
+  return (
+    <aside className="app-sidebar app-sidebar--shared">
+      <div className="app-sidebar-brand">
+        <div className="app-sidebar-brand-mark">SP</div>
+        <div className="app-sidebar-brand-copy">
+          <strong>Smart Parking</strong>
+          <span>Tìm chỗ đỗ xe dễ dàng</span>
+        </div>
+      </div>
+
+      <nav className="app-sidebar-links" aria-label="Điều hướng chính">
+        {SHARED_NAV_ITEMS.map((item) => {
+          const active = getSidebarItemActive(item, location);
+          return (
+            <button
+              key={item.key}
+              type="button"
+              className={`app-sidebar-link${active ? " active" : ""}`}
+              aria-current={active ? "page" : undefined}
+              onClick={() => navigate(item.to)}
+            >
+              <span className="app-sidebar-link-icon" aria-hidden="true">{item.icon}</span>
+              <span className="app-sidebar-link-label">{item.label}</span>
+            </button>
+          );
+        })}
+      </nav>
+
+      <div className="app-sidebar-wallet">
+        <div className="app-sidebar-wallet-head">
+          <span>Số dư ví</span>
+          <button
+            type="button"
+            className="app-sidebar-wallet-add"
+            aria-label="Mở ví của tôi"
+            onClick={() => navigate("/profile#wallet")}
+          >
+            +
+          </button>
+        </div>
+        {walletLoading ? (
+          <div className="app-sidebar-wallet-skeleton" aria-label="Đang tải số dư" />
+        ) : walletError ? (
+          <p className="app-sidebar-wallet-error">Không tải được số dư</p>
+        ) : (
+          <strong className="app-sidebar-wallet-value">{formatCurrency(wallet?.balance || 0)}</strong>
+        )}
+      </div>
+
+      <div className="app-sidebar-support-card">
+        <strong>Hỗ trợ 24/7</strong>
+        <p>Luôn sẵn sàng hỗ trợ bạn khi cần.</p>
+      </div>
+
+      <div className="app-sidebar-user">
+        {avatarSrc ? (
+          <img className="app-sidebar-avatar" src={avatarSrc} alt={displayName || "User avatar"} />
+        ) : (
+          <div className="app-sidebar-avatar app-sidebar-avatar--initial">{avatarLabel}</div>
+        )}
+        <div className="app-sidebar-user-copy">
+          <strong>{displayName || "User"}</strong>
+          <span>{auth?.user?.email || auth?.user?.username || ""}</span>
+        </div>
+      </div>
+    </aside>
+  );
 }
 
 function getDefaultRouteByRole(role) {
@@ -85,7 +176,7 @@ function App() {
         await API.post("/auth/logout");
       }
     } catch {
-      // Ignore logout API failures and still clear local auth.
+      // ignore
     } finally {
       clearAuth();
       setAuth(null);
@@ -98,20 +189,11 @@ function App() {
         setCheckingSession(false);
         return;
       }
-
       try {
         const me = await API.get("/auth/me");
         setAuth((prev) => {
-          if (!prev) {
-            return prev;
-          }
-          const nextAuth = {
-            ...prev,
-            user: {
-              ...prev.user,
-              ...me.data,
-            },
-          };
+          if (!prev) return prev;
+          const nextAuth = { ...prev, user: { ...prev.user, ...me.data } };
           return saveAuth(nextAuth) || nextAuth;
         });
       } catch {
@@ -121,13 +203,10 @@ function App() {
         setCheckingSession(false);
       }
     };
-
     verifySession();
   }, [auth?.token, auth?.user?.role]);
 
-  if (checkingSession) {
-    return null;
-  }
+  if (checkingSession) return null;
 
   return (
     <WalletProvider authToken={auth?.token} enabled={role === "user"}>
@@ -138,213 +217,74 @@ function App() {
 
 function AppBody({ auth, role, onLogin, onLogout }) {
   const location = useLocation();
-  const [notifications, setNotifications] = useState(() => loadNotifications());
-  const [notificationsOpen, setNotificationsOpen] = useState(false);
   const isOwnerWorkspace = location.pathname.startsWith("/owner");
   const isAdminWorkspace = location.pathname.startsWith("/admin");
   const isEmployeeWorkspace = location.pathname.startsWith("/employee");
   const isOwnerScanPage = location.pathname.startsWith("/scan");
   const displayName = auth?.user?.full_name || auth?.user?.name || auth?.user?.username || auth?.user?.email || "";
-
-  useEffect(() => {
-    localStorage.setItem(NOTIFICATIONS_KEY, JSON.stringify(notifications));
-  }, [notifications]);
-
-  useRealtimeNotifications(
-    (payload) => {
-      if (payload?.type !== "booking_no_show") {
-        return;
-      }
-
-      setNotifications((current) => [
-        {
-          id: `${payload.booking_id || "booking"}-${payload.ts || Date.now()}`,
-          title: "Booking quá hạn",
-          message: payload.message || "Booking của bạn đã bị hủy do quá thời gian check-in.",
-          timeLabel: formatTimeLabel(payload.ts || Date.now()),
-          read: false,
-        },
-        ...current,
-      ].slice(0, 20));
-    },
-    { enabled: Boolean(auth?.token) },
-  );
-
-  const toggleNotifications = () => {
-    setNotificationsOpen((current) => !current);
-    setNotifications((current) => current.map((item) => (item.read ? item : { ...item, read: true })));
-  };
-
-  const clearNotifications = () => {
-    setNotifications([]);
-    setNotificationsOpen(false);
-  };
-
-  const removeNotification = (notificationId) => {
-    setNotifications((current) => current.filter((item) => item.id !== notificationId));
-  };
-
-
-  const links = useMemo(() => {
-    if (!auth) {
-      return [];
-    }
-
-    const roleLinks = {
-      user: [
-        { to: "/booking", label: "Đặt chỗ" },
-        { to: "/booking-history", label: "Lịch sử booking" },
-        { to: "/payment-history", label: "Lịch sử thanh toán" },
-        { to: "/profile", label: "Hồ sơ" },
-      ],
-      owner: [
-        { to: "/profile", label: "Hồ sơ" },
-        { to: "/scan", label: "Quét QR vào/ra" },
-        { to: "/owner/reviews", label: "Đánh giá & phản hồi" },
-        { to: "/owner/settings", label: "Tạo nhân viên" },
-      ],
-      employee: [
-        { to: "/employee", label: "Dashboard Employee" },
-      ],
-      admin: [
-        { to: "/admin", label: "Bảng Admin" },
-        { to: "/booking", label: "Đặt chỗ" },
-        { to: "/booking-history", label: "Lịch sử booking" },
-        { to: "/payment-history", label: "Lịch sử thanh toán" },
-        { to: "/profile", label: "Hồ sơ" },
-        { to: "/scan", label: "Quét QR vào/ra" },
-      ],
-    };
-
-    return [{ to: "/", label: "Trang bãi xe" }, ...(roleLinks[role] || [])];
-  }, [auth, role]);
-
-  const userInfo = displayName;
-
   const defaultAuthedRoute = getDefaultRouteByRole(role);
+  const showSharedSidebar = Boolean(auth) && role === "user";
+
+  const shellClass = `app-shell${isOwnerWorkspace || isOwnerScanPage ? " app-shell--owner" : ""}${isAdminWorkspace ? " app-shell--admin" : ""}${isEmployeeWorkspace ? " app-shell--employee" : ""}${showSharedSidebar ? " app-shell--shared" : ""}`;
 
   return (
-    <div className={`app-shell${isOwnerWorkspace || isOwnerScanPage ? " app-shell--owner" : ""}${isAdminWorkspace ? " app-shell--admin" : ""}${isEmployeeWorkspace ? " app-shell--employee" : ""}`}>
-      {auth && !isOwnerWorkspace && !isAdminWorkspace && !isEmployeeWorkspace && !isOwnerScanPage ? (
-        <nav className="app-nav">
-          <div className="app-nav-links">
-            {links.map((link) => (
-              <NavLink
-                key={link.to}
-                to={link.to}
-                end
-                className={({ isActive }) => `app-link${isActive ? " active" : ""}`}
-              >
-                {link.label}
-              </NavLink>
-            ))}
-          </div>
-          <div className="app-nav-user">
-            <NotificationBell
-              notifications={notifications}
-              open={notificationsOpen}
-              onToggle={toggleNotifications}
-              onClear={clearNotifications}
-              onRemove={removeNotification}
-            />
-            <span>
-              {userInfo}
-            </span>
-            <button type="button" className="app-logout-btn" onClick={onLogout}>
-              Đăng xuất
-            </button>
-          </div>
-        </nav>
-      ) : null}
+    <div className={shellClass}>
+      <div className={`app-layout${showSharedSidebar ? " app-layout--shared" : ""}`}>
+        {showSharedSidebar ? <SharedSidebar auth={auth} displayName={displayName} location={location} /> : null}
+        <main className="page-transition app-content">
+          <Routes location={location}>
+            <Route path="/login" element={auth ? <Navigate to={defaultAuthedRoute} replace /> : <Login onLogin={onLogin} />} />
+            <Route path="/" element={auth ? (role === "user" ? <Home role={role} /> : <Navigate to={defaultAuthedRoute} replace />) : <Navigate to="/login" replace />} />
+            <Route path="/booking" element={auth ? <Booking /> : <Navigate to="/login" replace />} />
+            <Route path="/booking-history" element={auth ? <BookingHistory /> : <Navigate to="/login" replace />} />
+            <Route path="/payment-history" element={auth ? <PaymentHistory /> : <Navigate to="/login" replace />} />
+            <Route path="/profile" element={auth && role !== "employee" ? <Profile onAuthUpdated={onLogin} /> : <Navigate to={auth && role === "employee" ? "/employee/profile" : "/login"} replace />} />
+            <Route path="/payment/:bookingId" element={auth ? <Payment /> : <Navigate to="/login" replace />} />
+            <Route path="/payment/success/:bookingId" element={auth ? <PaymentSuccess /> : <Navigate to="/login" replace />} />
+            <Route path="/scan" element={auth && (role === "owner" || role === "admin") ? <Scan /> : <Navigate to="/" replace />} />
+            <Route path="/owner-review-replies" element={<Navigate to={auth && role === "owner" ? "/owner/reviews" : auth ? "/" : "/login"} replace />} />
 
-      <div className="page-transition">
-        <Routes location={location}>
-        <Route
-          path="/login"
-          element={auth ? <Navigate to={defaultAuthedRoute} replace /> : <Login onLogin={onLogin} />}
-        />
-        <Route
-          path="/"
-          element={auth ? (role === "user" ? <Home role={role} /> : <Navigate to={defaultAuthedRoute} replace />) : <Navigate to="/login" replace />}
-        />
-        <Route
-          path="/booking"
-          element={auth ? <Booking /> : <Navigate to="/login" replace />}
-        />
-        <Route
-          path="/booking-history"
-          element={auth ? <BookingHistory /> : <Navigate to="/login" replace />}
-        />
-        <Route
-          path="/payment-history"
-          element={auth ? <PaymentHistory /> : <Navigate to="/login" replace />}
-        />
-        <Route
-          path="/profile"
-          element={auth && role !== "employee" ? <Profile onAuthUpdated={onLogin} /> : <Navigate to={auth && role === "employee" ? "/employee/profile" : "/login"} replace />}
-        />
-        <Route
-          path="/payment/:bookingId"
-          element={auth ? <Payment /> : <Navigate to="/login" replace />}
-        />
-        <Route
-          path="/payment/success/:bookingId"
-          element={auth ? <PaymentSuccess /> : <Navigate to="/login" replace />}
-        />
-        <Route
-          path="/scan"
-          element={auth && (role === "owner" || role === "admin") ? <Scan /> : <Navigate to="/" replace />}
-        />
-        <Route
-          path="/owner-review-replies"
-          element={<Navigate to={auth && role === "owner" ? "/owner/reviews" : auth ? "/" : "/login"} replace />}
-        />
-        <Route
-          path="/employee"
-          element={auth && role === "employee" ? <EmployeeLayout auth={auth} onLogout={onLogout} /> : <Navigate to={auth ? "/" : "/login"} replace />}
-        >
-          <Route index element={<EmployeeDashboard />} />
-          <Route path="booking-assist" element={<EmployeeBookingAssist />} />
-          <Route path="scanner" element={<EmployeeQrScanner />} />
-          <Route path="vehicles" element={<EmployeeVehicles />} />
-          <Route path="revenue" element={<EmployeeRevenue />} />
-          <Route path="history" element={<EmployeeHistory />} />
-          <Route path="profile" element={<EmployeeProfile />} />
-        </Route>
-        <Route
-          path="/owner"
-          element={auth && role === "owner" ? <OwnerLayout auth={auth} onLogout={onLogout} /> : <Navigate to={auth && role === "admin" ? "/admin" : "/"} replace />}
-        >
-          <Route index element={<OwnerOverview />} />
-          <Route path="parking" element={<OwnerParking />} />
-          <Route path="parking/:parkingId" element={<OwnerParkingDetail />} />
-          <Route path="bookings" element={<OwnerBookings />} />
-          <Route path="customers" element={<OwnerCustomers />} />
-          <Route path="parking-map" element={<OwnerParkingMap />} />
-          <Route path="activity" element={<OwnerActivityHistory />} />
-          <Route path="revenue" element={<OwnerRevenue />} />
-          <Route path="reviews" element={<OwnerReviews />} />
-          <Route path="review-replies" element={<Navigate to="/owner/reviews" replace />} />
-          <Route path="notifications" element={<OwnerNotifications />} />
-          <Route path="settings" element={<OwnerSettings />} />
-          <Route path="parking-accounts" element={<OwnerEmployees />} />
-          <Route path="employees" element={<OwnerEmployees />} />
-        </Route>
-        <Route
-          path="/admin"
-          element={auth && role === "admin" ? <AdminLayout auth={auth} onLogout={onLogout} /> : <Navigate to="/" replace />}
-        >
-          <Route index element={<AdminDashboard />} />
-          <Route path="users" element={<UserManagement />} />
-          <Route path="owners" element={<OwnerManagement />} />
-          <Route path="parking-lots" element={<ParkingManagement />} />
-          <Route path="bookings" element={<BookingManagement />} />
-          <Route path="revenue" element={<RevenuePage />} />
-          <Route path="analytics" element={<AdminAnalytics />} />
-          <Route path="settings" element={<AdminSettings />} />
-        </Route>
-        <Route path="*" element={<Navigate to={auth ? defaultAuthedRoute : "/login"} replace />} />
-      </Routes>
+            <Route path="/employee" element={auth && role === "employee" ? <EmployeeLayout auth={auth} onLogout={onLogout} /> : <Navigate to={auth ? "/" : "/login"} replace />}>
+              <Route index element={<EmployeeDashboard />} />
+              <Route path="booking-assist" element={<EmployeeBookingAssist />} />
+              <Route path="scanner" element={<EmployeeQrScanner />} />
+              <Route path="vehicles" element={<EmployeeVehicles />} />
+              <Route path="revenue" element={<EmployeeRevenue />} />
+              <Route path="history" element={<EmployeeHistory />} />
+              <Route path="profile" element={<EmployeeProfile />} />
+            </Route>
+
+            <Route path="/owner" element={auth && role === "owner" ? <OwnerLayout auth={auth} onLogout={onLogout} /> : <Navigate to={auth && role === "admin" ? "/admin" : "/"} replace />}>
+              <Route index element={<OwnerOverview />} />
+              <Route path="parking" element={<OwnerParking />} />
+              <Route path="parking/:parkingId" element={<OwnerParkingDetail />} />
+              <Route path="bookings" element={<OwnerBookings />} />
+              <Route path="customers" element={<OwnerCustomers />} />
+              <Route path="parking-map" element={<OwnerParkingMap />} />
+              <Route path="activity" element={<OwnerActivityHistory />} />
+              <Route path="revenue" element={<OwnerRevenue />} />
+              <Route path="reviews" element={<OwnerReviews />} />
+              <Route path="review-replies" element={<Navigate to="/owner/reviews" replace />} />
+              <Route path="notifications" element={<OwnerNotifications />} />
+              <Route path="settings" element={<OwnerSettings />} />
+              <Route path="parking-accounts" element={<OwnerEmployees />} />
+              <Route path="employees" element={<OwnerEmployees />} />
+            </Route>
+
+            <Route path="/admin" element={auth && role === "admin" ? <AdminLayout auth={auth} onLogout={onLogout} /> : <Navigate to="/" replace />}>
+              <Route index element={<AdminDashboard />} />
+              <Route path="users" element={<UserManagement />} />
+              <Route path="owners" element={<OwnerManagement />} />
+              <Route path="parking-lots" element={<ParkingManagement />} />
+              <Route path="bookings" element={<BookingManagement />} />
+              <Route path="revenue" element={<RevenuePage />} />
+              <Route path="analytics" element={<AdminAnalytics />} />
+              <Route path="settings" element={<AdminSettings />} />
+            </Route>
+
+            <Route path="*" element={<Navigate to={auth ? defaultAuthedRoute : "/login"} replace />} />
+          </Routes>
+        </main>
       </div>
     </div>
   );

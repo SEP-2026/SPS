@@ -3,6 +3,7 @@ import { CircleMarker, MapContainer, Marker, Popup, TileLayer, useMap } from "re
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import "./NearbyParkingMap.css";
+import buildGoogleMapsLinks from "../utils/maps";
 import { isValidCoordinate, normalizeParkingSearchLot } from "../services/parkingSearch";
 
 function getAvailabilityTone(percent) {
@@ -160,6 +161,8 @@ function NearbyParkingMap({ searchMeta, nearbyLots, onSelectLot, selectedLotId }
             Math.round((Number(lot.available_slots || 0) / Math.max(1, Number(lot.total_slots || 1))) * 100),
           );
 
+          const { directionsUrl } = buildGoogleMapsLinks(lot);
+
           return (
             <Marker
               key={lot.id}
@@ -177,13 +180,23 @@ function NearbyParkingMap({ searchMeta, nearbyLots, onSelectLot, selectedLotId }
                   <p>{lot.address}</p>
                   <p>Khoảng cách: {lot.distance} km</p>
                   <p>Giá: {Number(lot.price_per_hour).toLocaleString("vi-VN")}đ/giờ</p>
-                  <button
-                    type="button"
-                    className="btn-primary nearby-map-popup-btn"
-                    onClick={() => onSelectLot?.(lot)}
-                  >
-                    Chọn bãi này
-                  </button>
+                  <div className="nearby-map-popup-actions">
+                    <button
+                      type="button"
+                      className="btn-primary nearby-map-popup-btn"
+                      onClick={() => onSelectLot?.(lot)}
+                    >
+                      Chọn bãi này
+                    </button>
+                    <a
+                      className="nearby-map-popup-directions"
+                      href={directionsUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      Chỉ đường
+                    </a>
+                  </div>
                 </div>
               </Popup>
             </Marker>

@@ -159,21 +159,7 @@ const statusClass = (status) => {
   return map[status] || "is-pending";
 };
 
-const buildGoogleMapsLinks = (parking) => {
-  const name = parking?.name?.trim() || "";
-  const address = parking?.address?.trim() || "";
-  const destinationText = address || name;
-  const searchText = [name, address].filter(Boolean).join(", ") || destinationText;
-
-  if (!destinationText) {
-    return { directionsUrl: "", mapUrl: "" };
-  }
-
-  return {
-    directionsUrl: `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(destinationText)}`,
-    mapUrl: `https://www.google.com/maps/search/${encodeURIComponent(searchText)}`,
-  };
-};
+import buildGoogleMapsLinks from "../utils/maps";
 
 const hashParkingKey = (value) => {
   const text = `${value || ""}`;

@@ -46,6 +46,22 @@
   margin-top: 8px;
 }
 
+.nearby-map-popup-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.nearby-map-popup-directions {
+  display: inline-block;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: #eef7ff;
+  color: #0f5f9d;
+  font-weight: 700;
+  text-decoration: none;
+}
+
 .parking-map-marker {
   background: transparent;
   border: none;

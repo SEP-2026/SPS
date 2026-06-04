@@ -49,6 +49,285 @@ body {
   animation: fade-slide 0.45s ease-out;
 }
 
+.app-layout {
+  display: flex;
+  align-items: stretch;
+}
+
+.app-layout--shared {
+  min-height: 100%;
+}
+
+.app-sidebar {
+  width: 220px;
+  background: linear-gradient(180deg, rgba(2,24,42,0.98), rgba(4,36,64,0.98));
+  color: #d6ecff;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.app-sidebar-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-weight: 900;
+  font-size: 18px;
+  color: #fff;
+  margin-bottom: 6px;
+}
+
+.app-sidebar-brand-mark {
+  width: 46px;
+  height: 46px;
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(135deg, rgba(22, 217, 255, 0.95), rgba(15, 108, 191, 0.98));
+  color: #fff;
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 18px;
+  letter-spacing: 0.08em;
+  box-shadow: 0 14px 24px rgba(8, 77, 123, 0.35);
+}
+
+.app-sidebar-brand-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.app-sidebar-brand-copy strong {
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 17px;
+}
+
+.app-sidebar-brand-copy span {
+  color: rgba(214, 236, 255, 0.72);
+  font-size: 12px;
+}
+
+.app-sidebar-links {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.app-sidebar-link {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 0;
+  background: transparent;
+  color: rgba(255,255,255,0.9);
+  text-decoration: none;
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
+}
+
+.app-sidebar-link:hover,
+.app-sidebar-link:focus-visible {
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  transform: translateX(2px);
+}
+
+.app-sidebar-link-icon {
+  width: 28px;
+  height: 28px;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.08);
+  flex: 0 0 auto;
+}
+
+.app-sidebar-link.active .app-sidebar-link-icon {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.app-sidebar-link.active {
+  background: linear-gradient(160deg, rgba(55, 193, 177, 0.14), rgba(105, 188, 255, 0.12));
+  color: #fff;
+}
+
+.app-sidebar-footer {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.app-sidebar-user {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding-top: 4px;
+  margin-top: auto;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.app-sidebar-avatar {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  display: inline-grid;
+  place-items: center;
+  font-weight: 800;
+  flex: 0 0 auto;
+}
+
+.app-sidebar-avatar--initial {
+  background: linear-gradient(135deg, rgba(22, 217, 255, 0.18), rgba(15, 108, 191, 0.3));
+}
+
+.app-sidebar-user-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.app-sidebar-user-copy strong,
+.app-sidebar-user-copy span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.app-sidebar-user-copy strong {
+  color: #fff;
+}
+
+.app-sidebar-user-copy span {
+  color: rgba(214, 236, 255, 0.7);
+  font-size: 12px;
+}
+
+.app-sidebar-wallet {
+  padding: 14px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, rgba(22, 217, 255, 0.16), rgba(15, 108, 191, 0.18));
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.app-sidebar-wallet-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  color: rgba(214, 236, 255, 0.78);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.app-sidebar-wallet-add {
+  width: 24px;
+  height: 24px;
+  border-radius: 8px;
+  border: 0;
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.app-sidebar-wallet-value {
+  color: #fff;
+  font-size: 20px;
+  line-height: 1.1;
+}
+
+.app-sidebar-wallet-skeleton {
+  width: 100%;
+  height: 22px;
+  border-radius: 11px;
+  background: linear-gradient(90deg, rgba(255,255,255,0.08), rgba(255,255,255,0.2), rgba(255,255,255,0.08));
+  background-size: 200% 100%;
+  animation: wallet-skeleton 1.4s ease-in-out infinite;
+}
+
+.app-sidebar-wallet-error {
+  margin: 0;
+  color: rgba(255, 207, 214, 0.95);
+  font-size: 12px;
+}
+
+.app-sidebar-support-card {
+  padding: 14px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.app-sidebar-support-card strong {
+  display: block;
+  color: #fff;
+  margin-bottom: 4px;
+}
+
+.app-sidebar-support-card p {
+  margin: 0;
+  color: rgba(214, 236, 255, 0.72);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.page-transition {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.app-content {
+  min-width: 0;
+}
+
+.app-shell--shared .home-sidebar,
+.app-shell--shared .booking-sidebar,
+.app-shell--shared .booking-history-sidebar {
+  display: none !important;
+}
+
+.app-shell--shared .home-grid,
+.app-shell--shared .booking-dashboard,
+.app-shell--shared .booking-history-dashboard {
+  grid-template-columns: minmax(0, 1fr) !important;
+}
+
+.app-shell--shared .home-grid,
+.app-shell--shared .booking-dashboard,
+.app-shell--shared .booking-history-dashboard {
+  width: 100% !important;
+}
+
+.app-shell--shared .booking-sidebar,
+.app-shell--shared .booking-history-sidebar {
+  pointer-events: none !important;
+}
+
+@keyframes wallet-skeleton {
+  0% {
+    background-position: 0% 50%;
+  }
+
+  100% {
+    background-position: 200% 50%;
+  }
+}
+
 .app-shell--owner {
   width: min(1480px, 97vw);
 }

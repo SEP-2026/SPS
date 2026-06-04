@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import API from "../services/api";
 import { formatDateTimeVN, toDatetimeLocalValue } from "../utils/dateTime";
 import "./Home.css";
 import NearbyParkingMap from "../components/NearbyParkingMap";
+import buildGoogleMapsLinks from "../utils/maps";
 import QuickBookingBar from "../components/home/QuickBookingBar";
 import { formatCurrency } from "../features/gate/gateFormatters";
 import { useWallet } from "../context/WalletContext";
@@ -127,6 +128,8 @@ function getStatusTone(status) {
   return "info";
 }
 
+// use shared buildGoogleMapsLinks from utils/maps
+
 function mapOverviewLotToBookingLot(lot) {
   return {
     id: lot.parking_id,
@@ -226,6 +229,7 @@ function getParkingImageSrc(lot = {}) {
 
 export default function Home({ role = "" }) {
   const navigate = useNavigate();
+  const location = useLocation();
   const { wallet, loading: walletLoading, error: walletError } = useWallet();
   const [quickCheckinTime, setQuickCheckinTime] = useState(() => toDatetimeLocalValue(new Date(Date.now() + 60 * 60 * 1000)));
   const [parkingLots, setParkingLots] = useState([]);
@@ -243,6 +247,16 @@ export default function Home({ role = "" }) {
   const popoverRef = useRef(null);
 
   const isOwner = role === "owner";
+  const sidebarItems = [
+    { icon: "🏠", label: "Trang chủ", to: "/" },
+    { icon: "🔍", label: "Tìm bãi xe", to: "/booking" },
+    { icon: "🧾", label: "Lịch sử thanh toán", to: "/payment-history" },
+    { icon: "🕘", label: "Lịch sử đặt chỗ", to: "/booking-history" },
+    { icon: "💳", label: "Ví của tôi", to: "/profile" },
+    { icon: "🚗", label: "Phương tiện", to: "/profile" },
+    { icon: "🔔", label: "Thông báo", to: "/profile" },
+    { icon: "⚙️", label: "Cài đặt", to: "/profile" },
+  ];
 
   const filteredLots = useMemo(() => {
     return parkingLots.filter((lot) => {
@@ -582,15 +596,17 @@ export default function Home({ role = "" }) {
           </div>
 
           <div className="sidebar-menu">
-
-            <div className="sidebar-item active">🏠 Trang chủ</div>
-            <div className="sidebar-item">🔍 Tìm bãi xe</div>
-            <div className="sidebar-item">📅 Đặt chỗ của tôi</div>
-            <div className="sidebar-item">🕘 Lịch sử đặt chỗ</div>
-            <div className="sidebar-item">💳 Ví của tôi</div>
-            <div className="sidebar-item">🚗 Phương tiện</div>
-            <div className="sidebar-item">🔔 Thông báo</div>
-            <div className="sidebar-item">⚙️ Cài đặt</div>
+            {sidebarItems.map((item) => (
+              <button
+                key={`${item.to}-${item.label}`}
+                type="button"
+                className={`sidebar-item${location.pathname === item.to ? " active" : ""}`}
+                onClick={() => navigate(item.to)}
+              >
+                <span aria-hidden="true">{item.icon}</span>
+                <span>{item.label}</span>
+              </button>
+            ))}
 
           </div>
 
@@ -870,12 +886,22 @@ export default function Home({ role = "" }) {
                             {mapPreviewLot.price_per_hour}.000đ/giờ
                           </div>
 
-                          <button
-                            type="button"
-                            onClick={() => navigate(`/booking?lotId=${mapPreviewLot.parking_id}`)}
-                          >
-                            Xem chi tiết
-                          </button>
+                          <div className="map-preview-actions">
+                            <button
+                              type="button"
+                              onClick={() => navigate(`/booking?lotId=${mapPreviewLot.parking_id}`)}
+                            >
+                              Xem chi tiết
+                            </button>
+                            <a
+                              className="map-preview-directions"
+                              href={buildGoogleMapsLinks(mapPreviewLot).directionsUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                            >
+                              Chỉ đường
+                            </a>
+                          </div>
 
                         </div>
 
@@ -890,17 +916,30 @@ export default function Home({ role = "" }) {
                         const isSelected = Number(lot.id) === Number(selectedMapLotId);
 
                         return (
-                          <button
+                          <div
                             key={lot.id}
-                            type="button"
                             role="listitem"
                             className={`map-nearby-item${isSelected ? " is-selected" : ""}`}
-                            onClick={() => setSelectedMapLotId(lot.id)}
                           >
-                            <strong>{lot.parking_name || lot.name}</strong>
-                            <span>{formatDistance(lot.distance)} km</span>
-                            <span className="map-nearby-item-meta">{availablePercent}% chỗ trống</span>
-                          </button>
+                            <button
+                              type="button"
+                              className="map-nearby-select"
+                              onClick={() => setSelectedMapLotId(lot.id)}
+                            >
+                              <strong>{lot.parking_name || lot.name}</strong>
+                              <span>{formatDistance(lot.distance)} km</span>
+                              <span className="map-nearby-item-meta">{availablePercent}% chỗ trống</span>
+                            </button>
+                            <a
+                              className="map-nearby-directions"
+                              href={buildGoogleMapsLinks(lot).directionsUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              Chỉ đường
+                            </a>
+                          </div>
                         );
                       })}
                     </div>

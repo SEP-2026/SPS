@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useLocation } from "react-router-dom";
 import API, { getAuth, saveAuth } from "../services/api";
 import { buildDynamicVietQrUrl } from "../features/gate/gateFormatters";
 import { formatCurrency } from "../features/gate/gateFormatters";
@@ -50,6 +51,7 @@ const getNoticeTone = (notice) => {
 
 export default function Profile({ onAuthUpdated }) {
   const auth = getAuth();
+  const location = useLocation();
   const role = auth?.user?.role || "user";
   const isVehicleProfileAvailable = role === "user";
   const isWalletAvailable = role === "user";
@@ -158,6 +160,34 @@ export default function Profile({ onAuthUpdated }) {
     () => Object.values(passwordChecklist).every(Boolean) && passwordForm.newPassword === passwordForm.confirmPassword,
     [passwordChecklist, passwordForm.newPassword, passwordForm.confirmPassword],
   );
+
+  useEffect(() => {
+    const hash = location.hash.replace(/^#/, "");
+
+    if (!hash) {
+      setActiveSection((current) => (current === "wallet" || current === "vehicle" || current === "password" || current === "manager" ? "personal" : current));
+      return;
+    }
+
+    if (hash === "wallet" && isWalletAvailable) {
+      setActiveSection("wallet");
+      return;
+    }
+
+    if (hash === "vehicles" && isVehicleProfileAvailable) {
+      setActiveSection("vehicle");
+      return;
+    }
+
+    if (hash === "settings") {
+      setActiveSection("password");
+      return;
+    }
+
+    if (hash === "support" || hash === "notifications") {
+      setActiveSection("personal");
+    }
+  }, [isVehicleProfileAvailable, isWalletAvailable, location.hash]);
 
   useEffect(() => {
     const loadProfile = async () => {

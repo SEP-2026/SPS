@@ -1096,6 +1096,15 @@ export default function Booking() {
               </span>
               <span className="nav-label">Trang chủ</span>
             </button>
+            <button type="button" className={`nav-item ${location.pathname === '/profile' ? 'is-active' : ''}`} title="Hồ sơ" aria-label="Hồ sơ" onFocus={() => setSidebarHover(true)} onBlur={() => setSidebarHover(false)} onClick={() => navigate('/profile')}>
+              <span className="nav-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                  <path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8z" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                  <path d="M4 20a8 8 0 0 1 16 0" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </span>
+              <span className="nav-label">Hồ sơ</span>
+            </button>
             <button type="button" className={`nav-item ${location.pathname === '/booking' ? 'is-active' : ''}`} title="Tìm bãi xe" aria-label="Tìm bãi xe" onFocus={() => setSidebarHover(true)} onBlur={() => setSidebarHover(false)} onClick={() => navigate('/booking')}>
               <span className="nav-icon" aria-hidden="true">
                 <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
@@ -1122,6 +1131,15 @@ export default function Booking() {
                 </svg>
               </span>
               <span className="nav-label">Lịch sử</span>
+            </button>
+            <button type="button" className={`nav-item ${location.pathname === '/payment-history' ? 'is-active' : ''}`} title="Lịch sử thanh toán" aria-label="Lịch sử thanh toán" onFocus={() => setSidebarHover(true)} onBlur={() => setSidebarHover(false)} onClick={() => navigate('/payment-history')}>
+              <span className="nav-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                  <path d="M4 7h16v10H4z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+                  <path d="M16 11a2 2 0 1 1-4 0" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+                </svg>
+              </span>
+              <span className="nav-label">Lịch sử thanh toán</span>
             </button>
             <button type="button" className={`nav-item ${location.pathname === '/wallet' ? 'is-active' : ''}`} title="Ví của tôi" aria-label="Ví của tôi" onFocus={() => setSidebarHover(true)} onBlur={() => setSidebarHover(false)} onClick={() => navigate('/wallet')}>
               <span className="nav-icon" aria-hidden="true">
