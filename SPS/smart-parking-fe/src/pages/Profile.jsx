@@ -98,6 +98,7 @@ export default function Profile({ onAuthUpdated }) {
     seatCount: "",
     vehicleColor: "",
   });
+  const [showVehicleForm, setShowVehicleForm] = useState(false);
 
   const [passwordForm, setPasswordForm] = useState({
     oldPassword: "",
@@ -180,7 +181,7 @@ export default function Profile({ onAuthUpdated }) {
     }
 
     if (hash === "settings") {
-      setActiveSection("password");
+      setActiveSection("personal");
       return;
     }
 
@@ -525,23 +526,36 @@ export default function Profile({ onAuthUpdated }) {
     );
   }
 
+  const hash = location.hash.replace(/^#/, "");
+  const isSettingsPage = hash === "settings";
+
   return (
     <section className="page-wrap">
-      <div className="page-card profile-shell profile-frame">
-        <header className="profile-header">
-          <span className="profile-spark profile-spark-left" aria-hidden="true">✦</span>
-          <span className="profile-spark profile-spark-right" aria-hidden="true">✦</span>
-          <h1 className="page-title">Hồ sơ tài khoản</h1>
-          <p className="page-subtitle profile-subtitle">👤 Xin chào, <strong>{greetingName}</strong></p>
-          <div className="profile-divider" aria-hidden="true">────◆────</div>
-          <div className="profile-summary" role="list" aria-label="Tóm tắt tài khoản">
-            <span className="profile-summary-chip" role="listitem">Vai trò: {role}</span>
-            <span className="profile-summary-chip" role="listitem">Email: {personalForm.email || "Chưa cập nhật"}</span>
-            <span className="profile-summary-chip" role="listitem">SĐT: {personalForm.phone || "Chưa cập nhật"}</span>
-          </div>
-        </header>
+      <div className={`page-card profile-shell ${isSettingsPage ? 'settings-frame' : 'profile-frame'}`}>
+        {isSettingsPage ? (
+          <header className="settings-header">
+            <div className="settings-breadcrumb">Trang chủ &gt; Cài đặt</div>
+            <div className="settings-title-row">
+              <h1 className="settings-title">Cài đặt</h1>
+              <p className="settings-subtitle">Quản lý thông tin tài khoản và bảo mật</p>
+            </div>
+          </header>
+        ) : (
+          <header className="profile-header">
+            <span className="profile-spark profile-spark-left" aria-hidden="true">✦</span>
+            <span className="profile-spark profile-spark-right" aria-hidden="true">✦</span>
+            <h1 className="page-title">Hồ sơ tài khoản</h1>
+            <p className="page-subtitle profile-subtitle">👤 Xin chào, <strong>{greetingName}</strong></p>
+            <div className="profile-divider" aria-hidden="true">────◆────</div>
+            <div className="profile-summary" role="list" aria-label="Tóm tắt tài khoản">
+              <span className="profile-summary-chip" role="listitem">Vai trò: {role}</span>
+              <span className="profile-summary-chip" role="listitem">Email: {personalForm.email || "Chưa cập nhật"}</span>
+              <span className="profile-summary-chip" role="listitem">SĐT: {personalForm.phone || "Chưa cập nhật"}</span>
+            </div>
+          </header>
+        )}
 
-        <div className="profile-layout">
+        <div className={`profile-layout ${isSettingsPage ? 'settings-layout' : ''}`}>
           <aside className="profile-menu">
             <button
               type="button"
@@ -552,36 +566,6 @@ export default function Profile({ onAuthUpdated }) {
               Thông tin cá nhân
               {isPersonalDirty ? <span className="profile-pill">Chưa lưu</span> : null}
             </button>
-            {isVehicleProfileAvailable ? (
-              <button
-                type="button"
-                className={`profile-menu-item ${activeSection === "vehicle" ? "is-active" : ""}`}
-                onClick={() => setActiveSection("vehicle")}
-              >
-                <span aria-hidden="true">🚗</span>
-                Thông tin xe
-                {isVehicleDirty ? <span className="profile-pill">Chưa lưu</span> : null}
-              </button>
-            ) : (
-              <button
-                type="button"
-                className={`profile-menu-item ${activeSection === "manager" ? "is-active" : ""}`}
-                onClick={() => setActiveSection("manager")}
-              >
-                <span aria-hidden="true">{isAdmin ? "🛠" : "🅿"}</span>
-                {isAdmin ? "Thông tin quản trị" : "Thông tin quản lý"}
-              </button>
-            )}
-            {isWalletAvailable ? (
-              <button
-                type="button"
-                className={`profile-menu-item ${activeSection === "wallet" ? "is-active" : ""}`}
-                onClick={() => setActiveSection("wallet")}
-              >
-                <span aria-hidden="true">💳</span>
-                Ví điện tử
-              </button>
-            ) : null}
             <button
               type="button"
               className={`profile-menu-item ${activeSection === "password" ? "is-active" : ""}`}
@@ -701,173 +685,16 @@ export default function Profile({ onAuthUpdated }) {
             )}
 
             {activeSection === "wallet" && isWalletAvailable && (
-              <form className="profile-card" onSubmit={handleTopUpWallet}>
-                <div className="profile-manager-grid">
-                  <article className="profile-manager-stat">
-                    <span className="profile-manager-label">Số dư khả dụng</span>
-                    {walletQueryLoading ? (
-                      <strong>Đang tải...</strong>
-                    ) : walletQueryError ? (
-                      <strong>Không tải được số dư</strong>
-                    ) : (
-                      <strong>{formatCurrency(wallet?.balance || 0)}</strong>
-                    )}
-                  </article>
-                  <article className="profile-manager-stat">
-                    <span className="profile-manager-label">Đang giữ chỗ</span>
-                    {walletQueryLoading ? (
-                      <strong>Đang tải...</strong>
-                    ) : walletQueryError ? (
-                      <strong>Không tải được số dư</strong>
-                    ) : (
-                      <strong>{formatCurrency(wallet?.reserved_balance || 0)}</strong>
-                    )}
-                  </article>
-                </div>
-
-                <label>Số tiền nạp</label>
-                <div className="profile-topup-presets">
-                  {[100000, 200000, 500000, 1000000, 2000000, 5000000].map((amount) => (
-                    <button
-                      key={amount}
-                      type="button"
-                      className="profile-topup-preset"
-                      onClick={() => {
-                        setWalletTopUpAmount(String(amount));
-                        setWalletPendingAmount(null);
-                        setWalletTopUpQrUrl("");
-                      }}
-                    >
-                      {amount.toLocaleString("vi-VN")} đ
-                    </button>
-                  ))}
-                </div>
-                <div className="profile-input-shell">
-                  <span className="profile-input-icon" aria-hidden="true">➕</span>
-                  <input
-                    className="booking-input profile-input"
-                    type="text"
-                    inputMode="numeric"
-                    placeholder="Ví dụ: 100.000"
-                    value={walletTopUpAmount ? formatCurrencyString(walletTopUpAmount) : ""}
-                    onChange={(e) => {
-                      setWalletTopUpAmount(parseCurrencyString(e.target.value));
-                      if (walletPendingAmount !== null) {
-                        setWalletPendingAmount(null);
-                      }
-                      if (walletTopUpQrUrl) {
-                        setWalletTopUpQrUrl("");
-                      }
-                    }}
-                  />
-                </div>
-
-                <button className="profile-action-btn" type="submit" disabled={walletLoading || walletQueryLoading}>
-                  {walletLoading ? "Đang xử lý..." : "→ Nạp tiền"}
-                </button>
-
-                {walletPendingAmount !== null ? (
-                  <div className="profile-topup-confirm">
-                    {!walletTopUpQrUrl ? (
-                      <>
-                        <p>Xác nhận tạo QR chuyển khoản {walletPendingAmount.toLocaleString("vi-VN")} đ để nạp ví?</p>
-                        <div className="profile-topup-confirm-actions">
-                          <button type="button" className="profile-action-btn profile-action-confirm" onClick={confirmTopUpWallet} disabled={walletLoading || walletQueryLoading}>
-                            Tạo QR chuyển khoản
-                          </button>
-                          <button type="button" className="profile-action-btn profile-action-cancel" onClick={cancelTopUpWallet} disabled={walletLoading || walletQueryLoading}>
-                            Hủy
-                          </button>
-                        </div>
-                      </>
-                    ) : (
-                      <>
-                        <p>Quét QR để chuyển đúng số tiền: {walletPendingAmount.toLocaleString("vi-VN")} đ</p>
-                        <div className="profile-topup-qr-box">
-                          <img src={walletTopUpQrUrl} alt="QR topup wallet" />
-                        </div>
-                        <div className="profile-topup-confirm-actions">
-                          <button type="button" className="profile-action-btn profile-action-confirm" onClick={completeTopUpWallet} disabled={walletLoading || walletQueryLoading}>
-                            {walletLoading ? "Đang xử lý..." : "Tôi đã chuyển khoản thành công"}
-                          </button>
-                          <button type="button" className="profile-action-btn profile-action-cancel" onClick={cancelTopUpWallet} disabled={walletLoading || walletQueryLoading}>
-                            Hủy
-                          </button>
-                        </div>
-                      </>
-                    )}
-                  </div>
-                ) : null}
-
-                {walletNotice ? <p className={`profile-notice ${getNoticeTone(walletNotice)}`} aria-live="polite">{walletNotice}</p> : null}
-              </form>
+              <div className="profile-card">
+                <p>Truy cập trang <a href="/wallet">Ví của tôi</a> để quản lý số dư và xem lịch sử giao dịch.</p>
+              </div>
             )}
 
             {activeSection === "vehicle" && isVehicleProfileAvailable && (
-              <form className="profile-card" onSubmit={handleSaveVehicle}>
-                <label>Biển số xe</label>
-                <div className="profile-input-shell">
-                  <span className="profile-input-icon" aria-hidden="true">🪪</span>
-                  <input
-                    className="booking-input profile-input"
-                    placeholder="Ví dụ: 30A-123.45"
-                    value={vehicleForm.licensePlate}
-                    onChange={(e) => setVehicleForm((prev) => ({ ...prev, licensePlate: e.target.value }))}
-                  />
-                </div>
-
-                <label>Thương hiệu</label>
-                <div className="profile-input-shell">
-                  <span className="profile-input-icon" aria-hidden="true">🚘</span>
-                  <input
-                    className="booking-input profile-input"
-                    placeholder="Toyota, Honda..."
-                    value={vehicleForm.brand}
-                    onChange={(e) => setVehicleForm((prev) => ({ ...prev, brand: e.target.value }))}
-                  />
-                </div>
-
-                <label>Dòng xe</label>
-                <div className="profile-input-shell">
-                  <span className="profile-input-icon" aria-hidden="true">🚙</span>
-                  <input
-                    className="booking-input profile-input"
-                    placeholder="Vios, City..."
-                    value={vehicleForm.vehicleModel}
-                    onChange={(e) => setVehicleForm((prev) => ({ ...prev, vehicleModel: e.target.value }))}
-                  />
-                </div>
-
-                <label>Số chỗ</label>
-                <div className="profile-input-shell">
-                  <span className="profile-input-icon" aria-hidden="true">🪑</span>
-                  <input
-                    className="booking-input profile-input"
-                    type="number"
-                    min={1}
-                    placeholder="4"
-                    value={vehicleForm.seatCount}
-                    onChange={(e) => setVehicleForm((prev) => ({ ...prev, seatCount: e.target.value }))}
-                  />
-                </div>
-
-                <label>Màu xe</label>
-                <div className="profile-input-shell">
-                  <span className="profile-input-icon" aria-hidden="true">🎨</span>
-                  <input
-                    className="booking-input profile-input"
-                    placeholder="Đen, trắng..."
-                    value={vehicleForm.vehicleColor}
-                    onChange={(e) => setVehicleForm((prev) => ({ ...prev, vehicleColor: e.target.value }))}
-                  />
-                </div>
-
-                <button className="profile-action-btn" type="submit" disabled={vehicleLoading || !isVehicleDirty}>
-                  {vehicleLoading ? "Đang lưu..." : "→ Lưu thông tin xe"}
-                </button>
-                <p className="profile-hint">{isVehicleDirty ? "Bạn có thay đổi chưa lưu." : "Thông tin xe đã mới nhất."}</p>
-                {vehicleNotice ? <p className={`profile-notice ${getNoticeTone(vehicleNotice)}`} aria-live="polite">{vehicleNotice}</p> : null}
-              </form>
+              <div className="profile-card">
+                <p>Quản lý phương tiện đã tách ra thành trang riêng.</p>
+                <p><a href="/vehicles">Mở trang Phương tiện</a></p>
+              </div>
             )}
 
             {activeSection === "password" && (

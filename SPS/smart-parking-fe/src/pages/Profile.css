@@ -463,3 +463,213 @@
     justify-content: flex-start;
   }
 }
+
+/* Settings redesign overrides */
+
+.settings-frame { background: transparent; }
+.page-wrap { background: #f5f7fa; }
+
+.settings-header { text-align: left; padding: 8px 0 12px; }
+.settings-breadcrumb { color: var(--profile-ink-500); font-size: 0.95rem; }
+.settings-title-row { margin-top: 6px; }
+.settings-title { margin: 0; font-size: 1.8rem; color: var(--profile-ink-700); }
+.settings-subtitle { margin: 0; color: var(--profile-ink-500); }
+
+/* layout tweaks for settings */
+.settings-layout .profile-menu { width: 220px; background: #ffffff; border: 1px solid #e5e7eb; padding: 0.6rem; }
+.settings-layout .profile-menu-item { background: rgba(245,247,250,0.9); border-radius: 8px; padding: 0.6rem 0.7rem; font-weight:700; }
+.settings-layout .profile-menu-item.is-active { background: linear-gradient(95deg, var(--profile-accent-a) 0%, var(--profile-accent-b) 100%); color: #fff; border-radius: 8px; }
+
+.settings-card { border: 1px solid #e5e7eb; background: #fff; border-radius: 12px; padding: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+.settings-card h2 { margin-bottom: 12px; color: var(--profile-ink-700); }
+
+/* inputs in settings */
+.settings-card .profile-input { background: #f0f4f8; border: none; border-radius: 8px; padding-left: 2.4rem; min-height:44px; }
+.settings-card .profile-input:focus { box-shadow: 0 0 0 3px rgba(16,113,160,0.08); border-color: transparent; }
+.settings-card .profile-input-icon { left: 12px; color: var(--profile-ink-500); }
+
+.settings-card .profile-action-btn { width: 100%; border-radius: 8px; min-height:48px; }
+.settings-card .profile-hint { margin-top: 8px; }
+
+/* Password card specifics */
+.settings-card .profile-password-toggle { right: 10px; }
+.settings-card .profile-password-checklist { margin-top: 12px; padding-left: 1rem; color: var(--profile-ink-500); font-size:0.88rem; }
+
+/* End of settings overrides */
+
+/* Wallet redesign styles */
+.wallet-header {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+.wallet-breadcrumb {
+  color: #5b7f97;
+  font-size: 0.9rem;
+}
+.wallet-title-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.wallet-title {
+  margin: 0;
+  font-size: 1.8rem;
+  color: var(--profile-ink-700);
+}
+.wallet-subtitle {
+  margin: 0;
+  color: var(--profile-ink-500);
+  font-size: 0.95rem;
+}
+.wallet-hero {
+  display: grid;
+  grid-template-columns: 1fr 220px 160px;
+  gap: 16px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+.wallet-balance {
+  background: rgba(255,255,255,0.9);
+  padding: 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(172, 216, 241, 0.85);
+}
+.wallet-label {
+  display: block;
+  color: #3b5f74;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+.wallet-amount {
+  font-size: 2rem;
+  color: #1a6bff;
+  margin-bottom: 8px;
+}
+.wallet-substats {
+  display: flex;
+  gap: 12px;
+}
+.wallet-substats small {
+  display: block;
+  color: #53708a;
+}
+.wallet-subval {
+  font-weight: 700;
+  color: #173e59;
+}
+.wallet-illustration {
+  width: 100%;
+  height: 100%;
+  min-height: 120px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(26,107,255,0.06), rgba(22,217,255,0.04));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(26,107,255,0.18);
+}
+.wallet-cta {
+  display: flex;
+  align-items: stretch;
+}
+.wallet-topup-cta {
+  width: 100%;
+  min-height: 56px;
+  border-radius: 12px;
+  font-size: 1rem;
+}
+.profile-topup-preset.is-active {
+  border-color: #1a6bff;
+  box-shadow: 0 6px 14px rgba(26,107,255,0.12);
+  background: linear-gradient(92deg, rgba(26,107,255,0.06), rgba(26,107,255,0.02));
+}
+.wallet-quick-topup {
+  margin-bottom: 12px;
+}
+.wallet-history {
+  margin-top: 12px;
+}
+.wallet-history-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.wallet-history-table-wrap {
+  overflow-x: auto;
+  border-radius: 10px;
+  border: 1px solid rgba(189,219,233,0.9);
+  background: rgba(255,255,255,0.95);
+}
+.wallet-history-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.wallet-history-table thead th {
+  text-align: left;
+  padding: 10px 12px;
+  font-size: 0.85rem;
+  color: #53708a;
+}
+.wallet-history-table td {
+  padding: 10px 12px;
+  border-top: 1px solid rgba(222,236,243,0.8);
+}
+.wallet-history-empty {
+  text-align: center;
+  padding: 18px;
+  color: #53708a;
+}
+.wallet-history-viewall,
+.wallet-history-link { color: #1a6bff; font-weight:700; text-decoration:none; }
+
+@media (max-width: 900px) {
+  .wallet-hero { grid-template-columns: 1fr; }
+  .wallet-cta { order: 3; }
+}
+
+/* Vehicle page redesign */
+.vehicle-page { background: transparent; }
+.vehicle-header { margin-bottom: 12px; }
+.vehicle-breadcrumb { color: var(--profile-ink-500); font-size: 0.95rem; margin-bottom: 6px; }
+.vehicle-title { margin: 0; font-size: 1.6rem; color: var(--profile-ink-700); }
+.vehicle-subtitle { margin: 0; color: var(--profile-ink-500); font-size: 0.95rem; }
+
+.vehicle-section { margin-top: 12px; display: flex; flex-direction: column; gap: 12px; }
+.vehicle-section-head { display: flex; align-items: center; justify-content: space-between; }
+.vehicle-section-title { margin: 0; color: var(--profile-ink-700); font-size: 1.1rem; }
+.vehicle-add-btn { border: none; background: linear-gradient(92deg, var(--profile-accent-a) 0%, var(--profile-accent-b) 100%); color: #fff; padding: 10px 14px; border-radius: 10px; cursor: pointer; font-weight:700; }
+
+.vehicle-list { display: flex; flex-direction: column; gap: 12px; }
+.vehicle-card { display: flex; gap: 18px; background: rgba(255,255,255,0.95); border: 1px solid rgba(189,219,233,0.95); border-radius: 12px; padding: 24px; align-items: center; transition: box-shadow 160ms ease; }
+.vehicle-card:hover { box-shadow: 0 8px 20px rgba(16,71,104,0.06); }
+.vehicle-card-media { flex: 0 0 200px; display:flex; align-items:center; justify-content:center; }
+.vehicle-image { width: 200px; height: 120px; display:flex; align-items:center; justify-content:center; }
+.vehicle-card-body { flex: 1 1 auto; min-width: 0; }
+.vehicle-card-row { display:flex; justify-content:space-between; align-items:flex-start; gap: 12px; }
+.vehicle-plate { font-size: 1.5rem; font-weight: 800; color: var(--profile-ink-900); }
+.vehicle-badge { margin-left: 10px; display:inline-block; background: rgba(239,249,255,0.72); color: var(--profile-accent-a); padding: 6px 10px; border-radius: 999px; font-weight:700; font-size:0.85rem; }
+.vehicle-menu { border: none; background: transparent; font-size: 1.4rem; color: var(--profile-ink-700); cursor: pointer; }
+
+.vehicle-info-grid { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 12px; margin-top: 12px; }
+.vehicle-info-item { background: transparent; padding: 6px 0; }
+.vehicle-info-label { color: var(--profile-ink-500); font-size: 0.9rem; }
+.vehicle-info-value { color: var(--profile-ink-700); font-weight: 700; margin-top: 4px; }
+
+.vehicle-empty { padding: 18px; border-radius: 12px; border: 1px dashed rgba(189,219,233,0.9); background: rgba(255,255,255,0.9); color: var(--profile-ink-500); }
+.vehicle-edit-form { background: rgba(255,255,255,0.95); border: 1px solid rgba(222,236,243,0.9); }
+
+.vehicle-notes { margin-top: 8px; }
+.vehicle-notes-grid { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 12px; }
+.vehicle-notes-grid article { background: rgba(255,255,255,0.95); border: 1px solid rgba(222,236,243,0.9); border-radius: 10px; padding: 12px; text-align: center; }
+.note-icon { color: var(--profile-accent-a); font-size: 1.55rem; margin-bottom: 8px; }
+.note-desc { margin: 6px 0 0; color: var(--profile-ink-500); font-size: 0.9rem; }
+
+@media (max-width: 900px) {
+  .vehicle-card { flex-direction: column; align-items: stretch; }
+  .vehicle-card-media { flex: none; }
+  .vehicle-info-grid { grid-template-columns: repeat(2, minmax(0,1fr)); }
+  .vehicle-notes-grid { grid-template-columns: 1fr 1fr; }
+}

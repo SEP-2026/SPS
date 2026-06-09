@@ -3,7 +3,6 @@ import { Navigate, Route, Routes, useLocation, useNavigate } from "react-router-
 
 import Booking from "./pages/Booking";
 import BookingHistory from "./pages/BookingHistory";
-import PaymentHistory from "./pages/PaymentHistory";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
 import AdminAnalytics from "./pages/admin/AdminAnalytics";
@@ -29,6 +28,7 @@ import OwnerSettings from "./pages/owner/OwnerSettings";
 import Payment from "./pages/Payment";
 import PaymentSuccess from "./pages/PaymentSuccess";
 import Profile from "./pages/Profile";
+import Wallet from "./pages/Wallet";
 import Scan from "./pages/Scan";
 import AdminLayout from "./admin/AdminLayout";
 import EmployeeLayout from "./employee/EmployeeLayout";
@@ -40,6 +40,7 @@ import EmployeeProfile from "./pages/employee/EmployeeProfile";
 import EmployeeQrScanner from "./pages/employee/EmployeeQrScanner";
 import EmployeeRevenue from "./pages/employee/EmployeeRevenue";
 import EmployeeVehicles from "./pages/employee/EmployeeVehicles";
+import Vehicles from "./pages/Vehicles";
 import API, { clearAuth, getAuth, saveAuth } from "./services/api";
 import { WalletProvider, useWallet } from "./context/WalletContext";
 import "./styles/layout.css";
@@ -54,12 +55,9 @@ const CURRENCY_FORMATTER = new Intl.NumberFormat("vi-VN", {
 const SHARED_NAV_ITEMS = [
   { key: "home", label: "Trang chủ", icon: "🏠", to: "/" },
   { key: "booking", label: "Tìm bãi xe", icon: "🔍", to: "/booking" },
-  { key: "payment-history", label: "Lịch sử thanh toán", icon: "🧾", to: "/payment-history" },
   { key: "booking-history", label: "Lịch sử đặt chỗ", icon: "🕘", to: "/booking-history" },
-  { key: "wallet", label: "Ví của tôi", icon: "💳", to: "/profile#wallet", hash: "#wallet" },
-  { key: "vehicles", label: "Phương tiện", icon: "🚗", to: "/profile#vehicles", hash: "#vehicles" },
-  { key: "notifications", label: "Thông báo", icon: "🔔", to: "/profile#notifications", hash: "#notifications" },
-  { key: "support", label: "Hỗ trợ", icon: "🛟", to: "/profile#support", hash: "#support" },
+  { key: "wallet", label: "Ví của tôi", icon: "💳", to: "/wallet" },
+  { key: "vehicles", label: "Phương tiện", icon: "🚗", to: "/vehicles" },
   { key: "settings", label: "Cài đặt", icon: "⚙️", to: "/profile#settings", hash: "#settings" },
 ];
 
@@ -69,7 +67,7 @@ function formatCurrency(value) {
 
 function getSidebarItemActive(item, location) {
   if (item.key === "wallet") {
-    return location.pathname === "/profile" && (location.hash === "#wallet" || location.hash === "");
+    return location.pathname === "/wallet";
   }
 
   if (item.hash) {
@@ -118,17 +116,17 @@ function SharedSidebar({ auth, displayName, location }) {
       </nav>
 
       <div className="app-sidebar-wallet">
-        <div className="app-sidebar-wallet-head">
-          <span>Số dư ví</span>
-          <button
-            type="button"
-            className="app-sidebar-wallet-add"
-            aria-label="Mở ví của tôi"
-            onClick={() => navigate("/profile#wallet")}
-          >
-            +
-          </button>
-        </div>
+      <div className="app-sidebar-wallet-head">
+        <span>Số dư ví</span>
+        <button
+          type="button"
+          className="app-sidebar-wallet-add"
+          aria-label="Mở ví của tôi"
+          onClick={() => navigate("/wallet")}
+        >
+          +
+        </button>
+      </div>
         {walletLoading ? (
           <div className="app-sidebar-wallet-skeleton" aria-label="Đang tải số dư" />
         ) : walletError ? (
@@ -237,8 +235,10 @@ function AppBody({ auth, role, onLogin, onLogout }) {
             <Route path="/" element={auth ? (role === "user" ? <Home role={role} /> : <Navigate to={defaultAuthedRoute} replace />) : <Navigate to="/login" replace />} />
             <Route path="/booking" element={auth ? <Booking /> : <Navigate to="/login" replace />} />
             <Route path="/booking-history" element={auth ? <BookingHistory /> : <Navigate to="/login" replace />} />
-            <Route path="/payment-history" element={auth ? <PaymentHistory /> : <Navigate to="/login" replace />} />
+            <Route path="/payment-history" element={<Navigate to="/wallet" replace />} />
             <Route path="/profile" element={auth && role !== "employee" ? <Profile onAuthUpdated={onLogin} /> : <Navigate to={auth && role === "employee" ? "/employee/profile" : "/login"} replace />} />
+            <Route path="/vehicles" element={auth ? <Vehicles /> : <Navigate to="/login" replace />} />
+            <Route path="/wallet" element={auth ? <Wallet /> : <Navigate to="/login" replace />} />
             <Route path="/payment/:bookingId" element={auth ? <Payment /> : <Navigate to="/login" replace />} />
             <Route path="/payment/success/:bookingId" element={auth ? <PaymentSuccess /> : <Navigate to="/login" replace />} />
             <Route path="/scan" element={auth && (role === "owner" || role === "admin") ? <Scan /> : <Navigate to="/" replace />} />

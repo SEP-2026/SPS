@@ -250,7 +250,6 @@ export default function PaymentHistory() {
           <div className="payment-history-hero-copy">
             <p className="payment-history-kicker">Billing & activity</p>
             <h1 className="payment-history-title">Lịch sử thanh toán</h1>
-            <p className="payment-history-subtitle">Theo dõi tổng tiền đã thanh toán, tiền booking và khoản cọc no-show trong một bảng tối, rõ ràng và dễ quét.</p>
           </div>
 
           <div className="payment-history-filters" aria-label="Bộ lọc lịch sử thanh toán">
