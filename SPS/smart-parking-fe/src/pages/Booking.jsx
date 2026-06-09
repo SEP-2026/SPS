@@ -6,7 +6,6 @@ import { formatDateOnlyVN, toDateInputValue, toDatetimeLocalValue, toVietnamIsoS
 import ParkingMap from "../components/ParkingMap";
 import NearbyParkingMap from "../components/NearbyParkingMap";
 import "./Booking.css";
-import { isValidCoordinate, normalizeParkingSearchLot, searchNearbyByCurrentLocation, searchParkingByAddress, searchParkingByCoords } from "../services/parkingSearch";
 
 const formatDisplayDate = (date) => {
   return formatDateOnlyVN(date, "");
@@ -225,14 +224,20 @@ const formatSeats = (seatCount) => {
 };
 
 const normalizeSelectedLot = (lot) => {
-  const normalized = normalizeParkingSearchLot(lot);
-
-  if (!normalized || !normalized.id) {
+  if (!lot || !lot.id) {
     return null;
   }
 
   return {
-    ...normalized,
+    ...lot,
+    id: Number(lot.id),
+    name: lot.name || lot.parking_name || "",
+    address: lot.address || lot.parking_address || "",
+    has_roof: Boolean(lot.has_roof),
+    distance: lot.distance ?? "",
+    price_per_hour: Number(lot.price_per_hour || 0),
+    price_per_day: Number(lot.price_per_day || 0),
+    price_per_month: Number(lot.price_per_month || 0),
     priceLoaded: Boolean(lot.priceLoaded),
   };
 };
@@ -368,7 +373,6 @@ export default function Booking() {
   const [bookingResult, setBookingResult] = useState(null);
   const [profile, setProfile] = useState(() => auth?.user || null);
   const [prefilledSlotName, setPrefilledSlotName] = useState("");
-  const quickSearchAppliedRef = useRef("");
   const bookingSectionRef = useRef(null);
   const bookingSubmitLockRef = useRef(false);
   const bookingWindow = useMemo(() => buildBookingWindow(bookingForm), [bookingForm]);
@@ -551,81 +555,6 @@ export default function Booking() {
   }, [location.state]);
 
   useEffect(() => {
-    const quickSearch = location.state?.quickSearch;
-    if (!quickSearch) {
-      return;
-    }
-
-    if (quickSearchAppliedRef.current === location.key) {
-      return;
-    }
-
-    quickSearchAppliedRef.current = location.key;
-
-    const nextCheckinTime = String(quickSearch.checkinTime || "").trim();
-    if (nextCheckinTime) {
-      const checkinDate = new Date(nextCheckinTime);
-      const checkoutDate = Number.isNaN(checkinDate.getTime())
-        ? null
-        : new Date(checkinDate.getTime() + 2 * 60 * 60 * 1000);
-
-      setBookingForm((prev) => ({
-        ...prev,
-        bookingMode: "hourly",
-        checkinTime: nextCheckinTime,
-        checkoutTime: checkoutDate ? toDatetimeLocalValue(checkoutDate) : prev.checkoutTime,
-      }));
-    }
-
-    const runQuickSearch = async () => {
-      try {
-        setError("");
-        setSearching(true);
-
-        let payload = null;
-        const quickCoordinates = quickSearch.coordinates;
-
-        if (isValidCoordinate(quickCoordinates?.lat, quickCoordinates?.lng)) {
-          payload = await searchParkingByCoords({
-            lat: Number(quickCoordinates.lat),
-            lng: Number(quickCoordinates.lng),
-            limit: 5,
-            sortBy,
-            coveredOnly,
-          });
-        } else if (quickSearch.address && String(quickSearch.address).trim()) {
-          const normalizedAddress = String(quickSearch.address).trim();
-          setAddress(normalizedAddress);
-          payload = await searchParkingByAddress({
-            address: normalizedAddress,
-            limit: 5,
-            sortBy,
-            coveredOnly,
-          });
-        }
-
-        if (!payload) {
-          return;
-        }
-
-        applySearchResult({
-          query: payload.query,
-          center: payload.center,
-          nearest: payload.nearby,
-        });
-      } catch (err) {
-        setNearby([]);
-        setSearchMeta(null);
-        setError(normalizeError(err));
-      } finally {
-        setSearching(false);
-      }
-    };
-
-    runQuickSearch();
-  }, [coveredOnly, location.key, location.state, sortBy]);
-
-  useEffect(() => {
     const lotIdParam = searchParams.get("lotId");
     const slotIdParam = searchParams.get("slotId");
     const slotNameParam = searchParams.get("slotName");
@@ -788,17 +717,15 @@ export default function Booking() {
     try {
       setError("");
       setSearching(true);
-      const payload = await searchParkingByAddress({
-        address: address.trim(),
-        limit: 5,
-        sortBy,
-        coveredOnly,
+      const res = await API.get("/search-parking", {
+        params: {
+          address: address.trim(),
+          limit: 5,
+          sort_by: sortBy,
+          covered_only: coveredOnly,
+        },
       });
-      applySearchResult({
-        query: payload.query,
-        center: payload.center,
-        nearest: payload.nearby,
-      });
+      applySearchResult(res.data);
     } catch (err) {
       setNearby([]);
       setSearchMeta(null);
@@ -809,30 +736,39 @@ export default function Booking() {
   };
 
   const handleUseCurrentLocation = () => {
-    const loadNearby = async () => {
-      try {
-        setError("");
-        setSearching(true);
-        const payload = await searchNearbyByCurrentLocation({
-          limit: 5,
-          sortBy,
-          coveredOnly,
-        });
-        applySearchResult({
-          query: payload.query,
-          center: payload.center,
-          nearest: payload.nearby,
-        });
-      } catch (err) {
-        setNearby([]);
-        setSearchMeta(null);
-        setError(normalizeError(err));
-      } finally {
-        setSearching(false);
-      }
-    };
+    if (!navigator.geolocation) {
+      setError("Trình duyệt không hỗ trợ lấy vị trí hiện tại");
+      return;
+    }
 
-    loadNearby();
+    navigator.geolocation.getCurrentPosition(
+      async ({ coords }) => {
+        try {
+          setError("");
+          setSearching(true);
+          const res = await API.get("/search-parking-by-coords", {
+            params: {
+              lat: coords.latitude,
+              lng: coords.longitude,
+              limit: 5,
+              sort_by: sortBy,
+              covered_only: coveredOnly,
+            },
+          });
+          applySearchResult(res.data);
+        } catch (err) {
+          setNearby([]);
+          setSearchMeta(null);
+          setError(normalizeError(err));
+        } finally {
+          setSearching(false);
+        }
+      },
+      () => {
+        setError("Không thể lấy vị trí hiện tại. Vui lòng cấp quyền vị trí.");
+      },
+      { enableHighAccuracy: true, timeout: 10000 },
+    );
   };
 
   const handleQuickFilter = async (addressQuery) => {

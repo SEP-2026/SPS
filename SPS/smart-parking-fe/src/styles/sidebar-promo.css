@@ -150,6 +150,49 @@
   margin-top: 0;
 }
 
+/* Owner sidebar — compact promo at 100% zoom */
+.owner-sidebar .owner-promo-card {
+  min-height: 0;
+  padding: 12px 12px 14px;
+  border-radius: 18px;
+}
+
+.owner-sidebar .owner-promo-visual {
+  min-height: 108px;
+  margin: -6px -14px 2px;
+}
+
+.owner-sidebar .owner-promo-car {
+  width: 200px;
+}
+
+.owner-sidebar .owner-promo-copy {
+  gap: 6px;
+}
+
+.owner-sidebar .owner-promo-copy strong {
+  font-size: 16px;
+  line-height: 1.12;
+}
+
+.owner-sidebar .owner-promo-copy span {
+  max-width: 100%;
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.owner-sidebar .owner-promo-button {
+  margin-top: 8px;
+  min-height: 34px;
+  padding: 0 12px;
+  font-size: 11px;
+  border-radius: 11px;
+}
+
+.owner-sidebar-scroll {
+  gap: 12px;
+}
+
 @media (max-width: 980px) {
   .owner-promo-card {
     min-height: 276px;

@@ -1,9 +1,11 @@
-import { memo, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { CircleMarker, MapContainer, Marker, Popup, TileLayer, useMap } from "react-leaflet";
 import L from "leaflet";
+import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png";
+import markerIcon from "leaflet/dist/images/marker-icon.png";
+import markerShadow from "leaflet/dist/images/marker-shadow.png";
 import "leaflet/dist/leaflet.css";
 import "./NearbyParkingMap.css";
-import buildGoogleMapsLinks from "../utils/maps";
 import { isValidCoordinate, normalizeParkingSearchLot } from "../services/parkingSearch";
 
 function getAvailabilityTone(percent) {
@@ -66,7 +68,7 @@ function MapPaneManager() {
   return null;
 }
 
-function FitBoundsController({ center, lots, selectedLot }) {
+function FitBoundsController({ center, lots }) {
   const map = useMap();
 
   useEffect(() => {
@@ -82,20 +84,10 @@ function FitBoundsController({ center, lots, selectedLot }) {
     map.fitBounds(bounds, { padding: [30, 30], maxZoom: 16 });
   }, [map, center, lots]);
 
-  useEffect(() => {
-    if (!selectedLot) {
-      return;
-    }
-
-    map.flyTo([selectedLot.latitude, selectedLot.longitude], Math.max(map.getZoom(), 15), {
-      duration: 0.6,
-    });
-  }, [map, selectedLot]);
-
   return null;
 }
 
-function NearbyParkingMap({ searchMeta, nearbyLots, onSelectLot, selectedLotId }) {
+export default function NearbyParkingMap({ searchMeta, nearbyLots, onSelectLot }) {
   const [mapLoading, setMapLoading] = useState(true);
 
   const center = useMemo(() => {
@@ -116,14 +108,13 @@ function NearbyParkingMap({ searchMeta, nearbyLots, onSelectLot, selectedLotId }
   const validLots = useMemo(
     () =>
       (nearbyLots || [])
-        .map((lot) => normalizeParkingSearchLot(lot))
-        .filter((lot) => isValidCoordinate(lot.latitude, lot.longitude)),
+        .filter((lot) => isValidCoordinate(lot.latitude, lot.longitude))
+        .map((lot) => ({
+          ...lot,
+          latitude: Number(lot.latitude),
+          longitude: Number(lot.longitude),
+        })),
     [nearbyLots],
-  );
-
-  const selectedLot = useMemo(
-    () => validLots.find((lot) => Number(lot.id) === Number(selectedLotId)) || validLots[0] || null,
-    [selectedLotId, validLots],
   );
 
   if (!searchMeta || !nearbyLots || nearbyLots.length === 0) {
@@ -144,14 +135,12 @@ function NearbyParkingMap({ searchMeta, nearbyLots, onSelectLot, selectedLotId }
         scrollWheelZoom
         whenReady={() => setMapLoading(false)}
       >
-        <MapPaneManager />
         <TileLayer
-          pane="parking-tiles"
-          attribution="&copy; OpenStreetMap &copy; CARTO"
-          url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
 
-        <CircleMarker pane="parking-search" center={[center.lat, center.lng]} radius={9} pathOptions={{ color: "#ffffff", weight: 2, fillColor: "#1976d2", fillOpacity: 1 }}>
+        <CircleMarker center={[center.lat, center.lng]} radius={9} pathOptions={{ color: "#ffffff", weight: 2, fillColor: "#1976d2", fillOpacity: 1 }}>
           <Popup>Vị trí tìm kiếm hiện tại</Popup>
         </CircleMarker>
 
@@ -160,8 +149,6 @@ function NearbyParkingMap({ searchMeta, nearbyLots, onSelectLot, selectedLotId }
             0,
             Math.round((Number(lot.available_slots || 0) / Math.max(1, Number(lot.total_slots || 1))) * 100),
           );
-
-          const { directionsUrl } = buildGoogleMapsLinks(lot);
 
           return (
             <Marker
@@ -180,23 +167,13 @@ function NearbyParkingMap({ searchMeta, nearbyLots, onSelectLot, selectedLotId }
                   <p>{lot.address}</p>
                   <p>Khoảng cách: {lot.distance} km</p>
                   <p>Giá: {Number(lot.price_per_hour).toLocaleString("vi-VN")}đ/giờ</p>
-                  <div className="nearby-map-popup-actions">
-                    <button
-                      type="button"
-                      className="btn-primary nearby-map-popup-btn"
-                      onClick={() => onSelectLot?.(lot)}
-                    >
-                      Chọn bãi này
-                    </button>
-                    <a
-                      className="nearby-map-popup-directions"
-                      href={directionsUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      Chỉ đường
-                    </a>
-                  </div>
+                  <button
+                    type="button"
+                    className="btn-primary nearby-map-popup-btn"
+                    onClick={() => onSelectLot?.(lot)}
+                  >
+                    Chọn bãi này
+                  </button>
                 </div>
               </Popup>
             </Marker>
@@ -208,5 +185,3 @@ function NearbyParkingMap({ searchMeta, nearbyLots, onSelectLot, selectedLotId }
     </div>
   );
 }
-
-export default memo(NearbyParkingMap);

@@ -10,9 +10,23 @@ from sqlalchemy.orm import Session
 from werkzeug.security import generate_password_hash
 
 from app.database import get_db
-from app.models.models import Booking, EmployeeActivity, OwnerParking, ParkingLot, ParkingPrice, ParkingSlot, Payment, RevokedToken, User
+from app.models.models import (
+    AdminSecurityEvent,
+    Booking,
+    District,
+    EmployeeActivity,
+    OwnerParking,
+    ParkingLot,
+    ParkingPrice,
+    ParkingSlot,
+    Payment,
+    RevokedToken,
+    User,
+)
+from app.utils.timezone import isoformat_vn, vn_now
 from app.routes.auth import get_current_user
 from app.security.password_policy import ensure_strong_password
+from app.services import admin_commissions, admin_contracts, admin_districts, admin_owners, admin_parking_lots, admin_registrations, admin_users
 from app.services.revenue_settings import ADMIN_RUNTIME_SETTINGS, get_commission_rate_percent, split_revenue
 import unicodedata
 
@@ -84,8 +98,12 @@ class ParkingLotCreateRequest(BaseModel):
     address: str = Field(min_length=1, max_length=255)
     phone: str | None = Field(default=None, max_length=30)
     owner: str | None = Field(default=None, max_length=255)
+    district_id: int | None = Field(default=None, alias="districtId")
     slot_count: int = Field(default=0, ge=0)
     status: str = Field(default="pending", pattern="^(pending|active|locked)$")
+
+    class Config:
+        allow_population_by_field_name = True
 
 
 class ParkingLotUpdateRequest(BaseModel):
@@ -93,7 +111,15 @@ class ParkingLotUpdateRequest(BaseModel):
     address: str | None = Field(default=None, max_length=255)
     phone: str | None = Field(default=None, max_length=30)
     owner: str | None = Field(default=None, max_length=255)
+    district_id: int | None = Field(default=None, alias="districtId")
     status: str | None = Field(default=None, pattern="^(pending|active|locked)$")
+
+    class Config:
+        allow_population_by_field_name = True
+
+
+class DistrictStatusUpdateRequest(BaseModel):
+    status: str = Field(pattern="^(active|paused|locked)$")
 
 
 class BookingStatusUpdateRequest(BaseModel):
@@ -396,8 +422,8 @@ def _build_monthly_revenue_series(
     return revenue, commission, bookings_series
 
 
-def _evaluate_user_spam(users: list[User], bookings: list[Booking]) -> tuple[dict[int, dict], list[dict]]:
-    now = datetime.utcnow()
+def _evaluate_user_spam(db: Session, users: list[User], bookings: list[Booking]) -> tuple[dict[int, dict], list[dict]]:
+    now = vn_now()
     user_meta: dict[int, dict] = {}
     auto_lock_events: list[dict] = []
 
@@ -436,20 +462,95 @@ def _evaluate_user_spam(users: list[User], bookings: list[Booking]) -> tuple[dic
         if is_spam and user.is_active == 1 and (not user.status or user.status.lower() != "banned"):
             user.status = "banned"
             user.is_active = 0
-            auto_lock_events.append({
-                "id": f"spam-{user.id}-{int(now.timestamp())}",
-                "actor": "system",
-                "action": f"Tu dong khoa user {user.email} do hanh vi spam",
-                "target": user.email,
-                "targetType": "user",
-                "time": now.isoformat(),
-                "type": "security",
-            })
+            event_key = f"spam-lock-{user.id}-{int(now.timestamp())}"
+            auto_lock_events.append(
+                _record_security_event(
+                    db,
+                    event_key=event_key,
+                    actor="Hệ thống",
+                    action=f"Tài khoản {user.email} đang bị khóa (tự động do hành vi spam)",
+                    target=user.email,
+                    target_type="user",
+                    level="security",
+                    created_at=now,
+                )
+            )
 
     return user_meta, auto_lock_events
 
 
-def _build_activity_logs(bookings: list[Booking], users: list[User], parking_lots: list[ParkingLot]) -> list[dict]:
+def _record_security_event(
+    db: Session,
+    *,
+    event_key: str,
+    action: str,
+    target: str,
+    target_type: str = "user",
+    actor: str = "system",
+    level: str = "security",
+    created_at: datetime | None = None,
+) -> dict:
+    timestamp = created_at or vn_now()
+    existing = db.query(AdminSecurityEvent).filter(AdminSecurityEvent.event_key == event_key).first()
+    if existing:
+        return {
+            "id": f"security-{existing.id}",
+            "actor": existing.actor,
+            "action": existing.action,
+            "target": existing.target,
+            "targetType": existing.target_type,
+            "time": isoformat_vn(existing.created_at, fallback_now=True),
+            "type": existing.level,
+        }
+
+    row = AdminSecurityEvent(
+        event_key=event_key,
+        actor=actor,
+        action=action,
+        target=target,
+        target_type=target_type,
+        level=level,
+        created_at=timestamp,
+    )
+    db.add(row)
+    db.flush()
+    return {
+        "id": f"security-{row.id}",
+        "actor": actor,
+        "action": action,
+        "target": target,
+        "targetType": target_type,
+        "time": isoformat_vn(timestamp, fallback_now=True),
+        "type": level,
+    }
+
+
+def _fetch_security_events(db: Session, limit: int = 30) -> list[dict]:
+    rows = (
+        db.query(AdminSecurityEvent)
+        .order_by(AdminSecurityEvent.created_at.desc(), AdminSecurityEvent.id.desc())
+        .limit(limit)
+        .all()
+    )
+    return [
+        {
+            "id": f"security-{row.id}",
+            "actor": row.actor,
+            "action": row.action,
+            "target": row.target,
+            "targetType": row.target_type,
+            "time": isoformat_vn(row.created_at, fallback_now=True),
+            "type": row.level,
+        }
+        for row in rows
+    ]
+
+
+def _build_activity_logs(
+    db: Session,
+    bookings: list[Booking],
+    parking_lots: list[ParkingLot],
+) -> list[dict]:
     logs = []
     for booking in sorted(bookings, key=lambda item: item.created_at or datetime.min, reverse=True)[:6]:
         actor = booking.user.name if booking.user else "Hệ thống"
@@ -462,21 +563,9 @@ def _build_activity_logs(bookings: list[Booking], users: list[User], parking_lot
             "action": action_label,
             "target": booking_code,
             "targetType": "booking",
-            "time": booking.created_at.isoformat() if booking.created_at else datetime.utcnow().isoformat(),
+            "time": isoformat_vn(booking.created_at, fallback_now=True),
             "type": "booking",
         })
-
-    for user in users:
-        if _to_status_label(user) == "banned":
-            logs.append({
-                "id": f"user-{user.id}",
-                "actor": "Hệ thống",
-                "action": f"Tài khoản {user.email} đang bị khóa",
-                "target": user.email,
-                "targetType": "user",
-                "time": datetime.utcnow().isoformat(),
-                "type": "security",
-            })
 
     for lot in parking_lots:
         if _lot_status(lot) == "locked":
@@ -486,12 +575,13 @@ def _build_activity_logs(bookings: list[Booking], users: list[User], parking_lot
                 "action": f"Bãi {lot.name} đang bị khóa vận hành",
                 "target": lot.name,
                 "targetType": "parking_lot",
-                "time": datetime.utcnow().isoformat(),
+                "time": isoformat_vn(fallback_now=True),
                 "type": "warning",
             })
 
+    logs.extend(_fetch_security_events(db))
     logs.sort(key=lambda item: item.get("time") or "", reverse=True)
-    return logs[:12]
+    return logs[:20]
 
 
 def _build_login_history(db: Session) -> list[dict]:
@@ -509,13 +599,270 @@ def _build_login_history(db: Session) -> list[dict]:
     ]
 
 
+def _build_daily_revenue_series(payments_list: list, start_date=None, end_date=None, days: int = 7) -> list:
+    """Build daily revenue and commission series for a given date range."""
+    from datetime import datetime as dt_parser
+    
+    now = datetime.utcnow()
+    today = now.date()
+    commission_rate = float(ADMIN_RUNTIME_SETTINGS["commissionRate"]) / 100
+    
+    # Determine date range
+    if start_date and end_date:
+        # If dates are strings, parse them
+        if isinstance(start_date, str):
+            start_date = dt_parser.strptime(start_date, "%Y-%m-%d").date()
+        if isinstance(end_date, str):
+            end_date = dt_parser.strptime(end_date, "%Y-%m-%d").date()
+        range_start = start_date
+        range_end = end_date
+    else:
+        # Use days parameter as fallback
+        range_start = today - timedelta(days=days - 1)
+        range_end = today
+    
+    # Initialize dictionary for each day in range
+    daily_data = {}
+    current_date = range_start
+    while current_date <= range_end:
+        daily_data[current_date] = {"revenue": 0.0, "commission": 0.0}
+        current_date += timedelta(days=1)
+    
+    # Aggregate payments by date
+    paid_payments = [p for p in payments_list if p.payment_status == "paid"] if payments_list else []
+    
+    for payment in paid_payments:
+        payment_date = (payment.paid_at or payment.created_at)
+        if payment_date:
+            payment_date = payment_date.date()
+            if payment_date in daily_data:
+                amount = float(payment.amount or 0) + float(payment.overtime_fee or 0)
+                daily_data[payment_date]["revenue"] += amount
+                daily_data[payment_date]["commission"] += amount * commission_rate
+    
+    # Format as list with day labels
+    result = []
+    for date in sorted(daily_data.keys()):
+        day_str = date.strftime("%d/%m")
+        result.append({
+            "date": day_str,
+            "label": day_str,
+            "revenue": round(daily_data[date]["revenue"], 2),
+            "commission": round(daily_data[date]["commission"], 2),
+        })
+    
+    return result
+
+
+def _build_dashboard_stats(db: Session, date_range: str = "7days", date_from: str = None, date_to: str = None) -> dict:
+    """Build dashboard statistics from real database data with date range support."""
+    from datetime import datetime as dt_parser
+    
+    users = db.query(User).all()
+    parking_lots = db.query(ParkingLot).all()
+    bookings = db.query(Booking).all()
+    slots = db.query(ParkingSlot).all()
+    payments = db.query(Payment).all()
+    
+    now = datetime.utcnow()
+    today = now.date()
+    
+    # Determine date range based on parameter
+    if date_range == "custom" and date_from and date_to:
+        try:
+            range_start = dt_parser.strptime(date_from, "%Y-%m-%d").date()
+            range_end = dt_parser.strptime(date_to, "%Y-%m-%d").date()
+        except:
+            range_start = today - timedelta(days=6)
+            range_end = today
+    elif date_range == "30days":
+        range_start = today - timedelta(days=29)
+        range_end = today
+    elif date_range == "90days":
+        range_start = today - timedelta(days=89)
+        range_end = today
+    else:  # Default to 7days
+        range_start = today - timedelta(days=6)
+        range_end = today
+    
+    # For comparison, use previous period of same length
+    period_length = (range_end - range_start).days + 1
+    previous_range_end = range_start - timedelta(days=1)
+    previous_range_start = previous_range_end - timedelta(days=period_length - 1)
+    
+    def get_revenue_for_period(payments_list, start_date, end_date):
+        """Calculate revenue for a given date range."""
+        period_payments = [
+            p for p in payments_list 
+            if p.payment_status == "paid" 
+            and (p.paid_at or p.created_at)
+            and (p.paid_at or p.created_at).date() >= start_date
+            and (p.paid_at or p.created_at).date() <= end_date
+        ]
+        return sum(float(p.amount or 0) + float(p.overtime_fee or 0) for p in period_payments)
+    
+    def get_commission_for_period(payments_list, start_date, end_date):
+        """Calculate commission for a given date range."""
+        commission_rate = float(ADMIN_RUNTIME_SETTINGS["commissionRate"]) / 100
+        period_payments = [
+            p for p in payments_list 
+            if p.payment_status == "paid" 
+            and (p.paid_at or p.created_at)
+            and (p.paid_at or p.created_at).date() >= start_date
+            and (p.paid_at or p.created_at).date() <= end_date
+        ]
+        gross = sum(float(p.amount or 0) + float(p.overtime_fee or 0) for p in period_payments)
+        return gross * commission_rate
+    
+    def get_bookings_count_for_period(bookings_list, start_date, end_date):
+        """Count bookings for a given date range."""
+        return sum(
+            1 for b in bookings_list 
+            if b.created_at 
+            and b.created_at.date() >= start_date 
+            and b.created_at.date() <= end_date
+        )
+    
+    # Calculate revenue and commission for current and previous periods
+    paid_transactions = [p for p in payments if p.payment_status == "paid"] if payments else []
+    
+    if paid_transactions:
+        current_period_gross = get_revenue_for_period(paid_transactions, range_start, range_end)
+        previous_period_gross = get_revenue_for_period(paid_transactions, previous_range_start, previous_range_end)
+        
+        current_period_commission = get_commission_for_period(paid_transactions, range_start, range_end)
+        previous_period_commission = get_commission_for_period(paid_transactions, previous_range_start, previous_range_end)
+    else:
+        # Fallback to bookings if no payments
+        paid_bookings = [b for b in bookings if b.status in {"booked", "checked_in", "in_progress", "completed"}]
+        
+        current_period_bookings = [b for b in paid_bookings if b.created_at and b.created_at.date() >= range_start and b.created_at.date() <= range_end]
+        previous_period_bookings = [b for b in paid_bookings if b.created_at and b.created_at.date() >= previous_range_start and b.created_at.date() <= previous_range_end]
+        
+        current_period_gross = sum(float(b.total_amount or 0) for b in current_period_bookings)
+        previous_period_gross = sum(float(b.total_amount or 0) for b in previous_period_bookings)
+        
+        commission_rate = float(ADMIN_RUNTIME_SETTINGS["commissionRate"]) / 100
+        current_period_commission = current_period_gross * commission_rate
+        previous_period_commission = previous_period_gross * commission_rate
+    
+    # Calculate total (all time)
+    total_gross = sum(float(p.amount or 0) + float(p.overtime_fee or 0) for p in paid_transactions) if paid_transactions else 0
+    total_commission = total_gross * (float(ADMIN_RUNTIME_SETTINGS["commissionRate"]) / 100) if total_gross > 0 else 0
+    
+    # Calculate period-over-period change percentage
+    def calculate_change_percent(current, previous):
+        """Calculate percentage change from previous to current."""
+        if previous <= 0:
+            return 100 if current > 0 else 0
+        return round(((current - previous) / previous) * 100, 1)
+    
+    revenue_change_percent = calculate_change_percent(current_period_gross, previous_period_gross)
+    commission_change_percent = calculate_change_percent(current_period_commission, previous_period_commission)
+    
+    # Count active users
+    active_users = sum(1 for u in users if u.role == "user" and (u.status or "").lower() != "banned" and u.is_active == 1)
+    active_owners = sum(1 for u in users if u.role == "owner" and (u.status or "").lower() != "suspended")
+    
+    # Calculate occupancy
+    slot_counts = _slot_counts_by_lot(slots)
+    occupancy_values = [
+        (slot_counts[lot_id]["occupied"] / slot_counts[lot_id]["total"] * 100) 
+        if slot_counts[lot_id]["total"] > 0 else 0
+        for lot_id in slot_counts
+    ]
+    avg_occupancy = int(round(sum(occupancy_values) / len(occupancy_values))) if occupancy_values else 0
+    
+    # Parking lot stats
+    active_parking_lots = sum(1 for lot in parking_lots if lot.is_active == 1)
+    total_parking_lots = len(parking_lots)
+    
+    # Bookings stats with period comparison
+    current_period_bookings_count = get_bookings_count_for_period(bookings, range_start, range_end)
+    previous_period_bookings_count = get_bookings_count_for_period(bookings, previous_range_start, previous_range_end)
+    bookings_change_percent = calculate_change_percent(current_period_bookings_count, previous_period_bookings_count)
+    
+    # System status (mock data - in real scenario, collect from monitoring)
+    system_status = {
+        "uptime": "99.98%",
+        "cpu": "23%",
+        "ram": "56%",
+        "database": "98%",
+        "apiResponse": "120ms",
+        "backupTime": now.strftime("%d/%m/%Y %H:%M"),
+    }
+    
+    # Format trend strings
+    def format_trend(percent):
+        """Format trend percentage with sign."""
+        if percent > 0:
+            return f"+{percent}%"
+        elif percent < 0:
+            return f"{percent}%"
+        else:
+            return "0%"
+    
+    # Determine days to display in daily revenue series
+    if date_range == "90days":
+        days_to_show = 90
+    elif date_range == "30days":
+        days_to_show = 30
+    else:
+        days_to_show = 7
+    
+    return {
+        "revenue": {
+            "totalRevenue": round(current_period_gross, 2),
+            "thisWeekRevenue": round(current_period_gross, 2),  # Current period
+            "lastWeekRevenue": round(previous_period_gross, 2),  # Previous period
+            "totalCommission": round(total_commission, 2),
+            "thisWeekCommission": round(current_period_commission, 2),
+            "lastWeekCommission": round(previous_period_commission, 2),
+            "totalOwnerPayout": round(current_period_gross - current_period_commission, 2),
+        },
+        "users": {
+            "totalUsers": sum(1 for u in users if u.role == "user"),
+            "activeUsers": active_users,
+            "totalOwners": sum(1 for u in users if u.role == "owner"),
+            "activeOwners": active_owners,
+            "totalEmployees": sum(1 for u in users if u.role == "employee"),
+        },
+        "parking": {
+            "totalParkingLots": total_parking_lots,
+            "activeParkingLots": active_parking_lots,
+            "averageOccupancy": avg_occupancy,
+            "totalSlots": sum(c["total"] for c in slot_counts.values()),
+            "occupiedSlots": sum(c["occupied"] for c in slot_counts.values()),
+        },
+        "bookings": {
+            "totalBookings": len(bookings),
+            "thisWeekBookings": current_period_bookings_count,
+            "lastWeekBookings": previous_period_bookings_count,
+            "completedBookings": sum(1 for b in bookings if b.status in {"completed", "checked_in"}),
+            "pendingBookings": sum(1 for b in bookings if b.status in {"booked", "in_progress"}),
+            "cancelledBookings": sum(1 for b in bookings if b.status == "cancelled"),
+        },
+        "systemStatus": system_status,
+        "trends": {
+            "revenueChange": format_trend(revenue_change_percent),
+            "revenueChangePercent": revenue_change_percent,
+            "commissionChange": format_trend(commission_change_percent),
+            "commissionChangePercent": commission_change_percent,
+            "bookingChange": format_trend(bookings_change_percent),
+            "bookingChangePercent": bookings_change_percent,
+        },
+        "dailyRevenueSeries": _build_daily_revenue_series(payments, start_date=range_start, end_date=range_end),
+    }
+
+
+
 def _serialize_bootstrap(db: Session) -> dict:
     users = db.query(User).all()
     parking_lots = db.query(ParkingLot).all()
     bookings = db.query(Booking).all()
     slots = db.query(ParkingSlot).all()
     payments = db.query(Payment).all()
-    spam_meta, spam_events = _evaluate_user_spam(users, bookings)
+    spam_meta, spam_events = _evaluate_user_spam(db, users, bookings)
     if spam_events:
         db.commit()
         users = db.query(User).all()
@@ -537,6 +884,7 @@ def _serialize_bootstrap(db: Session) -> dict:
 
     slot_counts = _slot_counts_by_lot(slots)
     owners = [user for user in users if user.role == "owner"]
+    employees = [user for user in users if user.role == "employee"]
     lot_by_owner, owner_by_lot = _owner_parking_maps(db)
 
     user_rows = [
@@ -662,15 +1010,15 @@ def _serialize_bootstrap(db: Session) -> dict:
     prev_growth = growth_values[-2]["amount"] if len(growth_values) > 1 else 0
     current_growth = growth_values[-1]["amount"] if growth_values else 0
     growth_percent = int(round(((current_growth - prev_growth) / prev_growth) * 100)) if prev_growth > 0 else (100 if current_growth > 0 else 0)
-    activity_logs = _build_activity_logs(bookings, users, parking_lots)
-    combined_logs = (spam_events + activity_logs)[:12]
+    activity_logs = _build_activity_logs(db, bookings, parking_lots)
+    combined_logs = activity_logs[:20]
 
     notifications = [
         {
             "id": item["id"],
             "title": item["action"],
             "time": item["time"],
-            "level": item["type"],
+            "level": item["type"],  # "security", "warning", "booking", etc.
         }
         for item in combined_logs
     ]
@@ -679,6 +1027,13 @@ def _serialize_bootstrap(db: Session) -> dict:
         "commissionRate": get_commission_rate_percent(),
         "users": user_rows,
         "owners": owner_rows,
+        "employees": [{
+            "id": emp.id,
+            "name": emp.name,
+            "email": emp.email,
+            "phone": emp.phone,
+            "status": _to_status_label(emp),
+        } for emp in employees],
         "parkingLots": parking_rows,
         "bookings": booking_rows,
         "transactions": transaction_rows,
@@ -706,6 +1061,55 @@ def _serialize_bootstrap(db: Session) -> dict:
     }
 
 
+class AdminCommissionPayoutRequest(BaseModel):
+    ownerIds: list[int] | None = None
+
+
+@router.get("/commissions")
+def get_admin_commissions(
+    dateFrom: str | None = None,
+    dateTo: str | None = None,
+    districtId: int | None = None,
+    paymentStatus: str | None = None,
+    search: str | None = None,
+    page: int = 1,
+    pageSize: int = 10,
+    _: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    return admin_commissions.build_admin_commissions(
+        db,
+        date_from=dateFrom,
+        date_to=dateTo,
+        district_id=districtId,
+        payment_status=paymentStatus,
+        search=search,
+        page=page,
+        page_size=pageSize,
+    )
+
+
+@router.post("/commissions/payout")
+def process_admin_commission_payout(
+    payload: AdminCommissionPayoutRequest | None = None,
+    _: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    owner_ids = payload.ownerIds if payload else None
+    return admin_commissions.process_partner_payouts(db, owner_ids=owner_ids)
+
+
+@router.get("/dashboard-stats")
+def get_dashboard_stats(
+    range: str = "7days",
+    dateFrom: str = None,
+    dateTo: str = None,
+    _: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    return _build_dashboard_stats(db, date_range=range, date_from=dateFrom, date_to=dateTo)
+
+
 @router.get("/bootstrap")
 def admin_bootstrap(
     _: User = Depends(require_admin),
@@ -714,21 +1118,377 @@ def admin_bootstrap(
     return _serialize_bootstrap(db)
 
 
+class UserUpdateRequest(BaseModel):
+    name: str | None = None
+    email: str | None = None
+    phone: str | None = None
+
+
+class UserCreateRequest(BaseModel):
+    name: str = Field(min_length=1, max_length=255)
+    email: str = Field(min_length=3, max_length=255)
+    phone: str | None = Field(default=None, max_length=30)
+    password: str | None = Field(default=None, min_length=6, max_length=255)
+    role: str = Field(min_length=1, max_length=50)
+    status: str = Field(default="active", pattern="^(active|suspended|banned)$")
+    managedDistrictId: int | None = Field(default=None, alias="managed_district_id")
+    ownerId: int | None = Field(default=None, alias="owner_id")
+    parkingId: int | None = Field(default=None, alias="parking_id")
+    vehiclePlate: str | None = Field(default=None, max_length=30, alias="vehicle_plate")
+    vehicleColor: str | None = Field(default=None, max_length=50, alias="vehicle_color")
+
+    class Config:
+        allow_population_by_field_name = True
+
+
+@router.get("/users/form-options")
+def get_user_form_options(
+    _: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    return admin_users.build_user_form_options(db)
+
+
+@router.post("/users")
+def create_user_account(
+    payload: UserCreateRequest,
+    admin: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    temporary_password = payload.password.strip() if payload.password else _generate_strong_password()
+    ensure_strong_password(temporary_password)
+    try:
+        created = admin_users.create_managed_user(
+            db,
+            name=payload.name,
+            email=payload.email,
+            phone=payload.phone,
+            password=temporary_password,
+            role=payload.role,
+            status=payload.status,
+            managed_district_id=payload.managedDistrictId,
+            owner_id=payload.ownerId,
+            parking_id=payload.parkingId,
+            vehicle_plate=payload.vehiclePlate,
+            vehicle_color=payload.vehicleColor,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    now = vn_now()
+    actor_name = admin.name or admin.email or "Admin"
+    _record_security_event(
+        db,
+        event_key=f"user-create-{created['id']}-{int(now.timestamp())}",
+        actor=actor_name,
+        action=f"Tạo tài khoản {created['email']} ({created['roleLabel']})",
+        target=created["email"],
+        target_type="user",
+        level="system",
+        created_at=now,
+    )
+    db.commit()
+
+    return {
+        "message": "Tạo người dùng thành công",
+        "user": created,
+        "temporary_password": temporary_password,
+    }
+
+
+@router.get("/users/management")
+def get_users_management(
+    search: str | None = None,
+    role: str | None = None,
+    status: str | None = None,
+    districtId: int | None = None,
+    createdSort: str = "newest",
+    page: int = 1,
+    pageSize: int = 10,
+    _: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    return admin_users.build_user_management(
+        db,
+        search=search,
+        role=role,
+        status=status,
+        district_id=districtId,
+        created_sort=createdSort,
+        page=page,
+        page_size=pageSize,
+    )
+
+
+@router.get("/users/{user_id}/detail")
+def get_user_detail(
+    user_id: int,
+    _: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    detail = admin_users.build_user_detail(db, user_id)
+    if not detail:
+        raise HTTPException(status_code=404, detail="Không tìm thấy người dùng")
+    return detail
+
+
+@router.patch("/users/{user_id}")
+def update_managed_user(
+    user_id: int,
+    payload: UserUpdateRequest,
+    _: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    user = db.query(User).filter(User.id == user_id, User.role.in_(admin_users.MANAGED_ROLES)).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="Không tìm thấy người dùng")
+
+    if payload.name is not None:
+        user.name = payload.name.strip()
+    if payload.phone is not None:
+        user.phone = payload.phone.strip() or None
+    if payload.email is not None:
+        normalized = payload.email.lower().strip()
+        existing = db.query(User).filter(User.email == normalized, User.id != user.id).first()
+        if existing:
+            raise HTTPException(status_code=409, detail="Email đã tồn tại")
+        user.email = normalized
+
+    db.commit()
+    return {"message": "Cập nhật người dùng thành công"}
+
+
+@router.post("/users/{user_id}/reset-password")
+def reset_managed_user_password(
+    user_id: int,
+    _: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    user = db.query(User).filter(User.id == user_id, User.role.in_(admin_users.MANAGED_ROLES)).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="Không tìm thấy người dùng")
+
+    temp_password = _generate_strong_password()
+    user.password = "__legacy_disabled__"
+    user.password_hash = generate_password_hash(temp_password)
+    db.commit()
+    return {"message": "Đã đặt lại mật khẩu", "temporary_password": temp_password}
+
+
 @router.patch("/users/{user_id}/status")
 def update_user_status(
     user_id: int,
     payload: UserStatusUpdateRequest,
-    _: User = Depends(require_admin),
+    admin: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
-    user = db.query(User).filter(User.id == user_id, User.role == "user").first()
+    user = db.query(User).filter(User.id == user_id, User.role.in_(admin_users.MANAGED_ROLES)).first()
     if not user:
         raise HTTPException(status_code=404, detail="Không tìm thấy người dùng")
 
+    previous_status = _to_status_label(user)
     user.status = payload.status
     user.is_active = 1 if payload.status == "active" else 0
+
+    if previous_status != payload.status:
+        now = vn_now()
+        actor_name = admin.name or admin.email or "Admin"
+        if payload.status == "banned":
+            _record_security_event(
+                db,
+                event_key=f"user-lock-{user.id}-{int(now.timestamp())}",
+                actor=actor_name,
+                action=f"Tài khoản {user.email} đang bị khóa",
+                target=user.email,
+                target_type="user",
+                level="security",
+                created_at=now,
+            )
+        else:
+            _record_security_event(
+                db,
+                event_key=f"user-unlock-{user.id}-{int(now.timestamp())}",
+                actor=actor_name,
+                action=f"Tài khoản {user.email} đã được mở khóa",
+                target=user.email,
+                target_type="user",
+                level="success",
+                created_at=now,
+            )
+
     db.commit()
     return {"message": "Cập nhật trạng thái người dùng thành công"}
+
+
+class RegistrationReviewRequest(BaseModel):
+    adminNotes: str | None = None
+    reason: str | None = None
+
+
+class ContractUpdateRequest(BaseModel):
+    commissionRate: float | None = None
+    contractValue: float | None = None
+    paymentMethod: str | None = None
+    paymentCycle: str | None = None
+
+
+@router.get("/registrations/management")
+def get_registrations_management(
+    search: str | None = None,
+    status: str | None = None,
+    districtId: int | None = None,
+    page: int = 1,
+    pageSize: int = 10,
+    _: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    return admin_registrations.build_registration_management(
+        db, search=search, status=status, district_id=districtId, page=page, page_size=pageSize,
+    )
+
+
+@router.get("/registrations/{registration_id}")
+def get_registration_detail(
+    registration_id: int,
+    _: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    detail = admin_registrations.get_registration_detail(db, registration_id)
+    if not detail:
+        raise HTTPException(status_code=404, detail="Không tìm thấy hồ sơ đăng ký")
+    return detail
+
+
+@router.post("/registrations/{registration_id}/approve")
+def approve_registration(
+    registration_id: int,
+    payload: RegistrationReviewRequest | None = None,
+    admin: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    try:
+        return admin_registrations.approve_registration(
+            db, registration_id, int(admin.id), admin_notes=payload.adminNotes if payload else None,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@router.post("/registrations/{registration_id}/reject")
+def reject_registration(
+    registration_id: int,
+    payload: RegistrationReviewRequest | None = None,
+    admin: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    try:
+        return admin_registrations.reject_registration(
+            db,
+            registration_id,
+            int(admin.id),
+            reason=payload.reason if payload else None,
+            admin_notes=payload.adminNotes if payload else None,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@router.get("/contracts/management")
+def get_contracts_management(
+    search: str | None = None,
+    status: str | None = None,
+    districtId: int | None = None,
+    page: int = 1,
+    pageSize: int = 10,
+    _: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    return admin_contracts.build_contract_management(
+        db, search=search, status=status, district_id=districtId, page=page, page_size=pageSize,
+    )
+
+
+@router.get("/contracts/{contract_id}")
+def get_contract_detail(
+    contract_id: int,
+    _: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    detail = admin_contracts.get_contract_detail(db, contract_id)
+    if not detail:
+        raise HTTPException(status_code=404, detail="Không tìm thấy hợp đồng")
+    return detail
+
+
+@router.post("/contracts/{contract_id}/renew")
+def renew_contract(
+    contract_id: int,
+    _: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    try:
+        return admin_contracts.renew_contract(db, contract_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@router.post("/contracts/{contract_id}/terminate")
+def terminate_contract(
+    contract_id: int,
+    _: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    try:
+        return admin_contracts.terminate_contract(db, contract_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@router.patch("/contracts/{contract_id}")
+def update_contract(
+    contract_id: int,
+    payload: ContractUpdateRequest,
+    _: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    try:
+        return admin_contracts.update_contract_notes(db, contract_id, payload.model_dump(exclude_unset=True))
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@router.get("/owners/management")
+def get_owners_management(
+    search: str | None = None,
+    status: str | None = None,
+    districtId: int | None = None,
+    createdSort: str = "newest",
+    page: int = 1,
+    pageSize: int = 10,
+    _: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    return admin_owners.build_owner_management(
+        db,
+        search=search,
+        status=status,
+        district_id=districtId,
+        created_sort=createdSort,
+        page=page,
+        page_size=pageSize,
+    )
+
+
+@router.get("/owners/{owner_id}/detail")
+def get_owner_detail(
+    owner_id: int,
+    _: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    detail = admin_owners.build_owner_detail(db, owner_id)
+    if not detail:
+        raise HTTPException(status_code=404, detail="Không tìm thấy chủ bãi")
+    return detail
 
 
 @router.post("/owners")
@@ -866,15 +1626,43 @@ def update_owner(
 def update_owner_status(
     owner_id: int,
     payload: OwnerStatusUpdateRequest,
-    _: User = Depends(require_admin),
+    admin: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
     owner = db.query(User).filter(User.id == owner_id, User.role == "owner").first()
     if not owner:
         raise HTTPException(status_code=404, detail="Không tìm thấy chủ khu vực")
 
+    previous_status = "active" if _to_status_label(owner) == "active" else "suspended"
     owner.status = "active" if payload.status == "active" else "banned"
     owner.is_active = 1 if payload.status == "active" else 0
+
+    if previous_status != payload.status:
+        now = vn_now()
+        actor_name = admin.name or admin.email or "Admin"
+        if payload.status == "suspended":
+            _record_security_event(
+                db,
+                event_key=f"owner-lock-{owner.id}-{int(now.timestamp())}",
+                actor=actor_name,
+                action=f"Tài khoản chủ khu vực {owner.email} đang bị khóa",
+                target=owner.email,
+                target_type="owner",
+                level="security",
+                created_at=now,
+            )
+        else:
+            _record_security_event(
+                db,
+                event_key=f"owner-unlock-{owner.id}-{int(now.timestamp())}",
+                actor=actor_name,
+                action=f"Tài khoản chủ khu vực {owner.email} đã được mở khóa",
+                target=owner.email,
+                target_type="owner",
+                level="success",
+                created_at=now,
+            )
+
     db.commit()
     return {"message": "Cập nhật trạng thái chủ khu vực thành công"}
 
@@ -977,6 +1765,104 @@ def sync_employee_login_format(
     }
 
 
+def _resolve_district_id(db: Session, district_id: int | None) -> int | None:
+    if district_id is None:
+        return None
+    district = db.query(District).filter(District.id == district_id).first()
+    if not district:
+        raise HTTPException(status_code=404, detail="Không tìm thấy khu vực")
+    return int(district.id)
+
+
+@router.get("/parking-lots/management")
+def get_parking_lots_management(
+    search: str | None = None,
+    status: str | None = None,
+    districtId: int | None = None,
+    ownerId: int | None = None,
+    sort: str = "newest",
+    page: int = 1,
+    pageSize: int = 10,
+    _: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    return admin_parking_lots.build_parking_lot_management(
+        db,
+        search=search,
+        status=status,
+        district_id=districtId,
+        owner_id=ownerId,
+        sort=sort,
+        page=page,
+        page_size=pageSize,
+    )
+
+
+@router.get("/parking-lots/{lot_id}/detail")
+def get_parking_lot_detail(
+    lot_id: int,
+    _: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    detail = admin_parking_lots.build_parking_lot_detail(db, lot_id)
+    if not detail:
+        raise HTTPException(status_code=404, detail="Không tìm thấy bãi đỗ")
+    return detail
+
+
+@router.get("/districts/management")
+def get_districts_management(
+    search: str | None = None,
+    status: str | None = None,
+    sort: str = "newest",
+    page: int = 1,
+    pageSize: int = 10,
+    _: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    return admin_districts.build_district_management(
+        db,
+        search=search,
+        status=status,
+        sort=sort,
+        page=page,
+        page_size=pageSize,
+    )
+
+
+@router.get("/districts/{district_id}/detail")
+def get_district_detail(
+    district_id: int,
+    _: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    detail = admin_districts.build_district_detail(db, district_id)
+    if not detail:
+        raise HTTPException(status_code=404, detail="Không tìm thấy khu vực")
+    return detail
+
+
+@router.patch("/districts/{district_id}/status")
+def update_district_status(
+    district_id: int,
+    payload: DistrictStatusUpdateRequest,
+    _: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    district = db.query(District).filter(District.id == district_id).first()
+    if not district:
+        raise HTTPException(status_code=404, detail="Không tìm thấy khu vực")
+    lots = db.query(ParkingLot).filter(ParkingLot.district_id == district_id).all()
+    if payload.status == "active":
+        for lot in lots:
+            lot.is_active = 1
+    else:
+        for lot in lots:
+            lot.is_active = 0
+    db.commit()
+    return {"message": "Đã cập nhật trạng thái khu vực", "status": payload.status}
+
+
 @router.post("/parking-lots")
 def create_parking_lot(
     payload: ParkingLotCreateRequest,
@@ -990,10 +1876,13 @@ def create_parking_lot(
     if duplicate_name:
         raise HTTPException(status_code=409, detail="Ten bai do da ton tai")
 
+    resolved_district_id = _resolve_district_id(db, payload.district_id) if payload.district_id else None
+
     lot = ParkingLot(
         name=payload.name.strip(),
         address=payload.address.strip(),
         phone=payload.phone.strip() if payload.phone else None,
+        district_id=resolved_district_id,
         latitude=10.0,
         longitude=106.0,
         has_roof=0,
@@ -1046,6 +1935,8 @@ def update_parking_lot(
             _assign_owner_parking(db, owner.id, lot.id)
     if payload.status is not None:
         lot.is_active = 1 if payload.status == "active" else 0
+    if payload.district_id is not None:
+        lot.district_id = _resolve_district_id(db, payload.district_id)
     db.commit()
     return {"message": "ÄÃ£ cáº­p nháº­t bÃ£i Ä‘á»—"}
 

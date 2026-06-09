@@ -169,7 +169,9 @@ export default function Login({ onLogin }) {
       <div className="login-bg-shape" />
       <div className="login-map-overlay" />
       <div className="page-card login-card fancy-panel">
-        <div className="parking-mark" aria-hidden="true">🚗</div>
+        <div className="parking-mark" aria-hidden="true">
+          <img src="/owner-promo-car.png" alt="" className="parking-mark-car" />
+        </div>
         <p className="login-kicker">Smart Parking Platform</p>
         <h1 className="page-title login-title">Bãi đỗ xe thông minh</h1>
 

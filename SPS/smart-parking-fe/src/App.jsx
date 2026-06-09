@@ -7,22 +7,34 @@ import Home from "./pages/Home";
 import Login from "./pages/Login";
 import AdminAnalytics from "./pages/admin/AdminAnalytics";
 import AdminDashboard from "./pages/admin/AdminDashboard";
+import AdminNotifications from "./pages/admin/AdminNotifications";
 import AdminSettings from "./pages/admin/AdminSettings";
 import BookingManagement from "./pages/admin/BookingManagement";
 import OwnerManagement from "./pages/admin/OwnerManagement";
-import ParkingManagement from "./pages/admin/ParkingManagement";
+import AdminOwnerRegistrations from "./pages/admin/AdminOwnerRegistrations";
+import AdminOwnerContracts from "./pages/admin/AdminOwnerContracts";
+import ParkingLotManagement from "./pages/admin/ParkingLotManagement";
+import DistrictManagement from "./pages/admin/DistrictManagement";
+import DistrictDetail from "./pages/admin/DistrictDetail";
 import RevenuePage from "./pages/admin/RevenuePage";
+import AdminCommissions from "./pages/admin/AdminCommissions";
+import AdminPartnerLayout from "./admin/AdminPartnerLayout";
 import UserManagement from "./pages/admin/UserManagement";
+import UserDetail from "./pages/admin/UserDetail";
+import UserAdd from "./pages/admin/UserAdd";
 import OwnerActivityHistory from "./pages/owner/OwnerActivityHistory";
 import OwnerBookings from "./pages/owner/OwnerBookings";
 import OwnerCustomers from "./pages/owner/OwnerCustomers";
-import OwnerEmployees from "./pages/owner/OwnerEmployees";
 import OwnerNotifications from "./pages/owner/OwnerNotifications";
 import OwnerOverview from "./pages/owner/OwnerOverview";
 import OwnerParking from "./pages/owner/OwnerParking";
 import OwnerParkingDetail from "./pages/owner/OwnerParkingDetail";
 import OwnerParkingMap from "./pages/owner/OwnerParkingMap";
-import OwnerRevenue from "./pages/owner/OwnerRevenue";
+import OwnerRevenueLayout from "./owner/revenue/OwnerRevenueLayout";
+import OwnerRevenueOverview from "./owner/revenue/OwnerRevenueOverview";
+import OwnerRevenueTransactions from "./owner/revenue/OwnerRevenueTransactions";
+import OwnerRevenueWithdrawals from "./owner/revenue/OwnerRevenueWithdrawals";
+import OwnerRevenueCommission from "./owner/revenue/OwnerRevenueCommission";
 import OwnerReviews from "./pages/owner/OwnerReviews";
 import OwnerSettings from "./pages/owner/OwnerSettings";
 import Payment from "./pages/Payment";
@@ -42,7 +54,8 @@ import EmployeeRevenue from "./pages/employee/EmployeeRevenue";
 import EmployeeVehicles from "./pages/employee/EmployeeVehicles";
 import Vehicles from "./pages/Vehicles";
 import API, { clearAuth, getAuth, saveAuth } from "./services/api";
-import { WalletProvider, useWallet } from "./context/WalletContext";
+import useRealtimeNotifications from "./services/useRealtimeNotifications";
+import { WalletProvider } from "./context/WalletContext";
 import "./styles/layout.css";
 import "./styles/role-theme-sync.css";
 
@@ -206,11 +219,7 @@ function App() {
 
   if (checkingSession) return null;
 
-  return (
-    <WalletProvider authToken={auth?.token} enabled={role === "user"}>
-      <AppBody auth={auth} role={role} onLogin={setAuth} onLogout={handleLogout} />
-    </WalletProvider>
-  );
+  return <AppBody auth={auth} role={role} onLogin={setAuth} onLogout={handleLogout} />;
 }
 
 function AppBody({ auth, role, onLogin, onLogout }) {
@@ -220,6 +229,82 @@ function AppBody({ auth, role, onLogin, onLogout }) {
   const isEmployeeWorkspace = location.pathname.startsWith("/employee");
   const isOwnerScanPage = location.pathname.startsWith("/scan");
   const displayName = auth?.user?.full_name || auth?.user?.name || auth?.user?.username || auth?.user?.email || "";
+
+  useEffect(() => {
+    localStorage.setItem(NOTIFICATIONS_KEY, JSON.stringify(notifications));
+  }, [notifications]);
+
+  useRealtimeNotifications(
+    (payload) => {
+      if (payload?.type !== "booking_no_show") {
+        return;
+      }
+
+      setNotifications((current) => [
+        {
+          id: `${payload.booking_id || "booking"}-${payload.ts || Date.now()}`,
+          title: "Booking quá hạn",
+          message: payload.message || "Booking của bạn đã bị hủy do quá thời gian check-in.",
+          timeLabel: formatTimeLabel(payload.ts || Date.now()),
+          read: false,
+        },
+        ...current,
+      ].slice(0, 20));
+    },
+    { enabled: Boolean(auth?.token) },
+  );
+
+  const toggleNotifications = () => {
+    setNotificationsOpen((current) => !current);
+    setNotifications((current) => current.map((item) => (item.read ? item : { ...item, read: true })));
+  };
+
+  const clearNotifications = () => {
+    setNotifications([]);
+    setNotificationsOpen(false);
+  };
+
+  const removeNotification = (notificationId) => {
+    setNotifications((current) => current.filter((item) => item.id !== notificationId));
+  };
+
+
+  const links = useMemo(() => {
+    if (!auth) {
+      return [];
+    }
+
+    const roleLinks = {
+      user: [
+        { to: "/booking", label: "Đặt chỗ" },
+        { to: "/booking-history", label: "Lịch sử booking" },
+        { to: "/payment-history", label: "Lịch sử thanh toán" },
+        { to: "/profile", label: "Hồ sơ" },
+      ],
+      owner: [
+        { to: "/profile", label: "Hồ sơ" },
+        { to: "/scan", label: "Quét QR vào/ra" },
+        { to: "/owner/reviews", label: "Đánh giá & phản hồi" },
+        { to: "/owner/settings?tab=parking-accounts", label: "Tạo nhân viên" },
+      ],
+      employee: [
+        { to: "/employee", label: "Dashboard Employee" },
+      ],
+      admin: [
+        { to: "/admin", label: "Bảng Admin" },
+        { to: "/booking", label: "Đặt chỗ" },
+        { to: "/booking-history", label: "Lịch sử booking" },
+        { to: "/payment-history", label: "Lịch sử thanh toán" },
+        { to: "/profile", label: "Hồ sơ" },
+        { to: "/scan", label: "Quét QR vào/ra" },
+      ],
+    };
+
+    return [{ to: "/", label: "Trang bãi xe" }, ...(roleLinks[role] || [])];
+  }, [auth, role]);
+
+  const userInfo = displayName;
+
   const defaultAuthedRoute = getDefaultRouteByRole(role);
   const showSharedSidebar = Boolean(auth) && role === "user";
 

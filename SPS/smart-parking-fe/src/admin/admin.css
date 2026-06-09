@@ -170,7 +170,7 @@ body.admin-page-lock,
   justify-content: space-between;
   align-items: center;
   gap: 16px;
-  padding: 16px 18px;
+  padding: 12px 14px;
   border: 1px solid var(--line);
   border-radius: 22px;
   background: linear-gradient(180deg, rgba(251, 254, 255, 0.88), rgba(237, 247, 252, 0.76));
@@ -186,10 +186,10 @@ body.admin-page-lock,
 }
 
 .admin-topbar-main h1 {
-  margin: 2px 0 4px;
+  margin: 2px 0 2px;
   font-family: "Space Grotesk", "Be Vietnam Pro", sans-serif;
-  font-size: clamp(26px, 2.7vw, 36px);
-  line-height: 1.08;
+  font-size: clamp(22px, 2.4vw, 30px);
+  line-height: 1.05;
   color: #14395d;
 }
 
@@ -234,6 +234,33 @@ body.admin-page-lock,
   white-space: nowrap;
 }
 
+.admin-notify-pill {
+  cursor: pointer;
+  font: inherit;
+  transition: border-color 0.2s ease, background 0.2s ease, transform 0.2s ease;
+}
+
+.admin-notify-pill:hover {
+  border-color: rgba(14, 165, 233, 0.35);
+  background: rgba(255, 255, 255, 0.95);
+  transform: translateY(-1px);
+}
+
+.admin-notify-pill span {
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #0f5f9e;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1;
+}
+
 .admin-avatar {
   min-width: 0;
   max-width: 320px;
@@ -247,6 +274,12 @@ body.admin-page-lock,
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.admin-dashboard {
+  display: grid;
+  gap: 16px;
+  width: 100%;
 }
 
 .admin-content {
@@ -278,6 +311,305 @@ body.admin-page-lock,
 .admin-state-card--error {
   color: #9a3340;
   background: linear-gradient(180deg, rgba(255, 247, 248, 0.96), rgba(253, 237, 239, 0.92));
+}
+
+/* Big Cards Row */
+/* SECTION 1: 6 KPI Cards Row */
+.admin-section-1 {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 12px;
+  width: 100%;
+}
+
+.admin-stat-card-compact {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  background: #ffffff;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.admin-stat-card-compact:hover {
+  transform: translateY(-1px);
+  border-color: rgba(14, 165, 233, 0.25);
+  box-shadow: 0 8px 20px rgba(14, 165, 233, 0.08);
+}
+
+.admin-stat-card-compact--link {
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+}
+
+.admin-stat-card-icon {
+  font-size: 24px;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  background: rgba(59, 130, 246, 0.08);
+  flex-shrink: 0;
+}
+
+.admin-stat-card-content {
+  min-width: 0;
+  flex: 1;
+  display: grid;
+  gap: 3px;
+}
+
+.admin-stat-card-label {
+  margin: 0;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.admin-stat-card-value {
+  color: #0f172a;
+  font-size: 16px;
+  font-weight: 900;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.admin-stat-card-meta {
+  color: #64748b;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+/* SECTION 2: 70/30 Layout */
+.admin-section-2 {
+  display: grid;
+  grid-template-columns: 1.4fr 0.6fr;
+  gap: 12px;
+  width: 100%;
+  align-items: stretch;
+}
+
+.admin-section-2-left,
+.admin-section-2-right {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.admin-section-2-left > *,
+.admin-section-2-right > * {
+  flex: 1;
+  width: 100%;
+  min-height: 0;
+}
+
+/* SECTION 3: 50/50 Layout */
+.admin-section-3 {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  width: 100%;
+  align-items: stretch;
+}
+
+.admin-section-3-left,
+.admin-section-3-right {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.admin-section-3-left > *,
+.admin-section-3-right > * {
+  flex: 1;
+  width: 100%;
+  min-height: 0;
+}
+
+/* Top Owners Card */
+.admin-top-owners-card {
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  background: #ffffff;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
+  padding: 16px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+}
+
+.admin-section-header {
+  margin-bottom: 12px;
+}
+
+.admin-section-header h2 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 900;
+  color: #0f172a;
+}
+
+.admin-section-header p {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.admin-top-owners-list {
+  display: grid;
+  gap: 10px;
+  flex: 1;
+  min-height: 0;
+  align-content: start;
+}
+
+.admin-top-owner-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  border-radius: 10px;
+  background: #f8fafc;
+  transition: background 0.2s ease;
+}
+
+.admin-top-owner-row:hover {
+  background: #f1f5f9;
+}
+
+.admin-top-owner-rank {
+  min-width: 28px;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(14, 165, 233, 0.12);
+  color: #0f5f9e;
+  font-size: 12px;
+  font-weight: 900;
+  flex-shrink: 0;
+}
+
+.admin-top-owner-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.admin-top-owner-info strong {
+  display: block;
+  color: #0f172a;
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.admin-top-owner-bar {
+  height: 4px;
+  border-radius: 2px;
+  background: #e5e7eb;
+  margin-top: 4px;
+  overflow: hidden;
+}
+
+.admin-top-owner-bar span {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.3s ease, background 0.3s ease;
+}
+
+.admin-top-owner-revenue {
+  min-width: fit-content;
+  color: #0f172a;
+  font-size: 12px;
+  font-weight: 900;
+  flex-shrink: 0;
+}
+
+/* Online Users Card */
+.admin-online-users-card {
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  background: #ffffff;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
+  padding: 16px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+}
+
+.admin-online-users-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: 1;
+  min-height: 0;
+}
+
+.admin-online-user-stat {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border-radius: 10px;
+  background: #f8fafc;
+  transition: background 0.2s ease;
+  flex: 1;
+  min-height: 0;
+}
+
+.admin-online-user-stat:hover {
+  background: #f1f5f9;
+}
+
+.admin-online-user-icon {
+  font-size: 20px;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: rgba(59, 130, 246, 0.08);
+  flex-shrink: 0;
+}
+
+.admin-online-user-content {
+  flex: 1;
+  display: grid;
+  gap: 2px;
+}
+
+.admin-online-user-label {
+  margin: 0;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.admin-online-user-value {
+  color: #0f172a;
+  font-size: 18px;
+  font-weight: 900;
+  line-height: 1;
 }
 
 .admin-menu-toggle {
@@ -347,6 +679,49 @@ body.admin-page-lock,
   font-weight: 600;
 }
 
+@media (max-width: 1200px) {
+  .admin-section-1 {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  
+  .admin-section-2 {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-section-2-left,
+  .admin-section-2-right,
+  .admin-section-3-left,
+  .admin-section-3-right {
+    display: block;
+  }
+
+  .admin-section-2-left > *,
+  .admin-section-2-right > *,
+  .admin-section-3-left > *,
+  .admin-section-3-right > * {
+    flex: none;
+    height: auto;
+  }
+
+  .admin-dashboard .admin-section-2 .owner-revenue-card,
+  .admin-dashboard .admin-section-2 .owner-activity-card {
+    height: auto !important;
+  }
+
+  .admin-top-owners-card,
+  .admin-online-users-card {
+    height: auto;
+  }
+
+  .admin-online-user-stat {
+    flex: none;
+  }
+  
+  .admin-section-3 {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (max-width: 980px) {
   .admin-shell {
     grid-template-columns: 1fr;
@@ -375,4 +750,101 @@ body.admin-page-lock,
     flex-direction: column;
     align-items: stretch;
   }
+
+  .admin-section-1 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .admin-stat-card-compact {
+    flex-direction: column;
+    text-align: center;
+    gap: 8px;
+  }
+
+  .admin-stat-card-icon {
+    margin: 0 auto;
+  }
+
+  .admin-stat-card-value {
+    white-space: normal;
+  }
+}
+
+@media (max-width: 640px) {
+  .admin-section-1 {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-stat-card-compact {
+    padding: 12px;
+    gap: 10px;
+  }
+
+  .admin-stat-card-value {
+    font-size: 14px;
+  }
+
+  .admin-top-owner-row {
+    padding: 8px;
+    gap: 8px;
+  }
+
+  .admin-online-user-stat {
+    padding: 10px;
+  }
+}
+
+/* Optimize dashboard layout for better spacing */
+.admin-dashboard {
+  gap: 12px !important;
+}
+
+.admin-main {
+  padding: 12px !important;
+  gap: 12px !important;
+}
+
+.admin-content {
+  gap: 12px !important;
+}
+
+/* Ensure owner components integrate well with admin layout */
+.admin-dashboard .owner-section-card,
+.admin-dashboard .owner-dashboard-card {
+  margin-bottom: 0 !important;
+}
+
+/* Section 2: equal height — Hoạt động gần đây = Doanh thu hệ thống */
+.admin-dashboard .admin-section-2 .owner-revenue-card,
+.admin-dashboard .admin-section-2 .owner-activity-card {
+  height: 100% !important;
+  max-height: none !important;
+  min-height: 0 !important;
+  box-sizing: border-box;
+}
+
+.admin-dashboard .admin-section-2 .owner-activity-card {
+  display: grid !important;
+  grid-template-rows: auto minmax(0, 1fr) !important;
+  overflow: hidden;
+}
+
+.admin-dashboard .admin-section-2 .owner-activity-feed {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.admin-dashboard .admin-section-2 .owner-chart-wrap,
+.admin-dashboard .admin-section-2 .owner-chart-wrap--revenue {
+  height: 100% !important;
+  min-height: 220px !important;
+}
+
+.admin-dashboard .owner-activity-feed {
+  gap: 6px !important;
+}
+
+.admin-dashboard .owner-activity-item {
+  padding: 8px 10px !important;
 }

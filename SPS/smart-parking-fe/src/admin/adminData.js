@@ -1,8 +1,38 @@
+export const ADMIN_PARTNER_NAV = [
+  { to: "/admin/owners", label: "Danh sách đối tác", end: true },
+  { to: "/admin/owners/registrations", label: "Duyệt đăng ký" },
+  { to: "/admin/owners/commissions", label: "Hoa hồng & thanh toán" },
+  { to: "/admin/owners/contracts", label: "Hợp đồng đối tác" },
+];
+
+export const ADMIN_PARKING_NAV = [
+  { to: "/admin/parking-lots", label: "Danh sách bãi xe", end: true },
+  { to: "/admin/parking-lots/areas", label: "Khu vực (Quận/Huyện)" },
+];
+
 export const ADMIN_NAV_ITEMS = [
   { to: "/admin", label: "Bảng điều khiển", icon: "dashboard" },
-  { to: "/admin/users", label: "Người dùng", icon: "users" },
-  { to: "/admin/owners", label: "Khu vực", icon: "owners" },
-  { to: "/admin/parking-lots", label: "Bãi đỗ", icon: "parking" },
+  {
+    id: "users",
+    label: "Người dùng",
+    icon: "users",
+    children: [
+      { to: "/admin/users", label: "Danh sách người dùng", end: true },
+      { to: "/admin/users/new", label: "Thêm người dùng" },
+    ],
+  },
+  {
+    id: "partners",
+    label: "Chủ bãi / Đối tác",
+    icon: "owners",
+    children: ADMIN_PARTNER_NAV,
+  },
+  {
+    id: "parking",
+    label: "Bãi đỗ xe",
+    icon: "parking",
+    children: ADMIN_PARKING_NAV,
+  },
   { to: "/admin/bookings", label: "Đặt chỗ", icon: "booking" },
   { to: "/admin/revenue", label: "Doanh thu", icon: "revenue" },
   { to: "/admin/analytics", label: "Phân tích", icon: "analytics" },
@@ -15,16 +45,44 @@ export const ADMIN_ROUTE_META = {
     description: "Theo dõi tổng quan người dùng, chủ khu vực, bãi đỗ, đặt chỗ và doanh thu toàn hệ thống.",
   },
   "/admin/users": {
-    title: "Quản lý người dùng",
-    description: "Quản lý người dùng cuối, trạng thái tài khoản và hoạt động đặt chỗ.",
+    title: "Danh sách người dùng",
+    description: "Quản lý và theo dõi tất cả tài khoản trên hệ thống.",
+  },
+  "/admin/users/new": {
+    title: "Thêm người dùng",
+    description: "Tạo tài khoản người dùng, quản lý khu vực hoặc tài khoản bãi mới.",
+  },
+  "/admin/users/": {
+    title: "Chi tiết người dùng",
+    description: "Xem và quản lý thông tin tài khoản, quyền truy cập và hoạt động.",
   },
   "/admin/owners": {
-    title: "Quản lý khu vực",
-    description: "Quản trị tài khoản chủ khu vực, khu vực đang phụ trách và hiệu suất vận hành.",
+    title: "Quản lý chủ bãi / đối tác",
+    description: "Quản lý tất cả chủ bãi và đối tác theo quận/huyện trên hệ thống.",
+  },
+  "/admin/owners/registrations": {
+    title: "Duyệt đăng ký đối tác",
+    description: "Xem xét và phê duyệt các yêu cầu đăng ký trở thành đối tác chủ bãi.",
+  },
+  "/admin/owners/commissions": {
+    title: "Hoa hồng & thanh toán",
+    description: "Quản lý hoa hồng, doanh thu và thanh toán cho đối tác.",
+  },
+  "/admin/owners/contracts": {
+    title: "Hợp đồng đối tác",
+    description: "Quản lý hợp đồng ký kết với các chủ bãi / đối tác.",
   },
   "/admin/parking-lots": {
-    title: "Quản lý bãi đỗ",
-    description: "Quản lý toàn bộ bãi đỗ trong hệ thống, duyệt bãi mới và khóa bãi vi phạm.",
+    title: "Quản lý bãi đỗ xe",
+    description: "Theo dõi danh sách bãi xe, sức chứa, giá giữ xe, doanh thu và trạng thái vận hành.",
+  },
+  "/admin/parking-lots/areas": {
+    title: "Quản lý khu vực (Quận/Huyện)",
+    description: "Quản lý khu vực địa lý, quản lý khu vực và tổng hợp bãi xe theo quận/huyện.",
+  },
+  "/admin/parking-lots/areas/": {
+    title: "Chi tiết khu vực",
+    description: "Xem thống kê, biểu đồ doanh thu và danh sách bãi xe trong khu vực.",
   },
   "/admin/bookings": {
     title: "Quản lý đặt chỗ",
@@ -34,6 +92,10 @@ export const ADMIN_ROUTE_META = {
     title: "Doanh thu & Hoa hồng",
     description: "Theo dõi doanh thu hệ thống và phần commission admin theo từng chu kỳ.",
   },
+  "/admin/commissions": {
+    title: "Hoa hồng & thanh toán",
+    description: "Quản lý hoa hồng, doanh thu và thanh toán cho đối tác.",
+  },
   "/admin/analytics": {
     title: "Phân tích",
     description: "Phân tích tăng trưởng user, hiệu suất bãi đỗ và tỷ lệ lấp đầy toàn hệ thống.",
@@ -41,6 +103,10 @@ export const ADMIN_ROUTE_META = {
   "/admin/settings": {
     title: "Nhật ký & Bảo mật",
     description: "Theo dõi log hệ thống, lịch sử đăng nhập và cấu hình bảo mật quản trị.",
+  },
+  "/admin/notifications": {
+    title: "Thông báo hệ thống",
+    description: "Theo dõi cảnh báo bảo mật, lỗi và sự kiện quan trọng trên toàn hệ thống.",
   },
 };
 

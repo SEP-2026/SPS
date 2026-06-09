@@ -14,6 +14,12 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models.models import Booking, OwnerParking, ParkingLot, ParkingPrice, ParkingSlot, Payment, Transaction, User, UserVehicle
 from app.routes.auth import get_current_user
+from app.services.owner_booking_config import (
+    deposit_amount_for_booking,
+    deposit_ratio,
+    get_parking_booking_config,
+    no_show_deadline as config_no_show_deadline,
+)
 from app.services.qr_service import invalidate_booking_qr_code
 
 router = APIRouter(prefix="/gate", tags=["gate"])
@@ -190,7 +196,11 @@ def _booking_window_hours(booking: Booking) -> float:
     return max((booking.expire_time - booking.start_time).total_seconds() / 3600, 0)
 
 
-def _no_show_deadline(booking: Booking) -> datetime | None:
+def _no_show_deadline(booking: Booking, db: Session) -> datetime | None:
+    config = get_parking_booking_config(db, booking.parking_id)
+    deadline = config_no_show_deadline(booking, config)
+    if deadline is not None:
+        return deadline
     if booking.booking_mode != "hourly" or not booking.start_time or not booking.expire_time:
         return None
     duration_seconds = max((booking.expire_time - booking.start_time).total_seconds(), 0)
@@ -286,8 +296,9 @@ def _resolve_prepaid_amount(payment: Payment | None) -> float:
     return float(payment.amount or 0)
 
 
-def _expire_no_show_booking_if_needed(booking: Booking, payment: Payment | None, now: datetime) -> bool:
-    deadline = _no_show_deadline(booking)
+def _expire_no_show_booking_if_needed(booking: Booking, payment: Payment | None, now: datetime, db: Session) -> bool:
+    config = get_parking_booking_config(db, booking.parking_id)
+    deadline = _no_show_deadline(booking, db)
     if booking.actual_checkin or deadline is None:
         return False
     if booking.status not in {"pending", "booked"}:
@@ -303,13 +314,26 @@ def _expire_no_show_booking_if_needed(booking: Booking, payment: Payment | None,
     if booking.slot:
         booking.slot.status = "available"
     if payment and float(payment.deposit_amount or 0) <= 0 and float(payment.amount or 0) > 0:
-        payment.deposit_amount = round(min(float(booking.total_amount or 0) * 0.3, float(payment.amount or 0)), 2)
+        forfeited = deposit_amount_for_booking(booking, config)
+        payment.deposit_amount = round(min(forfeited, float(payment.amount or 0)), 2)
     return True
 
 
-def _compute_pricing_preview(booking: Booking, payment: Payment | None, price: ParkingPrice | None, now: datetime) -> dict:
+def _compute_pricing_preview(
+    booking: Booking,
+    payment: Payment | None,
+    price: ParkingPrice | None,
+    now: datetime,
+    db: Session,
+) -> dict:
+    config = get_parking_booking_config(db, booking.parking_id)
+    try:
+        early_grace_minutes = int(config.get("earlyCheckinFreeMinutes", EARLY_GRACE_MINUTES))
+    except (TypeError, ValueError):
+        early_grace_minutes = EARLY_GRACE_MINUTES
     base_booking_cost = round(float(booking.total_amount or 0), 2)
-    deposit_due = round(base_booking_cost * 0.3, 2) if booking.booking_mode == "hourly" else 0
+    ratio = deposit_ratio(config, booking.booking_mode)
+    deposit_due = round(base_booking_cost * ratio, 2) if ratio > 0 else 0
     deposit_paid = round(float(payment.deposit_amount or 0), 2) if payment else 0
     prepaid_amount = round(_resolve_prepaid_amount(payment), 2)
     payment_status = payment.payment_status if payment else None
@@ -329,7 +353,7 @@ def _compute_pricing_preview(booking: Booking, payment: Payment | None, price: P
         effective_checkout = actual_checkout or now
         billable_start = actual_checkin
         if scheduled_start:
-            grace_threshold = scheduled_start - timedelta(minutes=EARLY_GRACE_MINUTES)
+            grace_threshold = scheduled_start - timedelta(minutes=early_grace_minutes)
             if actual_checkin >= grace_threshold:
                 billable_start = min(scheduled_start, actual_checkin)
         usage_hours = max((effective_checkout - billable_start).total_seconds() / 3600, 0)
@@ -362,7 +386,7 @@ def _compute_pricing_preview(booking: Booking, payment: Payment | None, price: P
         total_charge = base_booking_cost
 
     if booking.booking_mode == "hourly" and scheduled_start and actual_checkin:
-        early_grace_limit = scheduled_start - timedelta(minutes=EARLY_GRACE_MINUTES)
+        early_grace_limit = scheduled_start - timedelta(minutes=early_grace_minutes)
         if actual_checkin < early_grace_limit and price:
             extra_hours = (early_grace_limit - actual_checkin).total_seconds() / 3600
             early_extra_fee = round(_round_up_hours(extra_hours) * float(price.price_per_hour or 0), 2)
@@ -391,7 +415,7 @@ def _compute_pricing_preview(booking: Booking, payment: Payment | None, price: P
         "total_charge": round(total_charge, 2),
         "remaining_due": remaining_due,
         "payment_status": payment_status,
-        "is_no_show_deadline_passed": bool(_no_show_deadline(booking) and now > _no_show_deadline(booking)),
+        "is_no_show_deadline_passed": bool(_no_show_deadline(booking, db) and now > _no_show_deadline(booking, db)),
         "expired": expired,
         "qr_expired": qr_expired,
     }
@@ -466,7 +490,7 @@ def _serialize_booking_detail(booking: Booking, payment: Payment | None, db: Ses
     user = db.query(User).filter(User.id == booking.user_id).first() if booking.user_id else None
     vehicle_profile = db.query(UserVehicle).filter(UserVehicle.user_id == booking.user_id).first() if booking.user_id else None
     price = _get_price(booking, db)
-    pricing_preview = _compute_pricing_preview(booking, payment, price, now)
+    pricing_preview = _compute_pricing_preview(booking, payment, price, now, db)
 
     return {
         "server_now": now,
@@ -546,7 +570,7 @@ def _ensure_slot_available(booking: Booking, db: Session) -> None:
 def _execute_check_in(booking: Booking, payment: Payment | None, gate_id: str, source_type: str, actor: User, db: Session) -> dict:
     now = _local_now()
     _assert_gate_permission(actor, booking, db)
-    if _expire_no_show_booking_if_needed(booking, payment, now):
+    if _expire_no_show_booking_if_needed(booking, payment, now, db):
         raise HTTPException(status_code=400, detail="Booking Ä‘Ã£ háº¿t hiá»‡u lá»±c check-in vÃ  Ä‘Ã£ bá»‹ há»§y")
     if booking.status not in {"pending", "booked", "checked_out"}:
         raise HTTPException(status_code=400, detail=f"Booking Ä‘ang á»Ÿ tráº¡ng thÃ¡i { _status_label(booking.status) }, khÃ´ng thá»ƒ check-in")
@@ -557,7 +581,12 @@ def _execute_check_in(booking: Booking, payment: Payment | None, gate_id: str, s
     if booking.expire_time and now > booking.expire_time:
         raise HTTPException(status_code=400, detail="Booking Ä‘Ã£ háº¿t thá»i gian hiá»‡u lá»±c")
     if booking.start_time:
-        grace_limit = booking.start_time - timedelta(minutes=EARLY_GRACE_MINUTES)
+        checkin_config = get_parking_booking_config(db, booking.parking_id)
+        try:
+            grace_minutes = int(checkin_config.get("earlyCheckinFreeMinutes", EARLY_GRACE_MINUTES))
+        except (TypeError, ValueError):
+            grace_minutes = EARLY_GRACE_MINUTES
+        grace_limit = booking.start_time - timedelta(minutes=grace_minutes)
         if now < grace_limit and EARLY_CHECKIN_POLICY == "REJECT":
             raise HTTPException(status_code=400, detail="Xe Ä‘áº¿n quÃ¡ sá»›m so vá»›i giá» booking, vui lÃ²ng chá» Ä‘Ãºng giá»")
         _ensure_slot_available(booking, db)
@@ -599,7 +628,7 @@ def _execute_check_out(
 
     price = _get_price(booking, db)
     booking.actual_checkout = now
-    preview = _compute_pricing_preview(booking, payment, price, now)
+    preview = _compute_pricing_preview(booking, payment, price, now, db)
     normalized_payment_method = _normalize_payment_method(payment_method)
 
     if payment is None:
@@ -678,7 +707,7 @@ def resolve_gate_scan(
 
     _assert_gate_permission(current_user, booking, db)
     payment = _get_payment(booking.id, db, lock=True)
-    expired = _expire_no_show_booking_if_needed(booking, payment, now)
+    expired = _expire_no_show_booking_if_needed(booking, payment, now, db)
     detail = _serialize_booking_detail(booking, payment, db, now, parsed)
     _create_gate_log(
         booking=booking,

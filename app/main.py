@@ -11,7 +11,7 @@ from starlette.websockets import WebSocketDisconnect
 from app.init_db import init_db
 from app.realtime import realtime_hub
 from app.database import SessionLocal
-from app.routes import admin, auth, booking, employee, gate, owner, payment, review, vehicle, wallet
+from app.routes import admin, auth, booking, employee, gate, owner, owner_finance, payment, review, vehicle, wallet
 from app.security.gateway import SecurityGatewayMiddleware
 from app.services.auto_checkout_service import auto_checkout_expired_bookings
 
@@ -39,6 +39,7 @@ app.include_router(payment.router)
 app.include_router(auth.router)
 app.include_router(admin.router)
 app.include_router(owner.router)
+app.include_router(owner_finance.router)
 app.include_router(vehicle.router)
 app.include_router(wallet.router)
 app.include_router(employee.router)

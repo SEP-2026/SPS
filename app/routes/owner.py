@@ -3,6 +3,7 @@ from datetime import datetime
 from math import ceil
 import re
 import unicodedata
+from typing import Any
 from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -17,6 +18,12 @@ from app.routes.auth import get_current_user
 from app.security.password_policy import ensure_strong_password
 from app.services.qr_service import generate_booking_qr_code, invalidate_booking_qr_code
 from app.services.employee_service import create_employee_for_owner
+from app.services.owner_booking_config import (
+    deposit_amount_for_booking,
+    get_owner_booking_config,
+    get_parking_booking_config,
+    save_owner_booking_config,
+)
 from app.services.revenue_settings import get_commission_rate_percent, split_revenue
 from app.utils import isoformat_vn, vn_now
 
@@ -641,7 +648,8 @@ def _serialize_owner_bootstrap(current_user: User, parking_lots: list[ParkingLot
             deposit_amount = float(payment.deposit_amount)
         else:
             # Fallback: calculate 30% of total booking amount as deposit
-            deposit_amount = round(float(booking.total_amount or 0) * 0.3, 2)
+            lot_config = get_parking_booking_config(db, booking.parking_id)
+            deposit_amount = deposit_amount_for_booking(booking, lot_config)
         
         cancel_time = booking.actual_checkout or booking.created_at or datetime.utcnow()
         activity_rows.append(
@@ -1274,6 +1282,28 @@ def owner_reply_review(
         "owner_reply": review.owner_reply,
         "owner_replied_at": review.owner_replied_at.isoformat() if review.owner_replied_at else None,
     }
+
+
+class OwnerBookingConfigUpdateRequest(BaseModel):
+    config: dict[str, Any]
+
+
+@router.get("/booking-config")
+def owner_booking_config_get(
+    current_user: User = Depends(require_owner),
+    db: Session = Depends(get_db),
+):
+    return {"config": get_owner_booking_config(db, current_user.id)}
+
+
+@router.patch("/booking-config")
+def owner_booking_config_update(
+    payload: OwnerBookingConfigUpdateRequest,
+    current_user: User = Depends(require_owner),
+    db: Session = Depends(get_db),
+):
+    saved = save_owner_booking_config(db, current_user.id, payload.config or {})
+    return {"message": "Đã lưu cấu hình đặt chỗ & ra/vào", "config": saved}
 
 
 @router.get("/settings")

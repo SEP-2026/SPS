@@ -22,6 +22,7 @@
   border: 1px solid rgba(235, 255, 255, 0.45);
 }
 
+
 .login-map-overlay {
   position: absolute;
   left: -6%;
@@ -52,13 +53,22 @@
 }
 
 .parking-mark {
-  margin: 0 auto 8px;
-  width: 42px;
-  height: 42px;
+  margin: 0 auto 10px;
+  width: auto;
+  height: auto;
   display: grid;
   place-items: center;
-  font-size: 30px;
-  opacity: 0.68;
+}
+
+.parking-mark-car {
+  width: 136px;
+  height: auto;
+  max-height: 68px;
+  object-fit: contain;
+  display: block;
+  filter:
+    drop-shadow(0 0 10px rgba(22, 217, 255, 0.4))
+    drop-shadow(0 8px 14px rgba(16, 40, 71, 0.28));
 }
 
 .login-kicker {

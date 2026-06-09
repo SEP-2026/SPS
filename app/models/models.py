@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import Column, DateTime, DECIMAL, Float, CheckConstraint, ForeignKey, Integer, SmallInteger, String, Text
+from sqlalchemy import Boolean, Column, Date, DateTime, DECIMAL, Float, CheckConstraint, ForeignKey, Integer, SmallInteger, String, Text, UniqueConstraint
 from sqlalchemy.orm import relationship
 from app.database import Base
 from app.utils.timezone import vn_now
@@ -276,3 +276,168 @@ class EmployeeActivity(Base):
     employee = relationship("User")
     parking_lot = relationship("ParkingLot")
     booking = relationship("Booking")
+
+
+class OwnerBookingConfig(Base):
+    __tablename__ = "owner_booking_configs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    owner_id = Column(Integer, ForeignKey("users.id"), unique=True, nullable=False, index=True)
+    config_json = Column(Text, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    owner = relationship("User")
+
+
+class OwnerBalance(Base):
+    __tablename__ = "owner_balances"
+
+    id = Column(Integer, primary_key=True, index=True)
+    owner_id = Column(Integer, ForeignKey("users.id"), unique=True, nullable=False, index=True)
+    available_balance = Column(DECIMAL(12, 2), default=0, nullable=False)
+    lifetime_earned = Column(DECIMAL(12, 2), default=0, nullable=False)
+    lifetime_withdrawn = Column(DECIMAL(12, 2), default=0, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    owner = relationship("User")
+
+
+class OwnerBankAccount(Base):
+    __tablename__ = "owner_bank_accounts"
+
+    id = Column(Integer, primary_key=True, index=True)
+    owner_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    bank_code = Column(String(20), nullable=False)
+    bank_name = Column(String(100), nullable=False)
+    account_number = Column(String(50), nullable=False)
+    account_holder_name = Column(String(255), nullable=False)
+    is_default = Column(Boolean, default=False, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    owner = relationship("User")
+
+
+class OwnerWithdrawal(Base):
+    __tablename__ = "owner_withdrawals"
+
+    id = Column(Integer, primary_key=True, index=True)
+    owner_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    bank_account_id = Column(Integer, ForeignKey("owner_bank_accounts.id"), nullable=True)
+    request_code = Column(String(32), unique=True, nullable=False, index=True)
+    amount = Column(DECIMAL(12, 2), nullable=False)
+    fee = Column(DECIMAL(12, 2), default=0, nullable=False)
+    net_amount = Column(DECIMAL(12, 2), nullable=False)
+    status = Column(String(20), default="processing", nullable=False, index=True)
+    note = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    owner = relationship("User")
+    bank_account = relationship("OwnerBankAccount")
+
+
+class CashReconciliationSlip(Base):
+    __tablename__ = "cash_reconciliation_slips"
+    __table_args__ = (
+        UniqueConstraint("slip_code", name="uq_cash_reconciliation_slip_code"),
+    )
+
+    id = Column(Integer, primary_key=True, index=True)
+    owner_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    parking_id = Column(Integer, ForeignKey("parking_lots.id"), nullable=False, index=True)
+    employee_id = Column(Integer, ForeignKey("users.id"), nullable=True, index=True)
+    slip_code = Column(String(32), nullable=False)
+    reconciliation_date = Column(Date, nullable=False, index=True)
+    total_collected = Column(DECIMAL(12, 2), default=0, nullable=False)
+    deposited_amount = Column(DECIMAL(12, 2), default=0, nullable=False)
+    variance = Column(DECIMAL(12, 2), default=0, nullable=False)
+    status = Column(String(20), default="pending", nullable=False, index=True)
+    note = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    owner = relationship("User", foreign_keys=[owner_id])
+    employee = relationship("User", foreign_keys=[employee_id])
+    parking_lot = relationship("ParkingLot")
+    items = relationship("CashReconciliationItem", back_populates="slip", cascade="all, delete-orphan")
+
+
+class CashReconciliationItem(Base):
+    __tablename__ = "cash_reconciliation_items"
+
+    id = Column(Integer, primary_key=True, index=True)
+    slip_id = Column(Integer, ForeignKey("cash_reconciliation_slips.id"), nullable=False, index=True)
+    payment_id = Column(Integer, ForeignKey("payments.id"), nullable=False, index=True)
+    booking_id = Column(Integer, ForeignKey("bookings.id"), nullable=False, index=True)
+    amount = Column(DECIMAL(12, 2), nullable=False)
+
+    slip = relationship("CashReconciliationSlip", back_populates="items")
+    payment = relationship("Payment")
+    booking = relationship("Booking")
+
+
+class AdminSecurityEvent(Base):
+    __tablename__ = "admin_security_events"
+
+    id = Column(Integer, primary_key=True, index=True)
+    event_key = Column(String(120), unique=True, index=True, nullable=False)
+    actor = Column(String(255), nullable=False, default="system")
+    action = Column(String(500), nullable=False)
+    target = Column(String(255), nullable=False)
+    target_type = Column(String(50), nullable=False, default="user")
+    level = Column(String(20), nullable=False, default="security")
+    created_at = Column(DateTime, nullable=False, index=True)
+
+
+class PartnerRegistration(Base):
+    __tablename__ = "partner_registrations"
+
+    id = Column(Integer, primary_key=True, index=True)
+    registration_code = Column(String(32), unique=True, index=True, nullable=False)
+    business_name = Column(String(255), nullable=False)
+    contact_name = Column(String(255), nullable=False)
+    email = Column(String(255), nullable=False, index=True)
+    phone = Column(String(30), nullable=True)
+    address = Column(String(500), nullable=True)
+    district_id = Column(Integer, ForeignKey("districts.id"), nullable=True, index=True)
+    parking_lot_count = Column(Integer, default=1, nullable=False)
+    slot_count = Column(Integer, default=0, nullable=False)
+    lot_types = Column(String(255), nullable=True)
+    total_area_sqm = Column(Float, nullable=True)
+    operating_hours = Column(String(100), default="24/7")
+    services = Column(Text, nullable=True)
+    documents_json = Column(Text, nullable=True)
+    admin_notes = Column(Text, nullable=True)
+    status = Column(String(20), default="pending", nullable=False, index=True)
+    owner_id = Column(Integer, ForeignKey("users.id"), nullable=True, index=True)
+    reviewed_by = Column(Integer, ForeignKey("users.id"), nullable=True)
+    reviewed_at = Column(DateTime, nullable=True)
+    rejection_reason = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=vn_now, nullable=False)
+    updated_at = Column(DateTime, default=vn_now, onupdate=vn_now, nullable=False)
+
+    district = relationship("District", foreign_keys=[district_id])
+    owner = relationship("User", foreign_keys=[owner_id])
+
+
+class PartnerContract(Base):
+    __tablename__ = "partner_contracts"
+
+    id = Column(Integer, primary_key=True, index=True)
+    contract_code = Column(String(32), unique=True, index=True, nullable=False)
+    owner_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    district_id = Column(Integer, ForeignKey("districts.id"), nullable=True)
+    signed_at = Column(DateTime, nullable=False)
+    expires_at = Column(DateTime, nullable=False)
+    contract_value = Column(DECIMAL(14, 2), default=0, nullable=False)
+    commission_rate = Column(Float, default=10.0, nullable=False)
+    payment_method = Column(String(100), default="Chuyển khoản ngân hàng")
+    payment_cycle = Column(String(50), default="Hàng tháng")
+    terms_json = Column(Text, nullable=True)
+    attachments_json = Column(Text, nullable=True)
+    status = Column(String(20), default="active", nullable=False, index=True)
+    created_at = Column(DateTime, default=vn_now, nullable=False)
+    updated_at = Column(DateTime, default=vn_now, onupdate=vn_now, nullable=False)
+
+    owner = relationship("User", foreign_keys=[owner_id])
+    district = relationship("District", foreign_keys=[district_id])

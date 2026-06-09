@@ -5,10 +5,19 @@
   { to: "/owner/customers", label: "Quản lý khách hàng", icon: "customers" },
   { to: "/owner/parking-map", label: "Sơ đồ bãi xe", icon: "map" },
   { to: "/owner/activity", label: "Lịch sử hoạt động", icon: "history" },
-  { to: "/owner/revenue", label: "Doanh thu", icon: "revenue" },
+  {
+    to: "/owner/revenue",
+    label: "Doanh thu & Thanh toán",
+    icon: "revenue",
+    children: [
+      { to: "/owner/revenue", label: "Tổng quan", end: true },
+      { to: "/owner/revenue/transactions", label: "Giao dịch" },
+      { to: "/owner/revenue/withdrawals", label: "Rút tiền" },
+      { to: "/owner/revenue/commission", label: "Hoa hồng nền tảng" },
+    ],
+  },
   { to: "/owner/reviews", label: "Đánh giá & phản hồi", icon: "reviews" },
   { to: "/owner/settings", label: "Cài đặt", icon: "settings" },
-  { to: "/owner/parking-accounts", label: "Tài khoản bãi xe", icon: "account" },
 ];
 
 export const OWNER_ROUTE_META = {
@@ -37,12 +46,24 @@ export const OWNER_ROUTE_META = {
     description: "Theo dõi các sự kiện booking, thanh toán, slot và cảnh báo gần đây.",
   },
   "/owner/revenue": {
-    title: "Doanh thu",
-    description: "Theo dõi doanh thu của bãi theo ngày hoặc tuần và kiểm tra giao dịch gần đây.",
+    title: "Doanh thu & Thanh toán",
+    description: "Theo dõi doanh thu, giao dịch ví khách, rút tiền và hoa hồng nền tảng.",
+  },
+  "/owner/revenue/transactions": {
+    title: "Giao dịch",
+    description: "Theo dõi tất cả giao dịch thanh toán qua ví của bãi xe",
+  },
+  "/owner/revenue/withdrawals": {
+    title: "Rút tiền",
+    description: "Quản lý số dư và yêu cầu rút tiền về tài khoản ngân hàng",
+  },
+  "/owner/revenue/commission": {
+    title: "Hoa hồng nền tảng",
+    description: "Theo dõi chi tiết hoa hồng nền tảng được trừ từ doanh thu",
   },
   "/owner/settings": {
-    title: "Cài đặt & nhân viên",
-    description: "Quản lý thông tin owner, cấu hình bãi đỗ và tạo tài khoản nhân viên.",
+    title: "Cài đặt",
+    description: "Quản lý và cấu hình hệ thống Smart Parking.",
   },
   "/owner/reviews": {
     title: "Đánh giá & phản hồi",

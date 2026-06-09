@@ -1,0 +1,246 @@
+.admin-parking-page {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.admin-parking-kpis {
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+}
+
+.admin-parking-lot-cell {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.admin-parking-thumb {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+  color: #1d4ed8;
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.admin-parking-thumb--lg {
+  width: 52px;
+  height: 52px;
+  font-size: 18px;
+}
+
+.admin-parking-thumb--xl {
+  width: 72px;
+  height: 72px;
+  font-size: 24px;
+  border-radius: 14px;
+}
+
+.admin-parking-role-tag {
+  display: inline-block;
+  margin-top: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  font-size: 11px;
+}
+
+.admin-parking-detail {
+  max-height: calc(100vh - 180px);
+  overflow-y: auto;
+}
+
+.admin-parking-detail-hero {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+
+.admin-parking-detail-revenue {
+  background: #f8fafc;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 12px;
+  margin-bottom: 12px;
+}
+
+.admin-parking-detail-revenue span {
+  display: block;
+  font-size: 12px;
+  color: #64748b;
+}
+
+.admin-parking-detail-revenue strong {
+  display: block;
+  font-size: 18px;
+  margin: 4px 0;
+}
+
+.admin-parking-detail-tabs button {
+  border: none;
+  background: #eff6ff;
+  color: #1d4ed8;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+
+.admin-parking-detail-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.admin-parking-detail-toolbar-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.admin-parking-summary-card {
+  display: flex;
+  gap: 18px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  padding: 18px;
+}
+
+.admin-parking-summary-body h2 {
+  margin: 0 0 8px;
+  font-size: 22px;
+}
+
+.admin-parking-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px 20px;
+  margin-top: 14px;
+}
+
+.admin-parking-summary-grid span {
+  display: block;
+  font-size: 12px;
+  color: #64748b;
+}
+
+.admin-parking-tabs {
+  display: flex;
+  gap: 8px;
+  border-bottom: 1px solid #e5e7eb;
+  padding-bottom: 0;
+}
+
+.admin-parking-tabs button {
+  border: none;
+  background: transparent;
+  padding: 10px 14px;
+  font-size: 14px;
+  color: #64748b;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+}
+
+.admin-parking-tabs button.is-active {
+  color: #1d4ed8;
+  border-bottom-color: #1d4ed8;
+  font-weight: 600;
+}
+
+.admin-parking-charts-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.admin-parking-chart-card {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  padding: 16px;
+}
+
+.admin-parking-chart-card h3 {
+  margin: 0 0 12px;
+  font-size: 15px;
+}
+
+.admin-parking-chart-wrap {
+  width: 100%;
+  min-height: 220px;
+}
+
+.admin-parking-detail-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 280px;
+  gap: 16px;
+  align-items: start;
+}
+
+.admin-parking-side-widgets {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.admin-parking-widget {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  padding: 14px;
+}
+
+.admin-parking-widget h4 {
+  margin: 0 0 10px;
+  font-size: 14px;
+}
+
+.admin-parking-widget ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.admin-parking-widget li {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+}
+
+.admin-parking-link-btn {
+  margin-top: 12px;
+  border: none;
+  background: none;
+  color: #2563eb;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+}
+
+.admin-owners-status--paused {
+  background: #fff7ed;
+  color: #c2410c;
+}
+
+@media (max-width: 1100px) {
+  .admin-parking-kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .admin-parking-charts-grid,
+  .admin-parking-detail-columns,
+  .admin-parking-summary-grid {
+    grid-template-columns: 1fr;
+  }
+}

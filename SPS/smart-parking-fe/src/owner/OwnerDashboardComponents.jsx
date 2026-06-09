@@ -1,5 +1,5 @@
 import { createElement, useEffect, useMemo, useRef, useState } from "react";
-import { Link, NavLink } from "react-router-dom";
+import { Link, NavLink, useLocation } from "react-router-dom";
 import L from "leaflet";
 import { MapContainer, Marker, Popup, TileLayer, useMap } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
@@ -275,6 +275,8 @@ export function OwnerSidebar({
   isOpen,
   onNavigate,
 }) {
+  const location = useLocation();
+
   return (
     <aside className={`owner-sidebar w-[240px] shrink-0${isOpen ? " is-open" : ""}`}>
       <div className="owner-sidebar-scroll">
@@ -289,6 +291,41 @@ export function OwnerSidebar({
         <nav className="owner-menu" aria-label="Owner navigation">
           {navItems.map((item) => {
             const Icon = NAV_ICON_MAP[item.icon] || LayoutDashboard;
+            const isGroupActive = item.children?.length
+              ? location.pathname.startsWith(item.to)
+              : false;
+
+            if (item.children?.length) {
+              return (
+                <div key={item.to} className={`owner-menu-group${isGroupActive ? " is-expanded" : ""}`}>
+                  <NavLink
+                    to={item.to}
+                    end={item.to === "/owner"}
+                    className={({ isActive }) => `owner-menu-link owner-menu-link--parent${isActive || isGroupActive ? " active" : ""}`}
+                    onClick={onNavigate}
+                  >
+                    <Icon size={19} />
+                    <span>{item.label}</span>
+                    <ChevronDown size={16} className="owner-menu-caret" />
+                  </NavLink>
+                  <div className="owner-menu-sub">
+                    {item.children.map((child) => (
+                      <NavLink
+                        key={child.to}
+                        to={child.to}
+                        end={child.end}
+                        className={({ isActive }) => `owner-menu-sublink${isActive ? " active" : ""}`}
+                        onClick={onNavigate}
+                      >
+                        <span className="owner-menu-sublink-dot" />
+                        <span>{child.label}</span>
+                      </NavLink>
+                    ))}
+                  </div>
+                </div>
+              );
+            }
+
             return (
               <NavLink
                 key={item.to}

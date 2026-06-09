@@ -231,7 +231,7 @@ export default function OwnerParking() {
     if (!lot.id) {
       return;
     }
-    navigate(`/owner/settings?parkingId=${lot.id}`);
+    navigate(`/owner/settings?tab=parking&parkingId=${lot.id}`);
   };
 
   const closeModal = () => {

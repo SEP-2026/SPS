@@ -64,7 +64,7 @@ function passwordValid(form, editing) {
   return form.password.length >= 6 && form.password === form.confirmPassword;
 }
 
-export default function OwnerEmployees() {
+export default function OwnerEmployees({ embedded = false }) {
   const { ownerData, actions } = useOwnerContext();
   const [employees, setEmployees] = useState([]);
   const [activities, setActivities] = useState([]);
@@ -285,7 +285,7 @@ export default function OwnerEmployees() {
   }, [selectedEmployee?.id]);
 
   return (
-    <div className="owner-designed-page owner-accounts-page">
+    <div className={embedded ? "owner-settings-embedded-accounts" : "owner-designed-page owner-accounts-page"}>
       <div className="owner-page-actions">
         <button type="button" className="owner-management-secondary" onClick={exportEmployees}>
           <Download size={17} />
