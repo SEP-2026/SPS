@@ -1,6 +1,7 @@
 export const ADMIN_PARTNER_NAV = [
   { to: "/admin/owners", label: "Danh sách đối tác", end: true },
   { to: "/admin/owners/registrations", label: "Duyệt đăng ký" },
+  { to: "/admin/owners/withdrawals", label: "Duyệt rút tiền" },
   { to: "/admin/owners/commissions", label: "Hoa hồng & thanh toán" },
   { to: "/admin/owners/contracts", label: "Hợp đồng đối tác" },
 ];
@@ -63,6 +64,10 @@ export const ADMIN_ROUTE_META = {
   "/admin/owners/registrations": {
     title: "Duyệt đăng ký đối tác",
     description: "Xem xét và phê duyệt các yêu cầu đăng ký trở thành đối tác chủ bãi.",
+  },
+  "/admin/owners/withdrawals": {
+    title: "Duyệt rút tiền đối tác",
+    description: "Xem xét và phê duyệt các yêu cầu rút tiền từ chủ bãi.",
   },
   "/admin/owners/commissions": {
     title: "Hoa hồng & thanh toán",

@@ -22,6 +22,7 @@ import { useOwnerContext } from "../../owner/useOwnerContext";
 
 const ACTIVITY_TYPES = [
   { value: "all", label: "Tất cả loại hoạt động" },
+  { value: "owner", label: "Quản lý bãi" },
   { value: "booking", label: "Đặt chỗ" },
   { value: "payment", label: "Thanh toán" },
   { value: "review", label: "Đánh giá" },
@@ -29,6 +30,7 @@ const ACTIVITY_TYPES = [
 ];
 
 const TYPE_META = {
+  owner: { label: "Quản lý bãi", icon: ShieldCheck, tone: "pink" },
   booking: { label: "Đặt chỗ", icon: CalendarCheck, tone: "blue" },
   payment: { label: "Thanh toán", icon: CreditCard, tone: "green" },
   review: { label: "Đánh giá", icon: ClipboardList, tone: "orange" },

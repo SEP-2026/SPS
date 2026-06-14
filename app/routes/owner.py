@@ -18,6 +18,8 @@ from app.routes.auth import get_current_user
 from app.security.password_policy import ensure_strong_password
 from app.services.qr_service import generate_booking_qr_code, invalidate_booking_qr_code
 from app.services.employee_service import create_employee_for_owner
+from app.services.geocoding import GeocodingError, geocode_address
+from app.services.owner_activity_service import build_owner_management_activity_rows, log_owner_activity
 from app.services.owner_booking_config import (
     deposit_amount_for_booking,
     get_owner_booking_config,
@@ -51,7 +53,7 @@ OWNER_DISTRICT_COORDINATES = {
     "quan 8": [(10.7358, 106.6784), (10.7295, 106.6679), (10.7227, 106.6553)],
     "quan 10": [(10.7730, 106.6673), (10.7715, 106.6609), (10.7792, 106.6677)],
     "quan 11": [(10.7628, 106.6501), (10.7562, 106.6535), (10.7654, 106.6462)],
-    "quan 12": [(10.8565, 106.6358), (10.8627, 106.6116), (10.8518, 106.6210)],
+    "quan 12": [(10.8249, 106.6188), (10.8310, 106.6250), (10.8180, 106.6120)],
     "tan phu": [(10.7915, 106.6261), (10.7932, 106.6250), (10.7818, 106.6364)],
     "binh tan": [(10.7420, 106.6123), (10.7215, 106.5950), (10.7470, 106.6267)],
     "thu duc": [(10.8493, 106.7746), (10.8460, 106.7908), (10.8585, 106.7601)],
@@ -91,6 +93,19 @@ def _owner_coordinate_key(text_value: str) -> str | None:
     return None
 
 
+def _build_owner_geocode_query(address: str, district_name: str) -> str:
+    normalized_address = (address or "").strip()
+    normalized_district = (district_name or "").strip()
+    parts = [normalized_address]
+    if normalized_district:
+        district_key = _normalize_owner_map_text(normalized_district)
+        address_key = _normalize_owner_map_text(normalized_address)
+        if district_key and district_key not in address_key:
+            parts.append(normalized_district)
+    parts.extend(["Thành phố Hồ Chí Minh", "Việt Nam"])
+    return ", ".join(part for part in parts if part)
+
+
 def _resolve_owner_parking_coordinates(
     name: str,
     address: str,
@@ -98,6 +113,12 @@ def _resolve_owner_parking_coordinates(
     district_id: int | None,
     db: Session,
 ) -> tuple[float, float]:
+    geocode_query = _build_owner_geocode_query(address, district_name)
+    try:
+        return geocode_address(geocode_query)
+    except GeocodingError:
+        pass
+
     text_value = _normalize_owner_map_text(f"{name} {address} {district_name}")
     for keywords, point in OWNER_COORDINATE_HINTS:
         if all(keyword in text_value for keyword in keywords):
@@ -943,6 +964,12 @@ def create_owner_customer(
     db.add(customer)
     db.flush()
     _sync_customer_vehicle(customer, payload.vehicle_plate, db)
+    log_owner_activity(
+        current_user.id,
+        "customer_created",
+        f"Tạo khách {customer.name} ({customer.email})",
+        db,
+    )
     db.commit()
     db.refresh(customer)
     return {
@@ -987,6 +1014,12 @@ def update_owner_customer(
         customer.status = payload.status
         customer.is_active = 0 if payload.status == "inactive" else 1
 
+    log_owner_activity(
+        current_user.id,
+        "customer_updated",
+        f"Cập nhật khách {customer.name} ({customer.email})",
+        db,
+    )
     db.commit()
     db.refresh(customer)
     return {
@@ -1059,8 +1092,28 @@ def owner_activity_history(
     parking_lots = _get_owner_parking_lots(current_user.id, db, include_locked=True)
     parking_ids = [int(lot.id) for lot in parking_lots]
     parking_names = {int(lot.id): lot.name for lot in parking_lots}
+    owner_name = current_user.name or "Owner"
     if not parking_ids:
-        return {"activities": [], "summary": {"total": 0, "booking": 0, "payment": 0, "review": 0, "employee": 0, "warning": 0}}
+        rows = build_owner_management_activity_rows(
+            current_user.id,
+            owner_name,
+            [],
+            parking_names,
+            db,
+        )
+        rows.sort(key=lambda item: item["time"], reverse=True)
+        return {
+            "activities": rows[:1000],
+            "summary": {
+                "total": len(rows),
+                "booking": 0,
+                "payment": 0,
+                "review": 0,
+                "employee": 0,
+                "owner": sum(1 for item in rows if item["type"] == "owner"),
+                "warning": sum(1 for item in rows if item["result"] == "warning"),
+            },
+        }
 
     bookings = (
         db.query(Booking)
@@ -1173,6 +1226,16 @@ def owner_activity_history(
             "result": "success",
         })
 
+    rows.extend(
+        build_owner_management_activity_rows(
+            current_user.id,
+            owner_name,
+            parking_ids,
+            parking_names,
+            db,
+        )
+    )
+
     rows.sort(key=lambda item: item["time"], reverse=True)
     summary = {
         "total": len(rows),
@@ -1180,6 +1243,7 @@ def owner_activity_history(
         "payment": sum(1 for item in rows if item["type"] == "payment"),
         "review": sum(1 for item in rows if item["type"] == "review"),
         "employee": sum(1 for item in rows if item["type"] == "employee"),
+        "owner": sum(1 for item in rows if item["type"] == "owner"),
         "warning": sum(1 for item in rows if item["result"] == "warning"),
     }
     return {"activities": rows[:1000], "summary": summary}
@@ -1275,6 +1339,13 @@ def owner_reply_review(
         raise HTTPException(status_code=403, detail="Bạn không có quyền phản hồi đánh giá này")
     review.owner_reply = payload.reply.strip()
     review.owner_replied_at = datetime.utcnow()
+    log_owner_activity(
+        current_user.id,
+        "review_replied",
+        f"Phản hồi đánh giá #{review.id}",
+        db,
+        parking_id=int(review.parking_id),
+    )
     db.commit()
     return {
         "success": True,
@@ -1303,6 +1374,13 @@ def owner_booking_config_update(
     db: Session = Depends(get_db),
 ):
     saved = save_owner_booking_config(db, current_user.id, payload.config or {})
+    log_owner_activity(
+        current_user.id,
+        "booking_config_updated",
+        "Cập nhật cấu hình đặt chỗ & vòng đời booking",
+        db,
+    )
+    db.commit()
     return {"message": "Đã lưu cấu hình đặt chỗ & ra/vào", "config": saved}
 
 
@@ -1589,6 +1667,13 @@ def create_owner_parking_lot(
         db=db,
         commit=False,
     )
+    log_owner_activity(
+        current_user.id,
+        "parking_created",
+        f"Tạo bãi «{lot.name}» · {total_slot_count} chỗ đỗ",
+        db,
+        parking_id=int(lot.id),
+    )
     db.commit()
     db.refresh(lot)
     return {
@@ -1713,6 +1798,13 @@ def create_owner_slot(
         updated_at=now,
     )
     db.add(slot)
+    log_owner_activity(
+        current_user.id,
+        "slot_created",
+        f"Thêm chỗ {code} · {payload.zone.strip()} / {payload.level.strip()}",
+        db,
+        parking_id=int(parking_lot.id),
+    )
     db.commit()
     return {"message": "Đã thêm chỗ đỗ"}
 
@@ -1761,6 +1853,13 @@ def update_owner_slot(
         slot.status = _normalize_slot_status(payload.status)
     slot.updated_at = vn_now()
 
+    log_owner_activity(
+        current_user.id,
+        "slot_updated",
+        f"Cập nhật chỗ {_display_slot_code(slot)}",
+        db,
+        parking_id=int(parking_lot.id),
+    )
     db.commit()
     return {"message": "Đã cập nhật chỗ đỗ"}
 
@@ -1790,7 +1889,16 @@ def delete_owner_slot(
     if active_booking:
         raise HTTPException(status_code=409, detail="Chỗ đỗ đang có booking hoạt động, không thể xóa")
 
+    slot_code = _display_slot_code(slot)
+    parking_id = int(parking_lot.id)
     db.delete(slot)
+    log_owner_activity(
+        current_user.id,
+        "slot_deleted",
+        f"Xóa chỗ {slot_code}",
+        db,
+        parking_id=parking_id,
+    )
     db.commit()
     return {"message": "Đã xóa chỗ đỗ"}
 
@@ -1830,6 +1938,13 @@ def update_owner_booking_status(
         booking.slot.status = "occupied"
     elif target_status == "completed" and booking.slot:
         booking.slot.status = "available"
+    log_owner_activity(
+        current_user.id,
+        "booking_status_updated",
+        f"BK-{booking.id} → {_owner_booking_status(target_status)}",
+        db,
+        parking_id=int(booking.parking_id) if booking.parking_id else None,
+    )
     db.commit()
 
     if target_status == "confirmed" and not (booking.qr_code or booking.qr_code_path):
@@ -1859,6 +1974,7 @@ def update_owner_account(
         current_user.password_hash = generate_password_hash(payload.password)
 
     current_user.email = normalized_email
+    log_owner_activity(current_user.id, "account_updated", "Cập nhật tài khoản đăng nhập owner", db)
     db.commit()
     return {
         "message": "Đã cập nhật tài khoản owner",
@@ -1885,8 +2001,47 @@ def update_owner_settings(
             raise HTTPException(status_code=409, detail="Email liên hệ đã được sử dụng")
         current_user.email = payload.contactEmail.lower().strip()
 
+    log_owner_activity(current_user.id, "settings_updated", "Cập nhật thông tin liên hệ owner", db)
     db.commit()
     return {"message": "Đã cập nhật thông tin owner"}
+
+
+@router.post("/parking-lots/{parking_id}/geocode")
+def refresh_owner_parking_coordinates(
+    parking_id: int,
+    current_user: User = Depends(require_owner),
+    db: Session = Depends(get_db),
+):
+    parking_lot = db.query(ParkingLot).filter(ParkingLot.id == parking_id, ParkingLot.is_active == 1).first()
+    if not parking_lot or _get_owner_parking_assignment(current_user.id, parking_lot.id, db) is None:
+        raise HTTPException(status_code=404, detail="Owner không có quyền cập nhật bãi này")
+
+    district_name = parking_lot.district.name if parking_lot.district else ""
+    latitude, longitude = _resolve_owner_parking_coordinates(
+        parking_lot.name,
+        parking_lot.address,
+        district_name,
+        parking_lot.district_id,
+        db,
+    )
+    parking_lot.latitude = latitude
+    parking_lot.longitude = longitude
+    log_owner_activity(
+        current_user.id,
+        "parking_updated",
+        f"Cập nhật vị trí bản đồ cho «{parking_lot.name}»",
+        db,
+        parking_id=int(parking_lot.id),
+    )
+    db.commit()
+    return {
+        "message": "Đã cập nhật vị trí bản đồ",
+        "parkingLot": {
+            "id": parking_lot.id,
+            "latitude": float(parking_lot.latitude),
+            "longitude": float(parking_lot.longitude),
+        },
+    }
 
 
 @router.patch("/parking-lots/{parking_id}/settings")
@@ -1915,6 +2070,13 @@ def update_owner_managed_parking_settings(
     if payload.pricePerMonth is not None:
         price.price_per_month = float(payload.pricePerMonth or 0)
 
+    log_owner_activity(
+        current_user.id,
+        "parking_updated",
+        f"Cập nhật cấu hình bãi «{parking_lot.name}»",
+        db,
+        parking_id=int(parking_lot.id),
+    )
     db.commit()
     return {"message": "Đã cập nhật cấu hình bãi"}
 

@@ -19,6 +19,7 @@ import DistrictManagement from "./pages/admin/DistrictManagement";
 import DistrictDetail from "./pages/admin/DistrictDetail";
 import RevenuePage from "./pages/admin/RevenuePage";
 import AdminCommissions from "./pages/admin/AdminCommissions";
+import AdminWithdrawals from "./pages/admin/AdminWithdrawals";
 import AdminPartnerLayout from "./admin/AdminPartnerLayout";
 import UserManagement from "./pages/admin/UserManagement";
 import UserDetail from "./pages/admin/UserDetail";
@@ -354,6 +355,7 @@ function AppBody({ auth, role, onLogin, onLogout }) {
           <Route path="owners" element={<AdminPartnerLayout />}>
             <Route index element={<OwnerManagement />} />
             <Route path="registrations" element={<AdminOwnerRegistrations />} />
+            <Route path="withdrawals" element={<AdminWithdrawals />} />
             <Route path="commissions" element={<AdminCommissions />} />
             <Route path="contracts" element={<AdminOwnerContracts />} />
           </Route>

@@ -476,13 +476,7 @@ def cancel_withdrawal(owner_id: int, withdrawal_id: int, db: Session) -> dict[st
     )
     if not withdrawal:
         raise ValueError("Không tìm thấy yêu cầu rút tiền")
-    if withdrawal.status != WITHDRAWAL_STATUS_PROCESSING:
-        raise ValueError("Chỉ có thể hủy yêu cầu đang xử lý")
-    withdrawal.status = WITHDRAWAL_STATUS_CANCELLED
-    withdrawal.updated_at = vn_now()
-    db.commit()
-    sync_owner_balance(owner_id, db)
-    return _serialize_withdrawal(withdrawal)
+    return _mark_withdrawal_cancelled(withdrawal, db)
 
 
 def complete_withdrawal(owner_id: int, withdrawal_id: int, db: Session) -> dict[str, Any]:
@@ -493,13 +487,134 @@ def complete_withdrawal(owner_id: int, withdrawal_id: int, db: Session) -> dict[
     )
     if not withdrawal:
         raise ValueError("Không tìm thấy yêu cầu rút tiền")
+    return _mark_withdrawal_completed(withdrawal, db)
+
+
+def _serialize_admin_withdrawal(withdrawal: OwnerWithdrawal) -> dict[str, Any]:
+    owner = withdrawal.owner
+    account = withdrawal.bank_account
+    payload = _serialize_withdrawal(withdrawal, account)
+    payload.update(
+        {
+            "ownerId": withdrawal.owner_id,
+            "ownerName": owner.name if owner else "—",
+            "ownerEmail": owner.email if owner else "",
+            "bankName": account.bank_name if account else None,
+            "bankCode": account.bank_code if account else None,
+            "accountNumber": account.account_number if account else None,
+        }
+    )
+    return payload
+
+
+def _mark_withdrawal_completed(withdrawal: OwnerWithdrawal, db: Session) -> dict[str, Any]:
     if withdrawal.status != WITHDRAWAL_STATUS_PROCESSING:
         raise ValueError("Yêu cầu không ở trạng thái đang xử lý")
     withdrawal.status = WITHDRAWAL_STATUS_COMPLETED
     withdrawal.updated_at = vn_now()
     db.commit()
-    sync_owner_balance(owner_id, db)
-    return _serialize_withdrawal(withdrawal)
+    sync_owner_balance(withdrawal.owner_id, db)
+    return _serialize_withdrawal(withdrawal, withdrawal.bank_account)
+
+
+def _mark_withdrawal_cancelled(withdrawal: OwnerWithdrawal, db: Session, *, note: str | None = None) -> dict[str, Any]:
+    if withdrawal.status != WITHDRAWAL_STATUS_PROCESSING:
+        raise ValueError("Chỉ có thể từ chối yêu cầu đang chờ duyệt")
+    withdrawal.status = WITHDRAWAL_STATUS_CANCELLED
+    if note:
+        withdrawal.note = note.strip()
+    withdrawal.updated_at = vn_now()
+    db.commit()
+    sync_owner_balance(withdrawal.owner_id, db)
+    return _serialize_withdrawal(withdrawal, withdrawal.bank_account)
+
+
+def list_admin_withdrawals(
+    db: Session,
+    *,
+    status: str | None = None,
+    search: str | None = None,
+    page: int = 1,
+    page_size: int = 10,
+) -> dict[str, Any]:
+    from math import ceil
+
+    query = (
+        db.query(OwnerWithdrawal)
+        .options(joinedload(OwnerWithdrawal.owner), joinedload(OwnerWithdrawal.bank_account))
+        .order_by(OwnerWithdrawal.created_at.desc())
+    )
+    if status and status != "all":
+        query = query.filter(OwnerWithdrawal.status == status)
+
+    rows = query.all()
+    if search and search.strip():
+        token = search.strip().lower()
+        rows = [
+            row
+            for row in rows
+            if token
+            in " ".join(
+                filter(
+                    None,
+                    [
+                        row.request_code,
+                        row.owner.name if row.owner else "",
+                        row.owner.email if row.owner else "",
+                        row.bank_account.bank_name if row.bank_account else "",
+                        row.bank_account.account_number if row.bank_account else "",
+                    ],
+                )
+            ).lower()
+        ]
+
+    total = len(rows)
+    safe_page = max(page, 1)
+    safe_size = min(max(page_size, 1), 100)
+    start = (safe_page - 1) * safe_size
+    page_rows = rows[start : start + safe_size]
+
+    processing_count = sum(1 for row in rows if row.status == WITHDRAWAL_STATUS_PROCESSING)
+    processing_amount = _float(
+        sum(_to_decimal(row.amount) for row in rows if row.status == WITHDRAWAL_STATUS_PROCESSING)
+    )
+
+    return {
+        "summary": {
+            "total": total,
+            "processingCount": processing_count,
+            "processingAmount": processing_amount,
+        },
+        "items": [_serialize_admin_withdrawal(item) for item in page_rows],
+        "page": safe_page,
+        "pageSize": safe_size,
+        "total": total,
+        "totalPages": max(ceil(total / safe_size), 1) if total else 1,
+    }
+
+
+def admin_approve_withdrawal(withdrawal_id: int, db: Session) -> dict[str, Any]:
+    withdrawal = (
+        db.query(OwnerWithdrawal)
+        .options(joinedload(OwnerWithdrawal.bank_account))
+        .filter(OwnerWithdrawal.id == withdrawal_id)
+        .first()
+    )
+    if not withdrawal:
+        raise ValueError("Không tìm thấy yêu cầu rút tiền")
+    return _mark_withdrawal_completed(withdrawal, db)
+
+
+def admin_reject_withdrawal(withdrawal_id: int, db: Session, *, note: str | None = None) -> dict[str, Any]:
+    withdrawal = (
+        db.query(OwnerWithdrawal)
+        .options(joinedload(OwnerWithdrawal.bank_account))
+        .filter(OwnerWithdrawal.id == withdrawal_id)
+        .first()
+    )
+    if not withdrawal:
+        raise ValueError("Không tìm thấy yêu cầu rút tiền")
+    return _mark_withdrawal_cancelled(withdrawal, db, note=note)
 
 
 def _collect_cash_payments_for_day(

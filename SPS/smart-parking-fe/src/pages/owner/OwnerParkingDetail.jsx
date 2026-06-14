@@ -1,6 +1,7 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, CircleParking, Map, Settings, WalletCards } from "lucide-react";
+import { ArrowLeft, CircleParking, Map, MapPin, Settings, WalletCards } from "lucide-react";
+import API from "../../services/api";
 import { formatCurrency, StatusBadge } from "../../owner/OwnerUI";
 import { useOwnerContext } from "../../owner/useOwnerContext";
 import { formatTimeVN } from "../../utils/dateTime";
@@ -35,7 +36,9 @@ function ParkingDetailStat({ icon: Icon, title, value, note, tone }) {
 export default function OwnerParkingDetail() {
   const { parkingId } = useParams();
   const navigate = useNavigate();
-  const { ownerData, isSyncing } = useOwnerContext();
+  const { ownerData, isSyncing, actions } = useOwnerContext();
+  const [isGeocoding, setIsGeocoding] = useState(false);
+  const [geocodeMessage, setGeocodeMessage] = useState("");
 
   const lot = useMemo(() => (
     ownerData.parkingLots.find((item) => String(item.id) === String(parkingId)) || null
@@ -56,6 +59,23 @@ export default function OwnerParkingDetail() {
   if (isSyncing) {
     return <p className="owner-empty">Đang tải chi tiết bãi đỗ...</p>;
   }
+
+  const refreshMapPin = async () => {
+    if (!lot || isGeocoding) {
+      return;
+    }
+    try {
+      setIsGeocoding(true);
+      setGeocodeMessage("");
+      await API.post(`/owner/parking-lots/${lot.id}/geocode`);
+      await actions.refreshOwnerData({ silent: true });
+      setGeocodeMessage("Đã cập nhật vị trí ghim theo địa chỉ bãi.");
+    } catch (error) {
+      setGeocodeMessage(error?.response?.data?.detail || "Không cập nhật được vị trí bản đồ.");
+    } finally {
+      setIsGeocoding(false);
+    }
+  };
 
   if (!lot) {
     return (
@@ -79,6 +99,10 @@ export default function OwnerParkingDetail() {
           Danh sách bãi
         </button>
         <div>
+          <button type="button" className="owner-management-secondary" disabled={isGeocoding} onClick={refreshMapPin}>
+            <MapPin size={17} />
+            {isGeocoding ? "Đang ghim..." : "Cập nhật ghim"}
+          </button>
           <button type="button" className="owner-management-secondary" onClick={() => navigate(`/owner/parking-map?parkingId=${lot.id}`)}>
             <Map size={17} />
             Sơ đồ
@@ -95,6 +119,7 @@ export default function OwnerParkingDetail() {
           <span>Bãi đỗ #{lot.id}</span>
           <h2>{lot.name}</h2>
           <p>{[lot.address, lot.district].filter(Boolean).join(" • ") || "Chưa có địa chỉ"}</p>
+          {geocodeMessage ? <small>{geocodeMessage}</small> : null}
         </div>
         <strong>{summary.occupancy}% lấp đầy</strong>
       </section>

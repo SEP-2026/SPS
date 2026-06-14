@@ -21,6 +21,7 @@ logger = logging.getLogger(__name__)
 from app.database import get_db
 from app.models.models import Booking, District, ParkingLot, ParkingPrice, ParkingSlot, Payment, User, UserVehicle
 from app.routes.auth import get_current_user
+from app.services.geocoding import GeocodingError, geocode_address as _geocode_address
 from app.services.qr_service import invalidate_booking_qr_code
 from app.services.wallet_service import get_wallet_summary, settle_booking_payment, WalletError, InsufficientWalletBalance
 from app.utils.timezone import ensure_vn_local_naive, vn_now
@@ -60,66 +61,13 @@ def _normalize_text(value: str) -> str:
     return plain.lower().strip()
 
 
-def _local_geocode_fallback(address: str):
-    normalized = _normalize_text(address)
-    candidates = {
-        "nguyen van sang": (10.7910, 106.6255),
-        "tan ky tan quy": (10.7932, 106.6250),
-        "luy ban bich": (10.7818, 106.6364),
-        "au co": (10.7864, 106.6402),
-        "truong chinh": (10.8031, 106.6287),
-        "tan phu": (10.7910, 106.6255),
-    }
-    for key, point in candidates.items():
-        if key in normalized:
-            return point
-    return None
-
-
 def geocode_address(address: str):
-    api_key = os.getenv("GOOGLE_MAPS_API_KEY", "").strip()
-    encoded_address = quote_plus(address)
-
-    if api_key:
-        geocode_url = (
-            "https://maps.googleapis.com/maps/api/geocode/json"
-            f"?address={encoded_address}&key={api_key}"
-        )
-
-        try:
-            with urlopen(geocode_url, timeout=10) as response:
-                payload = json.loads(response.read().decode("utf-8"))
-            results = payload.get("results", [])
-            status = payload.get("status")
-            if status == "OK" and results:
-                location = results[0]["geometry"]["location"]
-                return float(location["lat"]), float(location["lng"])
-        except Exception:
-            pass
-
-    # Fallback khi chưa cấu hình Google API key hoặc Google API không phản hồi.
-    nominatim_url = (
-        "https://nominatim.openstreetmap.org/search"
-        f"?q={encoded_address}&format=json&limit=1"
-    )
     try:
-        req_headers = {"User-Agent": "smart-parking-app/1.0"}
-        from urllib.request import Request
-
-        req = Request(nominatim_url, headers=req_headers)
-        with urlopen(req, timeout=10) as response:
-            payload = json.loads(response.read().decode("utf-8"))
-    except Exception:
-        raise HTTPException(status_code=502, detail="Không gọi được dịch vụ geocoding")
-
-    if payload:
-        return float(payload[0]["lat"]), float(payload[0]["lon"])
-
-    local_point = _local_geocode_fallback(address)
-    if local_point:
-        return local_point
-
-    raise HTTPException(status_code=404, detail="Không tìm thấy tọa độ cho địa chỉ đã nhập")
+        return _geocode_address(address)
+    except GeocodingError as exc:
+        message = str(exc)
+        status_code = 502 if "gọi được" in message else 404
+        raise HTTPException(status_code=status_code, detail=message) from exc
 
 
 def _overview_slot_status(raw_status: str | None, booking_statuses: set[str]) -> str:

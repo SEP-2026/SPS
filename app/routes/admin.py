@@ -26,7 +26,7 @@ from app.models.models import (
 from app.utils.timezone import isoformat_vn, vn_now
 from app.routes.auth import get_current_user
 from app.security.password_policy import ensure_strong_password
-from app.services import admin_commissions, admin_contracts, admin_districts, admin_owners, admin_parking_lots, admin_registrations, admin_users
+from app.services import admin_commissions, admin_contracts, admin_districts, admin_owners, admin_parking_lots, admin_registrations, admin_users, owner_finance
 from app.services.revenue_settings import ADMIN_RUNTIME_SETTINGS, get_commission_rate_percent, split_revenue
 import unicodedata
 
@@ -1097,6 +1097,59 @@ def process_admin_commission_payout(
 ):
     owner_ids = payload.ownerIds if payload else None
     return admin_commissions.process_partner_payouts(db, owner_ids=owner_ids)
+
+
+class AdminWithdrawalRejectRequest(BaseModel):
+    note: str | None = Field(default=None, max_length=500)
+
+
+@router.get("/withdrawals")
+def list_admin_withdrawals(
+    status: str = "processing",
+    search: str | None = None,
+    page: int = 1,
+    pageSize: int = 10,
+    _: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    return owner_finance.list_admin_withdrawals(
+        db,
+        status=status,
+        search=search,
+        page=page,
+        page_size=pageSize,
+    )
+
+
+@router.post("/withdrawals/{withdrawal_id}/approve")
+def approve_admin_withdrawal(
+    withdrawal_id: int,
+    _: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    try:
+        withdrawal = owner_finance.admin_approve_withdrawal(withdrawal_id, db)
+    except ValueError as error:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(error)) from error
+    return {"withdrawal": withdrawal, "message": "Đã duyệt yêu cầu rút tiền"}
+
+
+@router.post("/withdrawals/{withdrawal_id}/reject")
+def reject_admin_withdrawal(
+    withdrawal_id: int,
+    payload: AdminWithdrawalRejectRequest | None = None,
+    _: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    try:
+        withdrawal = owner_finance.admin_reject_withdrawal(
+            withdrawal_id,
+            db,
+            note=payload.note if payload else None,
+        )
+    except ValueError as error:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(error)) from error
+    return {"withdrawal": withdrawal, "message": "Đã từ chối yêu cầu rút tiền"}
 
 
 @router.get("/dashboard-stats")

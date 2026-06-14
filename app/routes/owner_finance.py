@@ -6,6 +6,8 @@ from app.database import get_db
 from app.models.models import User
 from app.routes.owner import require_owner
 from app.services import owner_finance as finance_service
+from app.services import vietqr as vietqr_service
+from app.services.vietqr import VietQRError
 
 router = APIRouter(prefix="/owner", tags=["owner-finance"])
 
@@ -30,6 +32,11 @@ class WithdrawalCreateRequest(BaseModel):
     amount: float = Field(gt=0)
     bankAccountId: int | None = None
     note: str | None = Field(default=None, max_length=500)
+
+
+class VietQrLookupRequest(BaseModel):
+    bankBin: str = Field(min_length=6, max_length=20)
+    accountNumber: str = Field(min_length=6, max_length=50)
 
 
 class CashReconciliationCreateRequest(BaseModel):
@@ -58,6 +65,34 @@ def owner_balance(
     db: Session = Depends(get_db),
 ):
     return finance_service.get_owner_balance_payload(current_user.id, db)
+
+
+@router.get("/vietqr/banks")
+def list_vietqr_banks(
+    current_user: User = Depends(require_owner),
+):
+    del current_user
+    try:
+        banks = vietqr_service.get_banks()
+    except VietQRError as error:
+        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=str(error)) from error
+    return {"banks": banks, "total": len(banks), "source": "vietqr"}
+
+
+@router.post("/vietqr/lookup")
+def lookup_vietqr_account(
+    payload: VietQrLookupRequest,
+    current_user: User = Depends(require_owner),
+):
+    del current_user
+    try:
+        result = vietqr_service.lookup_account_holder(
+            bank_bin=payload.bankBin,
+            account_number=payload.accountNumber,
+        )
+    except VietQRError as error:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(error)) from error
+    return result
 
 
 @router.get("/bank-accounts")

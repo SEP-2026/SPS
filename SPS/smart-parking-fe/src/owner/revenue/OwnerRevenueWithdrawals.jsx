@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
 import {
   ArrowRight,
@@ -32,26 +31,19 @@ import {
   RevenueStatGrid,
   RevenueTableTabs,
 } from "./OwnerRevenueShared";
+import BankAccountModal from "./BankAccountModal";
 
 const TABLE_TABS = [
   { value: "all", label: "Tất cả yêu cầu" },
-  { value: "processing", label: "Đang xử lý" },
+  { value: "processing", label: "Chờ duyệt" },
   { value: "completed", label: "Đã hoàn thành" },
   { value: "cancelled", label: "Đã hủy" },
 ];
 
 const STATUS_LABELS = {
-  processing: { label: "Đang xử lý", tone: "info" },
+  processing: { label: "Chờ duyệt", tone: "info" },
   completed: { label: "Đã hoàn thành", tone: "success" },
   cancelled: { label: "Đã hủy", tone: "danger" },
-};
-
-const EMPTY_BANK_FORM = {
-  bankCode: "VCB",
-  bankName: "Vietcombank",
-  accountNumber: "",
-  accountHolderName: "",
-  isDefault: true,
 };
 
 export default function OwnerRevenueWithdrawals() {
@@ -68,7 +60,6 @@ export default function OwnerRevenueWithdrawals() {
   const [pageSize, setPageSize] = useState(10);
   const [amount, setAmount] = useState("");
   const [bankModal, setBankModal] = useState(false);
-  const [bankForm, setBankForm] = useState(EMPTY_BANK_FORM);
   const [saving, setSaving] = useState(false);
 
   const loadData = useCallback(async () => {
@@ -126,7 +117,7 @@ export default function OwnerRevenueWithdrawals() {
       action: <button type="button" className="owner-revenue-inline-button" onClick={() => document.getElementById("owner-quick-withdraw")?.scrollIntoView({ behavior: "smooth" })}>Rút tiền ngay →</button>,
     },
     {
-      title: "Đang xử lý",
+      title: "Chờ duyệt",
       value: formatCurrency(summary.processingAmount),
       subtitle: `${formatNumber(summary.processingCount || 0)} yêu cầu`,
       icon: <WalletCards size={23} />,
@@ -183,7 +174,7 @@ export default function OwnerRevenueWithdrawals() {
       });
       setAmount("");
       await loadData();
-      window.alert("Đã tạo yêu cầu rút tiền.");
+      window.alert("Đã gửi yêu cầu rút tiền. Admin sẽ duyệt trong 1–2 ngày làm việc.");
     } catch (err) {
       window.alert(err?.response?.data?.detail || "Không thể tạo yêu cầu rút tiền");
     } finally {
@@ -191,14 +182,13 @@ export default function OwnerRevenueWithdrawals() {
     }
   };
 
-  const saveBankAccount = async (event) => {
-    event.preventDefault();
+  const saveBankAccount = async (payload) => {
     try {
       setSaving(true);
-      await createBankAccount(bankForm);
+      await createBankAccount(payload);
       setBankModal(false);
-      setBankForm(EMPTY_BANK_FORM);
       await loadData();
+      window.alert("Đã lưu tài khoản ngân hàng.");
     } catch (err) {
       window.alert(err?.response?.data?.detail || "Không thể lưu tài khoản");
     } finally {
@@ -357,8 +347,8 @@ export default function OwnerRevenueWithdrawals() {
           <section className="owner-revenue-side-card">
             <h3>Lưu ý</h3>
             <ul className="owner-revenue-notes">
-              <li>Yêu cầu trước 17:00 có thể xử lý trong ngày.</li>
-              <li>Thời gian xử lý 1–2 ngày làm việc.</li>
+              <li>Yêu cầu rút tiền cần được admin duyệt trước khi chuyển khoản.</li>
+              <li>Thời gian xử lý 1–2 ngày làm việc sau khi được duyệt.</li>
               <li>Số tiền tối thiểu {formatCurrency(balance.minWithdrawalAmount || 50000)}.</li>
             </ul>
             <Link to="/owner/settings" className="owner-revenue-inline-link-button">
@@ -368,40 +358,12 @@ export default function OwnerRevenueWithdrawals() {
         </aside>
       </div>
 
-      {bankModal ? createPortal(
-        <div className="owner-modal-backdrop" onClick={() => !saving && setBankModal(false)}>
-          <form className="owner-modal owner-modal--detail" onSubmit={saveBankAccount} onClick={(event) => event.stopPropagation()}>
-            <div className="owner-modal-head">
-              <div>
-                <h2>Thêm tài khoản ngân hàng</h2>
-                <p>Dùng để nhận tiền khi rút.</p>
-              </div>
-              <button type="button" className="owner-modal-close" onClick={() => setBankModal(false)}>×</button>
-            </div>
-            <label className="owner-revenue-quick-withdraw">
-              <span>Mã ngân hàng</span>
-              <input value={bankForm.bankCode} onChange={(event) => setBankForm((prev) => ({ ...prev, bankCode: event.target.value }))} required />
-            </label>
-            <label className="owner-revenue-quick-withdraw">
-              <span>Tên ngân hàng</span>
-              <input value={bankForm.bankName} onChange={(event) => setBankForm((prev) => ({ ...prev, bankName: event.target.value }))} required />
-            </label>
-            <label className="owner-revenue-quick-withdraw">
-              <span>Số tài khoản</span>
-              <input value={bankForm.accountNumber} onChange={(event) => setBankForm((prev) => ({ ...prev, accountNumber: event.target.value }))} required />
-            </label>
-            <label className="owner-revenue-quick-withdraw">
-              <span>Chủ tài khoản</span>
-              <input value={bankForm.accountHolderName} onChange={(event) => setBankForm((prev) => ({ ...prev, accountHolderName: event.target.value }))} required />
-            </label>
-            <div className="owner-modal-actions">
-              <button type="button" className="owner-management-secondary" onClick={() => setBankModal(false)}>Hủy</button>
-              <button type="submit" className="owner-management-primary" disabled={saving}>{saving ? "Đang lưu..." : "Lưu tài khoản"}</button>
-            </div>
-          </form>
-        </div>,
-        document.body,
-      ) : null}
+      <BankAccountModal
+        open={bankModal}
+        saving={saving}
+        onClose={() => setBankModal(false)}
+        onSubmit={saveBankAccount}
+      />
     </>
   );
 }

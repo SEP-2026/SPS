@@ -261,6 +261,20 @@ class ParkingOperationalState(Base):
     parking_lot = relationship("ParkingLot")
 
 
+class OwnerActivity(Base):
+    __tablename__ = "owner_activities"
+
+    id = Column(Integer, primary_key=True, index=True)
+    owner_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    parking_id = Column(Integer, ForeignKey("parking_lots.id"), nullable=True, index=True)
+    action = Column(String(50), nullable=False)
+    detail = Column(String(500), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    owner = relationship("User", foreign_keys=[owner_id])
+    parking_lot = relationship("ParkingLot")
+
+
 class EmployeeActivity(Base):
     __tablename__ = "employee_activities"
 

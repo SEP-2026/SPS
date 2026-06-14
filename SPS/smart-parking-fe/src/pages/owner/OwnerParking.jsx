@@ -94,6 +94,10 @@ export default function OwnerParking() {
   const [lotForm, setLotForm] = useState(() => createEmptyLotForm());
   const [isLotSubmitting, setIsLotSubmitting] = useState(false);
 
+  const assignedLotIds = useMemo(
+    () => new Set((ownerData.parkingLots || []).map((lot) => lot.id)),
+    [ownerData.parkingLots],
+  );
   const zones = useMemo(() => [...new Set(ownerData.slots.map((slot) => slot.zone))], [ownerData.slots]);
   const filteredSlots = useMemo(() => ownerData.slots.filter((slot) => {
     if (zoneFilter !== "all" && slot.zone !== zoneFilter) {
@@ -134,7 +138,12 @@ export default function OwnerParking() {
 
     const search = normalizeUniqueText(searchQuery);
     const items = Array.from(lotMap.values())
-      .filter((lot) => lot.slots.length > 0 || !zoneFilter || statusFilter === "all")
+      .filter((lot) => {
+        if (lot.id && assignedLotIds.has(lot.id)) {
+          return true;
+        }
+        return lot.slots.length > 0 || zoneFilter === "all" || statusFilter === "all";
+      })
       .filter((lot) => {
         if (!search) {
           return true;
@@ -155,7 +164,7 @@ export default function OwnerParking() {
       }
       return left.name.localeCompare(right.name, "vi");
     });
-  }, [filteredSlots, ownerData.parkingLots, searchQuery, sortBy, statusFilter, zoneFilter]);
+  }, [assignedLotIds, filteredSlots, ownerData.parkingLots, searchQuery, sortBy, statusFilter, zoneFilter]);
 
   const slotGroupTotal = useMemo(
     () => lotForm.slotGroups.reduce((sum, group) => sum + Math.max(0, Number(group.slotCount) || 0), 0),
@@ -416,7 +425,13 @@ export default function OwnerParking() {
         </div>
 
         {isSyncing ? <p className="owner-empty">Đang đồng bộ chỗ đỗ từ CSDL...</p> : null}
-        {!isSyncing && lots.length === 0 ? <p className="owner-empty">Không có bãi nào khớp bộ lọc hiện tại.</p> : null}
+        {!isSyncing && lots.length === 0 ? (
+          <p className="owner-empty">
+            {(ownerData.parkingLots?.length || 0) > 0
+              ? "Không có bãi khớp tìm kiếm. Thử đặt lại bộ lọc về «Tất cả khu vực / Tất cả trạng thái»."
+              : "Chưa có bãi đỗ nào được gán cho tài khoản owner."}
+          </p>
+        ) : null}
 
         <div className="owner-parking-v2-list">
           {lots.map((lot, index) => {
