@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { Star } from "lucide-react";
 import API from "../services/api";
 import "./ReviewForm.css";
 
@@ -56,7 +57,7 @@ export default function ReviewForm({ bookingId, parkingName, onSubmit, onSkip })
             onMouseEnter={() => setHoverRating(star)}
             onClick={() => setRating(star)}
           >
-            ★
+            <Star size={20} fill={activeRating >= star ? "#eab308" : "none"} />
           </button>
         ))}
       </div>

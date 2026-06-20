@@ -10,6 +10,7 @@ import {
   Smile,
   Star,
   ThumbsUp,
+  X,
 } from "lucide-react";
 import {
   Area,
@@ -61,9 +62,12 @@ function toDateLabel(value) {
 }
 
 function StarRating({ rating }) {
+  const normalizedRating = Number(rating || 0);
   return (
-    <span className="owner-star-rating" aria-label={`${rating} sao`}>
-      {"★".repeat(Number(rating || 0))}{"☆".repeat(Math.max(0, 5 - Number(rating || 0)))}
+    <span className="owner-star-rating" aria-label={`${normalizedRating} sao`}>
+      {Array.from({ length: 5 }).map((_, index) => (
+        <Star key={index} size={16} fill={index < normalizedRating ? "#eab308" : "none"} />
+      ))}
     </span>
   );
 }
@@ -390,7 +394,7 @@ export default function OwnerReviews() {
                 <h2>Chi tiết đánh giá</h2>
                 <p>{selectedReview.parkingLotName}</p>
               </div>
-              <button type="button" className="owner-modal-close" onClick={() => setSelectedReview(null)}>×</button>
+              <button type="button" className="owner-modal-close" onClick={() => setSelectedReview(null)}><X size={18} /></button>
             </div>
             <div className="owner-detail-grid">
               <div><span>Khách hàng</span><strong>{selectedReview.user}</strong></div>

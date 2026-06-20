@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import ReactDOM from "react-dom";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
+import { X, MapPin, Loader2, User, Car, Save, Calendar, Info, CheckCircle, AlertTriangle } from "lucide-react";
 import API, { getAuth, saveAuth } from "../services/api";
 import { formatDateOnlyVN, toDateInputValue, toDatetimeLocalValue, toVietnamIsoString } from "../utils/dateTime";
 import ParkingMap from "../components/ParkingMap";
@@ -806,21 +807,21 @@ export default function Booking() {
                   aria-label="Xóa địa chỉ"
                   onClick={() => setAddress("")}
                 >
-                  ✕
+                  <X size={16} />
                 </button>
               )}
             </div>
 
             <button type="button" className="btn-primary btn-primary--search" onClick={handleSearchNearby} disabled={searching}>
               {searching ? (
-                <span className="btn-loading">⏳ Đang tìm...</span>
+                <span className="btn-loading"><Loader2 size={16} className="spin" /> Đang tìm...</span>
               ) : (
                 "Tìm bãi xe gần bạn"
               )}
             </button>
 
             <button type="button" className="btn-secondary" onClick={handleUseCurrentLocation} disabled={searching}>
-              📍 Dùng vị trí hiện tại
+              <MapPin size={16} /> Dùng vị trí hiện tại
             </button>
           </div>
 
@@ -858,8 +859,8 @@ export default function Booking() {
                 {nearby.map((lot) => (
                   <article className="nearby-item" key={lot.id}>
                     <h3>{lot.name}</h3>
-                    <p>📍 {lot.address}</p>
-                    <p>📏 {lot.distance} km</p>
+                    <p><MapPin size={14} /> {lot.address}</p>
+                    <p><MapPin size={14} /> {lot.distance} km</p>
                     {expandedLotId === lot.id ? (
                       <div className="lot-detail-box">
                         <p><strong>ID bãi:</strong> {lot.id}</p>
@@ -890,7 +891,7 @@ export default function Booking() {
             {/* Progress Stepper */}
             <div className="booking-stepper">
               <div className="stepper-step stepper-step--completed">
-                <div className="stepper-number">✓</div>
+                <div className="stepper-number"><CheckCircle size={18} /></div>
                 <div className="stepper-label">Chọn bãi xe</div>
               </div>
               <div className="stepper-line"></div>
@@ -918,8 +919,8 @@ export default function Booking() {
               <p><strong>Giá theo ngày:</strong> {Number(selectedLot.price_per_day || 0).toLocaleString("vi-VN")}đ</p>
               <p><strong>Giá theo tháng:</strong> {Number(selectedLot.price_per_month || 0).toLocaleString("vi-VN")}đ</p>
               <div className="selected-lot-meta">
-                <span>📍 Khoảng cách: {selectedLot.distance} km</span>
-                <span>✅ Slot trống: {availableSlots.length}</span>
+                <span><MapPin size={14} /> Khoảng cách: {selectedLot.distance} km</span>
+                <span><CheckCircle size={14} /> Slot trống: {availableSlots.length}</span>
               </div>
             </div>
 
@@ -933,7 +934,7 @@ export default function Booking() {
               {/* Section 1: Thông tin người đặt */}
               <div className="form-section">
                 <div className="form-section-header">
-                  <span className="section-icon">👤</span>
+                  <span className="section-icon"><User size={18} /></span>
                   <h3>Thông tin người đặt</h3>
                   {profile && <span className="badge badge--account">Từ tài khoản</span>}
                 </div>
@@ -971,7 +972,7 @@ export default function Booking() {
               {/* Section 2: Thông tin xe */}
               <div className="form-section">
                 <div className="form-section-header">
-                  <span className="section-icon">🚗</span>
+                  <span className="section-icon"><Car size={18} /></span>
                   <h3>Thông tin xe</h3>
                 </div>
                 <div className="form-section-content">
@@ -1031,7 +1032,7 @@ export default function Booking() {
                       onClick={handleSaveVehicleProfile}
                       disabled={savingVehicle}
                     >
-                      {savingVehicle ? "Đang lưu..." : "💾 Lưu thông tin xe"}
+                      {savingVehicle ? "Đang lưu..." : <><Save size={16} /> Lưu thông tin xe</>}
                     </button>
                     {vehicleNotice && <span className="vehicle-notice">{vehicleNotice}</span>}
                   </div>
@@ -1041,7 +1042,7 @@ export default function Booking() {
               {/* Section 3: Chi tiết đặt chỗ */}
               <div className="form-section">
                 <div className="form-section-header">
-                  <span className="section-icon">📅</span>
+                  <span className="section-icon"><Calendar size={18} /></span>
                   <h3>Chi tiết đặt chỗ</h3>
                 </div>
                 <div className="form-section-content">
@@ -1050,7 +1051,7 @@ export default function Booking() {
                     <div className="field-wrap">
                       <label>
                         Vị trí mong muốn
-                        <span className="label-hint" title="Chọn vị trí từ sơ đồ bãi xe hoặc từ danh sách slot trống">ℹ️</span>
+                        <span className="label-hint" title="Chọn vị trí từ sơ đồ bãi xe hoặc từ danh sách slot trống"><Info size={14} /></span>
                       </label>
                       {prefilledSlotName ? (
                         <div className="prefilled-slot-display">

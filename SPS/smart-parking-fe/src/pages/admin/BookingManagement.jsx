@@ -71,8 +71,8 @@ export default function BookingManagement() {
                   <td>{booking.anomaly ? <StatusBadge status="warning" /> : <StatusBadge status="success" />}</td>
                   <td>
                     <div className="owner-row-actions">
-                      <button type="button" className="btn-secondary owner-btn owner-btn--small" onClick={() => setSelectedBooking(booking)}>Chi tiết</button>
-                      <button type="button" className="btn-secondary owner-btn owner-btn--small owner-btn--danger" onClick={() => actions.updateBookingStatus(booking.id, "cancelled")}>Hủy</button>
+                      <button type="button" className="owner-btn owner-btn--outline owner-btn--small" onClick={() => setSelectedBooking(booking)}>Chi tiết</button>
+                      <button type="button" className="owner-btn owner-btn--danger owner-btn--small" onClick={() => actions.updateBookingStatus(booking.id, "cancelled")}>Hủy</button>
                     </div>
                   </td>
                 </tr>

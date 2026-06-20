@@ -31,38 +31,14 @@
 }
 
 .admin-partner-subnav-link.active {
-  background: linear-gradient(135deg, rgba(36, 175, 171, 0.95), rgba(74, 148, 242, 0.92));
+  background: linear-gradient(160deg, rgba(55, 193, 177, 0.36), rgba(105, 188, 255, 0.28));
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.18);
   color: #fff;
-  box-shadow: 0 8px 18px rgba(14, 165, 233, 0.22);
+  font-weight: 700;
 }
 
 .admin-partner-hub-content {
   min-height: 0;
-}
-
-.admin-menu-group {
-  display: grid;
-  gap: 4px;
-}
-
-.admin-menu-group-toggle {
-  width: 100%;
-  border: none;
-  background: transparent;
-  cursor: pointer;
-  text-align: left;
-}
-
-.admin-menu-sublink {
-  padding-left: 38px !important;
-  font-size: 13px;
-  font-weight: 500;
-}
-
-.admin-menu-sublink.active {
-  background: linear-gradient(135deg, rgba(36, 175, 171, 0.95), rgba(74, 148, 242, 0.92));
-  color: #fff;
-  box-shadow: 0 10px 18px rgba(14, 165, 233, 0.22);
 }
 
 .admin-reg-layout,

@@ -152,7 +152,7 @@
 
 .employee-topbar-main h1 {
   margin: 1px 0 2px;
-  font-family: "Space Grotesk", "Be Vietnam Pro", sans-serif;
+  font-family: var(--font-family-display);
   font-size: clamp(20px, 2.2vw, 28px);
   line-height: 1.05;
   color: #12344f;
@@ -1379,13 +1379,7 @@
 .employee-shell {
   --employee-font-body: "Be Vietnam Pro", "Noto Sans", "Segoe UI", Roboto, Arial, sans-serif;
   --employee-font-display: "Space Grotesk", "Be Vietnam Pro", "Noto Sans", sans-serif;
-  --employee-accent: #1f78c8;
-  --employee-accent-2: #15a0be;
-  --employee-text-1: #123754;
-  --employee-text-2: #4d6f8a;
-  --employee-surface: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(243, 249, 255, 0.92));
-  --employee-border-strong: rgba(28, 88, 133, 0.16);
-  font-family: var(--employee-font-body);
+  font-family: var(--font-family-base);
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -3842,7 +3836,7 @@
   min-height: 100vh;
   overflow: hidden;
   color: var(--modern-text);
-  font-family: Inter, "Be Vietnam Pro", "Segoe UI", system-ui, sans-serif;
+  font-family: "Be Vietnam Pro", "Noto Sans", "Segoe UI", system-ui, sans-serif;
   background:
     linear-gradient(135deg, rgba(244, 248, 255, 0.98) 0%, rgba(236, 246, 255, 0.95) 52%, rgba(248, 250, 252, 0.98) 100%);
 }

@@ -1,3 +1,4 @@
+import { Eye, EyeOff, Lock, Mail, Phone, User, Car, Palette, IdCard } from "lucide-react";
 import { useEffect, useState } from "react";
 import API, { saveAuth } from "../services/api";
 import { isStrongPassword, getPasswordStrength, PASSWORD_POLICY_TEXT } from "../services/passwordPolicy";
@@ -204,7 +205,7 @@ export default function Login({ onLogin }) {
           <form className="login-form" onSubmit={handleLogin}>
             <label className="login-label" htmlFor="email">Email đăng nhập</label>
             <div className="input-shell">
-              <span className="input-icon" aria-hidden="true">✉</span>
+              <Mail className="input-icon" aria-hidden="true" size={18} />
               <input
                 id="email"
                 className="login-input"
@@ -218,7 +219,7 @@ export default function Login({ onLogin }) {
 
             <label className="login-label" htmlFor="password">Mật khẩu</label>
             <div className="input-shell">
-              <span className="input-icon" aria-hidden="true">🔒</span>
+              <Lock className="input-icon" aria-hidden="true" size={18} />
               <input
                 id="password"
                 className="login-input"
@@ -234,7 +235,7 @@ export default function Login({ onLogin }) {
                 onClick={() => setShowPassword(!showPassword)}
                 aria-label={showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
               >
-                {showPassword ? "🙈" : "👁"}
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
             </div>
 
@@ -340,7 +341,7 @@ export default function Login({ onLogin }) {
             <p className="register-heading">Đăng ký tài khoản user</p>
             <label className="login-label" htmlFor="register-name">Họ và tên</label>
             <div className={`input-shell ${formErrors.name ? "input-error" : ""}`}>
-              <span className="input-icon" aria-hidden="true">👤</span>
+              <User className="input-icon" aria-hidden="true" size={18} />
               <input
                 id="register-name"
                 className="login-input"
@@ -359,7 +360,7 @@ export default function Login({ onLogin }) {
 
             <label className="login-label" htmlFor="register-email">Email</label>
             <div className={`input-shell ${formErrors.email ? "input-error" : ""}`}>
-              <span className="input-icon" aria-hidden="true">✉</span>
+              <Mail className="input-icon" aria-hidden="true" size={18} />
               <input
                 id="register-email"
                 className="login-input"
@@ -379,7 +380,7 @@ export default function Login({ onLogin }) {
 
             <label className="login-label" htmlFor="register-password">Mật khẩu</label>
             <div className="input-shell">
-              <span className="input-icon" aria-hidden="true">🔒</span>
+              <Lock className="input-icon" aria-hidden="true" size={18} />
               <input
                 id="register-password"
                 className={`login-input ${formErrors.password ? "input-error" : ""}`}
@@ -401,7 +402,7 @@ export default function Login({ onLogin }) {
                 onClick={() => setShowRegisterPassword(!showRegisterPassword)}
                 aria-label={showRegisterPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
               >
-                {showRegisterPassword ? "🙈" : "👁"}
+                {showRegisterPassword ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
             </div>
             {formErrors.password ? (
@@ -412,8 +413,8 @@ export default function Login({ onLogin }) {
                 {registerPassword && (
                   <div className="password-strength">
                     <div className="strength-bar">
-                      <div 
-                        className="strength-fill" 
+                      <div
+                        className="strength-fill"
                         style={{ width: `${(getPasswordStrength(registerPassword).score / 5) * 100}%`, backgroundColor: getPasswordStrength(registerPassword).color }}
                       />
                     </div>
@@ -427,7 +428,7 @@ export default function Login({ onLogin }) {
 
             <label className="login-label" htmlFor="register-phone">Số điện thoại (tùy chọn)</label>
             <div className="input-shell">
-              <span className="input-icon" aria-hidden="true">☎</span>
+              <Phone className="input-icon" aria-hidden="true" size={18} />
               <input
                 id="register-phone"
                 className="login-input"
@@ -439,7 +440,7 @@ export default function Login({ onLogin }) {
 
             <label className="login-label" htmlFor="register-plate">Biển số xe (tùy chọn)</label>
             <div className="input-shell">
-              <span className="input-icon" aria-hidden="true">🚙</span>
+              <Car className="input-icon" aria-hidden="true" size={18} />
               <input
                 id="register-plate"
                 className="login-input"
@@ -451,7 +452,7 @@ export default function Login({ onLogin }) {
 
             <label className="login-label" htmlFor="register-color">Màu xe (tùy chọn)</label>
             <div className="input-shell">
-              <span className="input-icon" aria-hidden="true">🎨</span>
+              <Palette className="input-icon" aria-hidden="true" size={18} />
               <input
                 id="register-color"
                 className="login-input"

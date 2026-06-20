@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { Check, X, Phone, Mail, MapPin, FileText, Clock, CheckCircle, AlertCircle, RefreshCw, Percent } from "lucide-react";
 import { formatCurrency } from "../../owner/OwnerUI";
 import API from "../../services/api";
 import { formatDateTimeVN } from "../../utils/dateTime";
@@ -135,11 +136,11 @@ export default function AdminOwnerRegistrations() {
   return (
     <div className="admin-owners-page">
       <div className="admin-owners-kpis">
-        <article className="admin-owners-kpi"><div className="admin-owners-kpi-icon admin-owners-kpi-icon--blue">📋</div><div><span>Tất cả yêu cầu</span><strong>{summary.total || 0}</strong></div></article>
-        <article className="admin-owners-kpi"><div className="admin-owners-kpi-icon admin-owners-kpi-icon--amber">⏳</div><div><span>Chờ duyệt</span><strong>{summary.pending || 0}</strong></div></article>
-        <article className="admin-owners-kpi"><div className="admin-owners-kpi-icon admin-owners-kpi-icon--green">✓</div><div><span>Đã duyệt</span><strong>{summary.approved || 0}</strong></div></article>
-        <article className="admin-owners-kpi"><div className="admin-owners-kpi-icon admin-owners-kpi-icon--red">✕</div><div><span>Từ chối</span><strong>{summary.rejected || 0}</strong></div></article>
-        <article className="admin-owners-kpi"><div className="admin-owners-kpi-icon admin-owners-kpi-icon--purple">%</div><div><span>Tỷ lệ duyệt</span><strong>{summary.approvalRate || 0}%</strong></div></article>
+        <article className="admin-owners-kpi"><div className="admin-owners-kpi-icon admin-owners-kpi-icon--blue"><FileText size={24} /></div><div><span>Tất cả yêu cầu</span><strong>{summary.total || 0}</strong></div></article>
+        <article className="admin-owners-kpi"><div className="admin-owners-kpi-icon admin-owners-kpi-icon--amber"><Clock size={24} /></div><div><span>Chờ duyệt</span><strong>{summary.pending || 0}</strong></div></article>
+        <article className="admin-owners-kpi"><div className="admin-owners-kpi-icon admin-owners-kpi-icon--green"><CheckCircle size={24} /></div><div><span>Đã duyệt</span><strong>{summary.approved || 0}</strong></div></article>
+        <article className="admin-owners-kpi"><div className="admin-owners-kpi-icon admin-owners-kpi-icon--red"><X size={24} /></div><div><span>Từ chối</span><strong>{summary.rejected || 0}</strong></div></article>
+        <article className="admin-owners-kpi"><div className="admin-owners-kpi-icon admin-owners-kpi-icon--purple"><Percent size={24} /></div><div><span>Tỷ lệ duyệt</span><strong>{summary.approvalRate || 0}%</strong></div></article>
       </div>
 
       <div className="admin-owners-toolbar">
@@ -195,8 +196,8 @@ export default function AdminOwnerRegistrations() {
                     <td onClick={(e) => e.stopPropagation()}>
                       {row.status === "pending" ? (
                         <div className="admin-owners-row-actions">
-                          <button type="button" className="admin-owners-icon-btn" title="Duyệt" onClick={() => handleApproveById(row.id)}>✓</button>
-                          <button type="button" className="admin-owners-icon-btn" title="Từ chối" onClick={() => handleRejectById(row.id)}>✕</button>
+                          <button type="button" className="admin-owners-icon-btn" title="Duyệt" onClick={() => handleApproveById(row.id)}><Check size={18} /></button>
+                          <button type="button" className="admin-owners-icon-btn" title="Từ chối" onClick={() => handleRejectById(row.id)}><X size={18} /></button>
                         </div>
                       ) : "—"}
                     </td>
@@ -219,14 +220,14 @@ export default function AdminOwnerRegistrations() {
           <aside className="admin-reg-detail">
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
               <h3 style={{ margin: 0 }}>Chi tiết đăng ký</h3>
-              <button type="button" className="admin-owners-icon-btn" onClick={() => setSelectedId(null)} aria-label="Đóng">✕</button>
+              <button type="button" className="admin-owners-icon-btn" onClick={() => setSelectedId(null)} aria-label="Đóng"><X size={18} /></button>
             </div>
             <p><strong>{detail.businessName}</strong> — {STATUS_LABELS[detail.status]}</p>
             <p><small>{detail.registrationCode}</small></p>
             <div className="admin-owners-detail-meta" style={{ marginTop: 12 }}>
-              <div>📞 {detail.phone}</div>
-              <div>✉️ {detail.email}</div>
-              <div>📍 {detail.address}</div>
+              <div><Phone size={14} /> {detail.phone}</div>
+              <div><Mail size={14} /> {detail.email}</div>
+              <div><MapPin size={14} /> {detail.address}</div>
             </div>
             <div className="admin-owners-detail-section">
               <h4>Thông tin bãi xe</h4>

@@ -420,7 +420,7 @@
   margin: 0;
   color: #14395d;
   font-size: 24px;
-  font-family: "Space Grotesk", "Be Vietnam Pro", sans-serif;
+  font-family: var(--font-family-display);
 }
 
 .scan-summary-list {

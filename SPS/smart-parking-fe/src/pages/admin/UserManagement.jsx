@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { Eye, CheckCircle, Check, MessageSquare, Clock, User, Phone, Mail, MapPin, Pencil, X, Lock, KeyRound, Car, Users, Map, UserRound, MoreHorizontal } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { formatCurrency } from "../../owner/OwnerUI";
 import API from "../../services/api";
@@ -129,7 +130,9 @@ export default function UserManagement() {
 
       <div className="admin-owners-kpis">
         <article className="admin-owners-kpi">
-          <div className="admin-owners-kpi-icon admin-owners-kpi-icon--blue">👥</div>
+          <div className="admin-owners-kpi-icon admin-owners-kpi-icon--blue">
+            <Users size={24} />
+          </div>
           <div>
             <span>Tổng người dùng</span>
             <strong>{summary.totalUsers || 0}</strong>
@@ -139,7 +142,9 @@ export default function UserManagement() {
           </div>
         </article>
         <article className="admin-owners-kpi">
-          <div className="admin-owners-kpi-icon admin-owners-kpi-icon--green">🗺️</div>
+          <div className="admin-owners-kpi-icon admin-owners-kpi-icon--green">
+            <Map size={24} />
+          </div>
           <div>
             <span>Quản lý khu vực</span>
             <strong>{summary.areaManagers || 0}</strong>
@@ -149,7 +154,9 @@ export default function UserManagement() {
           </div>
         </article>
         <article className="admin-owners-kpi">
-          <div className="admin-owners-kpi-icon admin-owners-kpi-icon--amber">🅿️</div>
+          <div className="admin-owners-kpi-icon admin-owners-kpi-icon--amber">
+            <Car size={24} />
+          </div>
           <div>
             <span>Tài khoản bãi</span>
             <strong>{summary.parkingAccounts || 0}</strong>
@@ -159,7 +166,9 @@ export default function UserManagement() {
           </div>
         </article>
         <article className="admin-owners-kpi">
-          <div className="admin-owners-kpi-icon admin-owners-kpi-icon--purple">🧑</div>
+          <div className="admin-owners-kpi-icon admin-owners-kpi-icon--purple">
+            <UserRound size={24} />
+          </div>
           <div>
             <span>Người dùng</span>
             <strong>{summary.endUsers || 0}</strong>
@@ -274,7 +283,7 @@ export default function UserManagement() {
                           title="Xem"
                           onClick={() => handleSelectUser(user)}
                         >
-                          👁
+                          <Eye size={18} />
                         </button>
                         <button
                           type="button"
@@ -282,7 +291,7 @@ export default function UserManagement() {
                           title="Chi tiết"
                           onClick={() => navigate(`/admin/users/${user.id}`)}
                         >
-                          ✏️
+                          <Pencil size={18} />
                         </button>
                         <button
                           type="button"
@@ -290,7 +299,7 @@ export default function UserManagement() {
                           title="Mở trang chi tiết"
                           onClick={() => navigate(`/admin/users/${user.id}`)}
                         >
-                          ⋯
+                          <MoreHorizontal size={18} />
                         </button>
                       </div>
                     </td>
@@ -339,7 +348,7 @@ export default function UserManagement() {
               onClick={closeDetailPanel}
               aria-label="Đóng chi tiết"
             >
-              ✕
+              <X size={18} />
             </button>
             {detailLoading || !detail ? (
               <p>Đang tải chi tiết...</p>
@@ -363,8 +372,8 @@ export default function UserManagement() {
                 <div className="admin-owners-detail-meta">
                   <div><strong>Vai trò:</strong> {detail.roleLabel}</div>
                   <div><strong>Khu vực:</strong> {detail.location || "—"}</div>
-                  <div>✉️ {detail.email}</div>
-                  <div>📞 {detail.phone || "—"}</div>
+                  <div><Mail size={14} /> {detail.email}</div>
+                  <div><Phone size={14} /> {detail.phone || "—"}</div>
                   <div><strong>Ngày tạo:</strong> {formatDateTimeVN(detail.createdAt)}</div>
                   <div><strong>Cập nhật:</strong> {formatDateTimeVN(detail.updatedAt)}</div>
                 </div>
@@ -393,7 +402,9 @@ export default function UserManagement() {
                     {(detail.permissions || []).map((perm) => (
                       <div key={perm.key} className="admin-users-permission-row">
                         <span>{perm.label}</span>
-                        <span className={perm.allowed ? "ok" : "no"}>{perm.allowed ? "✓" : "✕"}</span>
+                        <span className={perm.allowed ? "ok" : "no"}>
+                          {perm.allowed ? <CheckCircle size={16} /> : <X size={16} />}
+                        </span>
                       </div>
                     ))}
                   </div>

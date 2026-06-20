@@ -1,4 +1,5 @@
 ﻿import { useEffect, useMemo, useRef, useState } from "react";
+import { CheckCircle } from "lucide-react";
 
 import ActionButtons from "../../features/gate/ActionButtons";
 import BookingInfoPanel from "../../features/gate/BookingInfoPanel";
@@ -190,7 +191,11 @@ export default function EmployeeQrScanner() {
 
     setManualBookingId(String(bookingId));
     setScanMode("manual");
-    setScanSuccess("✓ Đọc QR thành công!");
+    setScanSuccess(
+      <span>
+        <CheckCircle size={16} /> Đọc QR thành công!
+      </span>
+    );
     if (successTimeoutRef.current) {
       clearTimeout(successTimeoutRef.current);
     }

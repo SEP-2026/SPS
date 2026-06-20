@@ -4,6 +4,7 @@ import ReviewForm from "../components/ReviewForm";
 import API from "../services/api";
 import CountdownTimer from "../components/CountdownTimer";
 import { formatDateTimeVN } from "../utils/dateTime";
+import { CheckCircle, MessageCircle, Clock, Star } from "lucide-react";
 import "./PaymentSuccess.css";
 
 const formatMoney = (value) => Number(value || 0).toLocaleString("vi-VN");
@@ -201,7 +202,7 @@ export default function PaymentSuccess() {
               />
             ) : null}
             {(currentCheckinStatus === "checked_out" || currentCheckinStatus === "completed") ? (
-              <p className="payment-success-note">✅ Đã check-out thành công</p>
+              <p className="payment-success-note"><CheckCircle size={18} /> Đã check-out thành công</p>
             ) : null}
             <p><strong>Booking ID:</strong> {booking.booking_id}</p>
             <p><strong>Trạng thái:</strong> {bookingStatusLabel(currentCheckinStatus || booking.booking_status)}</p>
@@ -275,12 +276,17 @@ export default function PaymentSuccess() {
                 ) : null}
                 {reviewData ? (
                   <div className="booking-review-result">
-                    <h3>✅ Đánh giá của bạn</h3>
-                    <p className="owner-review-rating">{"★".repeat(reviewData.rating)}{"☆".repeat(5 - reviewData.rating)} ({reviewData.rating}/5)</p>
+                    <h3><CheckCircle size={18} /> Đánh giá của bạn</h3>
+                    <p className="owner-review-rating">
+                      {Array.from({ length: 5 }).map((_, index) => (
+                        <Star key={index} size={16} fill={index < reviewData.rating ? "#eab308" : "none"} />
+                      ))}{" "}
+                      ({reviewData.rating}/5)
+                    </p>
                     <p>"{reviewData.comment || "Không có nhận xét."}"</p>
                     <p>Gửi lúc: {formatDateTimeVN(reviewData.created_at)}</p>
                     <p><strong>Phản hồi từ chủ bãi:</strong></p>
-                    {reviewData.owner_reply ? <p>💬 "{reviewData.owner_reply}"</p> : <p>⏳ Chưa có phản hồi từ chủ bãi</p>}
+                    {reviewData.owner_reply ? <p><MessageCircle size={14} /> "{reviewData.owner_reply}"</p> : <p><Clock size={14} /> Chưa có phản hồi từ chủ bãi</p>}
                   </div>
                 ) : null}
               </div>

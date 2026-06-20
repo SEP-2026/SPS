@@ -150,7 +150,7 @@
 
 .owner-topbar-main h1 {
   margin: 2px 0 4px;
-  font-family: "Space Grotesk", "Be Vietnam Pro", sans-serif;
+  font-family: var(--font-family-display);
   font-size: clamp(24px, 2.5vw, 34px);
   line-height: 1.08;
   color: #14395d;
@@ -888,10 +888,28 @@
   font-size: 13px;
 }
 
+.owner-btn--outline {
+  background: transparent !important;
+  border: 1px solid rgba(15, 23, 42, 0.15) !important;
+  color: #475569 !important;
+  border-radius: 8px;
+}
+
+.owner-btn--outline:hover {
+  background: #f1f5f9 !important;
+  border-color: rgba(15, 23, 42, 0.25) !important;
+  color: #1e293b !important;
+}
+
 .owner-btn--danger {
-  background: #fcebed;
-  color: #9a3340;
-  border-color: rgba(199, 63, 76, 0.22);
+  background: #fef2f2 !important;
+  color: #dc2626 !important;
+  border-color: rgba(220, 38, 38, 0.22) !important;
+  border-radius: 8px;
+}
+
+.owner-btn--danger:hover {
+  background: #fee2e2 !important;
 }
 
 .owner-slot-grid {

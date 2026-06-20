@@ -1,10 +1,9 @@
-﻿import { useCallback, useEffect, useMemo, useState } from "react";
-import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { ADMIN_NAV_ITEMS, ADMIN_ROUTE_META } from "./adminData";
-import { AdminIcon } from "./AdminIcons";
 import API from "../services/api";
 import useRealtimeRefresh from "../services/useRealtimeRefresh";
-import SidebarPromoCard from "../components/SidebarPromoCard";
+import { AdminHeader, AdminSidebar } from "./AdminDashboardComponents";
 import "./admin.css";
 import "./AdminPartners.css";
 import "../owner/owner.css";
@@ -28,10 +27,6 @@ export default function AdminLayout({ auth, onLogout }) {
   const [syncNote, setSyncNote] = useState("Đang tải dữ liệu admin");
   const [loading, setLoading] = useState(true);
   const meta = useMemo(() => resolveAdminRouteMeta(location.pathname), [location.pathname]);
-  const partnerSectionOpen = location.pathname.startsWith("/admin/owners");
-  const usersSectionOpen = location.pathname.startsWith("/admin/users");
-  const parkingSectionOpen = location.pathname.startsWith("/admin/parking-lots");
-  
   const [notificationStorageVersion, setNotificationStorageVersion] = useState(0);
 
   useEffect(() => {
@@ -226,133 +221,43 @@ export default function AdminLayout({ auth, onLogout }) {
   };
 
   return (
-    <div className={`admin-shell${sidebarOpen ? " sidebar-open" : ""}`}>
-      <aside className="admin-sidebar">
-        <div className="admin-sidebar-scroll">
-          <div className="admin-brand">
-            <div className="admin-brand-mark">AD</div>
-            <div>
-              <strong>Smart Parking</strong>
-              <span>Trung tâm điều hành</span>
+    <div className={`owner-shell min-h-screen w-full flex${sidebarOpen ? " sidebar-open" : ""}`}>
+      <AdminSidebar
+        navItems={ADMIN_NAV_ITEMS}
+        adminName={adminDisplayName}
+        adminEmail={auth?.user?.email || "admin@smartparking.vn"}
+        onLogout={onLogout}
+        isOpen={sidebarOpen}
+        onNavigate={() => setSidebarOpen(false)}
+      />
+      <button
+        type="button"
+        className="owner-sidebar-backdrop"
+        aria-label="Đóng menu admin"
+        onClick={() => setSidebarOpen(false)}
+      />
+
+      <div className="owner-main flex-1 min-w-0 w-full overflow-x-hidden">
+        <AdminHeader
+          adminName={adminDisplayName}
+          meta={meta}
+          unreadNotificationsCount={unreadNotificationsCount}
+          syncNote={syncNote}
+          onMenuToggle={() => setSidebarOpen((value) => !value)}
+          onLogout={onLogout}
+        />
+
+        <main className="owner-content">
+          {loading && !adminData ? (
+            <div className="owner-state-card owner-state-card--loading">
+              <span>Đang tải dữ liệu admin từ CSDL...</span>
             </div>
-          </div>
-
-          <div className="admin-sidebar-panel">
-            <p className="admin-sidebar-title">Điều hướng hệ thống</p>
-            <nav className="admin-menu">
-              {ADMIN_NAV_ITEMS.map((item) => {
-                if (item.children) {
-                  const groupBase = item.id === "users"
-                    ? "/admin/users"
-                    : item.id === "parking"
-                      ? "/admin/parking-lots"
-                      : "/admin/owners";
-                  const groupOpen = item.id === "users"
-                    ? usersSectionOpen
-                    : item.id === "parking"
-                      ? parkingSectionOpen
-                      : partnerSectionOpen;
-                  return (
-                    <div key={item.id} className="admin-menu-group">
-                      <NavLink
-                        to={groupBase}
-                        end
-                        className={({ isActive }) =>
-                          `admin-menu-link admin-menu-group-toggle${isActive || groupOpen ? " active" : ""}`
-                        }
-                        onClick={() => setSidebarOpen(false)}
-                      >
-                        <AdminIcon name={item.icon} className="admin-menu-icon" />
-                        <span>{item.label}</span>
-                      </NavLink>
-                      {groupOpen
-                        ? item.children.map((child) => (
-                            child.disabled ? (
-                              <span key={child.label} className="admin-menu-link admin-menu-sublink is-disabled" title="Sắp ra mắt">
-                                {child.label}
-                              </span>
-                            ) : (
-                              <NavLink
-                                key={child.to + child.label}
-                                to={child.to}
-                                end={Boolean(child.end)}
-                                className={({ isActive }) => `admin-menu-link admin-menu-sublink${isActive ? " active" : ""}`}
-                                onClick={() => setSidebarOpen(false)}
-                              >
-                                <span>{child.label}</span>
-                              </NavLink>
-                            )
-                          ))
-                        : null}
-                    </div>
-                  );
-                }
-
-                return (
-                  <NavLink
-                    key={item.to}
-                    to={item.to}
-                    end={item.to === "/admin"}
-                    className={({ isActive }) => `admin-menu-link${isActive ? " active" : ""}`}
-                    onClick={() => setSidebarOpen(false)}
-                  >
-                    <AdminIcon name={item.icon} className="admin-menu-icon" />
-                    <span>{item.label}</span>
-                  </NavLink>
-                );
-              })}
-            </nav>
-          </div>
-
-          <SidebarPromoCard variant="admin" />
-        </div>
-
-        <button type="button" className="admin-logout" onClick={onLogout}>
-          <AdminIcon name="logout" className="admin-menu-icon" />
-          <span>Đăng xuất</span>
-        </button>
-      </aside>
-
-      <div className="admin-main">
-        <header className="admin-topbar">
-          <div className="admin-topbar-main">
-            <button type="button" className="admin-menu-toggle" onClick={() => setSidebarOpen((value) => !value)}>
-              <AdminIcon name="menu" className="admin-menu-icon" />
-            </button>
-            <div>
-              <p className="admin-kicker">Bảng quản trị</p>
-              <h1>{meta.title}</h1>
-              <span>{meta.description}</span>
-            </div>
-          </div>
-          <div className="admin-topbar-tools">
-            <button
-              type="button"
-              className="admin-notify-pill"
-              onClick={() => navigate("/admin/notifications")}
-              aria-label="Thông báo hệ thống"
-              title="Thông báo quan trọng của admin"
-            >
-              <AdminIcon name="bell" className="admin-menu-icon" />
-              {unreadNotificationsCount > 0 ? <span>{unreadNotificationsCount}</span> : null}
-            </button>
-            <div className="admin-role-pill">Trung tâm vận hành</div>
-            <div className="admin-avatar">
-              <div className="admin-avatar-mark">{adminDisplayName.slice(0, 1).toUpperCase()}</div>
-              <div>
-                <strong>{adminDisplayName}</strong>
-                <span>{syncNote}</span>
-              </div>
-            </div>
-          </div>
-        </header>
-        <main className="admin-content">
-          {loading && !adminData ? <section className="admin-state-card">Đang tải dữ liệu admin từ CSDL...</section> : null}
+          ) : null}
           {!loading && !adminData ? (
-            <section className="admin-state-card admin-state-card--error">
-              Không lấy được dữ liệu admin từ backend.
-              Có thể backend chưa restart để nhận route `/admin/*` mới hoặc API đang lỗi.
-            </section>
+            <div className="owner-state-card owner-state-card--error">
+              <strong>Không lấy được dữ liệu admin từ backend.</strong>
+              <span>Có thể backend chưa restart để nhận route `/admin/*` mới hoặc API đang lỗi.</span>
+            </div>
           ) : null}
           {adminData ? <Outlet context={{ auth, adminData, stats, actions }} /> : null}
         </main>

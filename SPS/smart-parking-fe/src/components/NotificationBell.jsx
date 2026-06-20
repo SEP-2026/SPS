@@ -1,3 +1,5 @@
+import { Bell } from "lucide-react";
+
 export default function NotificationBell({ notifications = [], open = false, onToggle, onClear, onRemove }) {
   const unreadCount = notifications.filter((item) => !item.read).length;
 
@@ -11,7 +13,7 @@ export default function NotificationBell({ notifications = [], open = false, onT
         title="Thông báo"
       >
         <span className="notification-bell-icon" aria-hidden="true">
-          🔔
+          <Bell size={20} />
         </span>
         {unreadCount > 0 ? <span className="notification-bell-badge">{unreadCount}</span> : null}
       </button>

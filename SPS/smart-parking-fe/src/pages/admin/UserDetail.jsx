@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
+import { Phone, Mail, MapPin } from "lucide-react";
 import { formatCurrency } from "../../owner/OwnerUI";
 import API from "../../services/api";
 import { formatDateTimeVN } from "../../utils/dateTime";
@@ -140,9 +141,9 @@ export default function UserDetail() {
               </span>
             </div>
             <div className="admin-users-detail-meta-grid" style={{ marginTop: 12 }}>
-              <div>📞 {detail.phone || "—"}</div>
-              <div>✉️ {detail.email}</div>
-              <div>📍 {detail.location || "—"}</div>
+              <div><Phone size={14} /> {detail.phone || "—"}</div>
+              <div><Mail size={14} /> {detail.email}</div>
+              <div><MapPin size={14} /> {detail.location || "—"}</div>
             </div>
           </div>
         </div>

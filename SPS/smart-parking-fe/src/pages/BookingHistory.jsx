@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import ReactDOM from "react-dom";
 import { useLocation, useNavigate } from "react-router-dom";
+import { Star, X } from "lucide-react";
 import ReviewForm from "../components/ReviewForm";
 import API from "../services/api";
 import useRealtimeRefresh from "../services/useRealtimeRefresh";
@@ -1002,7 +1003,7 @@ export default function BookingHistory() {
       {qrModal.isOpen && ReactDOM.createPortal(
         <div className="history-qr-modal-overlay" onClick={closeQrModal}>
           <div className="history-qr-modal" onClick={(e) => e.stopPropagation()}>
-            <button className="history-qr-modal-close" onClick={closeQrModal}>×</button>
+            <button className="history-qr-modal-close" onClick={closeQrModal}><X size={18} /></button>
             <h2>Mã QR - Booking #{qrModal.bookingId}</h2>
             {qrModal.loading && <p>Đang tải mã QR...</p>}
             {qrModal.error && <p className="history-qr-modal-error">{qrModal.error}</p>}
@@ -1023,7 +1024,7 @@ export default function BookingHistory() {
       {reviewModal.isOpen && ReactDOM.createPortal(
         <div className="history-qr-modal-overlay" onClick={closeReviewModal}>
           <div className="history-qr-modal" onClick={(e) => e.stopPropagation()}>
-            <button className="history-qr-modal-close" onClick={closeReviewModal}>×</button>
+            <button className="history-qr-modal-close" onClick={closeReviewModal}><X size={18} /></button>
             {reviewModal.loading ? <p>Đang tải đánh giá...</p> : null}
             {reviewModal.error ? <p className="history-qr-modal-error">{reviewModal.error}</p> : null}
 
@@ -1061,8 +1062,9 @@ export default function BookingHistory() {
                   <span className="review-result-score">{reviewModal.review.rating}/5</span>
                 </div>
                 <p className="owner-review-rating">
-                  {"★".repeat(reviewModal.review.rating)}
-                  {"☆".repeat(5 - reviewModal.review.rating)}
+                  {Array.from({ length: 5 }).map((_, index) => (
+                    <Star key={index} size={16} fill={index < reviewModal.review.rating ? "#eab308" : "none"} />
+                  ))}
                 </p>
                 <blockquote className="review-result-comment">
                   {reviewModal.review.comment || "Không có nhận xét."}

@@ -5,6 +5,7 @@ import { PieChart } from "../../owner/PieChart";
 import { RevenueSystemChart, RecentActivities } from "../../owner/OwnerDashboardComponents";
 import { useAdminContext } from "../../admin/useAdminContext";
 import API from "../../services/api";
+import { BarChart3, Users, Car, CheckCircle, Wallet, CircleParking, Clock, UserRound, Building2 } from "lucide-react";
 
 function normalizeSeries(raw) {
   if (!Array.isArray(raw)) return [];
@@ -292,7 +293,9 @@ export default function AdminDashboard() {
       {/* SECTION 1: KPI Cards Row - 6 Cards */}
       <div className="admin-section-1">
         <div className="admin-stat-card-compact">
-          <div className="admin-stat-card-icon">📊</div>
+          <div className="admin-stat-card-icon">
+            <BarChart3 size={24} />
+          </div>
           <div className="admin-stat-card-content">
             <p className="admin-stat-card-label">Doanh thu</p>
             <div className="admin-stat-card-value">{formatCurrency(stats.totalRevenue)}</div>
@@ -301,7 +304,9 @@ export default function AdminDashboard() {
         </div>
 
         <Link to="/admin/owners/commissions" className="admin-stat-card-compact admin-stat-card-compact--link">
-          <div className="admin-stat-card-icon">💰</div>
+          <div className="admin-stat-card-icon">
+            <Wallet size={24} />
+          </div>
           <div className="admin-stat-card-content">
             <p className="admin-stat-card-label">Hoa hồng</p>
             <div className="admin-stat-card-value">{formatCurrency(stats.totalCommission)}</div>
@@ -310,7 +315,9 @@ export default function AdminDashboard() {
         </Link>
 
         <Link to="/admin/owners" className="admin-stat-card-compact admin-stat-card-compact--link">
-          <div className="admin-stat-card-icon">👥</div>
+          <div className="admin-stat-card-icon">
+            <Users size={24} />
+          </div>
           <div className="admin-stat-card-content">
             <p className="admin-stat-card-label">Chủ bãi</p>
             <div className="admin-stat-card-value">{stats.totalOwners}</div>
@@ -319,7 +326,9 @@ export default function AdminDashboard() {
         </Link>
 
         <div className="admin-stat-card-compact">
-          <div className="admin-stat-card-icon">🅿️</div>
+          <div className="admin-stat-card-icon">
+            <Car size={24} />
+          </div>
           <div className="admin-stat-card-content">
             <p className="admin-stat-card-label">Tổng bãi</p>
             <div className="admin-stat-card-value">{stats.totalParkingLots}</div>
@@ -328,7 +337,9 @@ export default function AdminDashboard() {
         </div>
 
         <div className="admin-stat-card-compact">
-          <div className="admin-stat-card-icon">⏰</div>
+          <div className="admin-stat-card-icon">
+            <Clock size={24} />
+          </div>
           <div className="admin-stat-card-content">
             <p className="admin-stat-card-label">Chế độ</p>
             <div className="admin-stat-card-value">{stats.totalBookings}</div>
@@ -337,7 +348,9 @@ export default function AdminDashboard() {
         </div>
 
         <div className="admin-stat-card-compact">
-          <div className="admin-stat-card-icon">✅</div>
+          <div className="admin-stat-card-icon">
+            <CheckCircle size={24} />
+          </div>
           <div className="admin-stat-card-content">
             <p className="admin-stat-card-label">Booking</p>
             <div className="admin-stat-card-value">{stats.totalBookings}</div>
@@ -435,7 +448,9 @@ export default function AdminDashboard() {
 
             <div className="admin-online-users-grid">
               <div className="admin-online-user-stat">
-                <div className="admin-online-user-icon">👤</div>
+                <div className="admin-online-user-icon">
+                  <UserRound size={20} />
+                </div>
                 <div className="admin-online-user-content">
                   <p className="admin-online-user-label">Người dùng</p>
                   <div className="admin-online-user-value">{usersOnlineStats.users}</div>
@@ -443,7 +458,9 @@ export default function AdminDashboard() {
               </div>
 
               <div className="admin-online-user-stat">
-                <div className="admin-online-user-icon">🏢</div>
+                <div className="admin-online-user-icon">
+                  <Building2 size={20} />
+                </div>
                 <div className="admin-online-user-content">
                   <p className="admin-online-user-label">Chủ bãi</p>
                   <div className="admin-online-user-value">{usersOnlineStats.owners}</div>
@@ -451,7 +468,9 @@ export default function AdminDashboard() {
               </div>
 
               <div className="admin-online-user-stat">
-                <div className="admin-online-user-icon">👨‍💼</div>
+                <div className="admin-online-user-icon">
+                  <UserRound size={20} />
+                </div>
                 <div className="admin-online-user-content">
                   <p className="admin-online-user-label">Nhân viên</p>
                   <div className="admin-online-user-value">{usersOnlineStats.employees}</div>

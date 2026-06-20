@@ -8,7 +8,7 @@ from fastapi.staticfiles import StaticFiles
 from starlette.requests import Request
 from starlette.websockets import WebSocketDisconnect
 from app.database import engine
-from app.routes import auth, booking, employee, owner, payment, vehicle, wallet
+from app.routes import admin, auth, booking, employee, gate, owner, owner_finance, payment, review, vehicle, wallet
 from app.realtime import realtime_hub
 
 app = FastAPI()
@@ -35,6 +35,10 @@ app.include_router(wallet.router)
 app.include_router(owner.router)
 app.include_router(employee.router)
 app.include_router(employee.owner_router)
+app.include_router(review.router)
+app.include_router(gate.router)
+app.include_router(owner_finance.router)
+app.include_router(admin.router)
 
 
 @app.middleware("http")

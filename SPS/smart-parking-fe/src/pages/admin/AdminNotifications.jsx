@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useOutletContext } from "react-router-dom";
+import { Bell } from "lucide-react";
 import { formatDateTime } from "../../owner/OwnerUI";
 import "./AdminNotifications.css";
 
@@ -171,7 +172,7 @@ export default function AdminNotifications() {
       <div className="admin-notifications-content">
         {filteredNotifications.length === 0 ? (
           <div className="admin-notifications-empty">
-            <div className="admin-notifications-empty-icon">🔔</div>
+            <div className="admin-notifications-empty-icon"><Bell size={32} /></div>
             <p>Không có thông báo nào.</p>
           </div>
         ) : (

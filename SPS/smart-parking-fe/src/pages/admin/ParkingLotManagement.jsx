@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { Eye, Pencil, X, Pause, CircleParking, UserRound, Lock, Phone, Mail, MapPin, KeyRound, AlertCircle, Wallet, Clock, RefreshCw, Car } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { formatCurrency } from "../../owner/OwnerUI";
 import { useAdminContext } from "../../admin/useAdminContext";
@@ -145,7 +146,9 @@ export default function ParkingLotManagement() {
 
       <div className="admin-owners-kpis admin-parking-kpis">
         <article className="admin-owners-kpi">
-          <div className="admin-owners-kpi-icon admin-owners-kpi-icon--blue">P</div>
+          <div className="admin-owners-kpi-icon admin-owners-kpi-icon--blue">
+            <Car size={24} />
+          </div>
           <div>
             <span>Tổng số bãi xe</span>
             <strong>{summary.totalLots || 0}</strong>
@@ -155,7 +158,9 @@ export default function ParkingLotManagement() {
           </div>
         </article>
         <article className="admin-owners-kpi">
-          <div className="admin-owners-kpi-icon admin-owners-kpi-icon--green">●</div>
+          <div className="admin-owners-kpi-icon admin-owners-kpi-icon--green">
+            <CircleParking size={24} />
+          </div>
           <div>
             <span>Đang hoạt động</span>
             <strong>{summary.activeLots || 0}</strong>
@@ -163,7 +168,9 @@ export default function ParkingLotManagement() {
           </div>
         </article>
         <article className="admin-owners-kpi">
-          <div className="admin-owners-kpi-icon admin-owners-kpi-icon--amber">⏸</div>
+          <div className="admin-owners-kpi-icon admin-owners-kpi-icon--amber">
+            <Pause size={24} />
+          </div>
           <div>
             <span>Tạm ngưng</span>
             <strong>{summary.pausedLots || 0}</strong>
@@ -171,7 +178,9 @@ export default function ParkingLotManagement() {
           </div>
         </article>
         <article className="admin-owners-kpi">
-          <div className="admin-owners-kpi-icon admin-owners-kpi-icon--red">✕</div>
+          <div className="admin-owners-kpi-icon admin-owners-kpi-icon--red">
+            <X size={24} />
+          </div>
           <div>
             <span>Ngừng hoạt động</span>
             <strong>{summary.inactiveLots || 0}</strong>
@@ -278,7 +287,9 @@ export default function ParkingLotManagement() {
                     </td>
                     <td onClick={(e) => e.stopPropagation()}>
                       <div className="admin-owners-row-actions">
-                        <button type="button" className="admin-owners-icon-btn" title="Xem" onClick={() => handleSelectLot(lot)}>👁</button>
+                        <button type="button" className="admin-owners-icon-btn" title="Xem" onClick={() => handleSelectLot(lot)}>
+                          <Eye size={18} />
+                        </button>
                         <button
                           type="button"
                           className="admin-owners-icon-btn"
@@ -288,7 +299,7 @@ export default function ParkingLotManagement() {
                             setEditingLot(lot);
                           }}
                         >
-                          ✏️
+                          <Pencil size={18} />
                         </button>
                       </div>
                     </td>
@@ -332,7 +343,7 @@ export default function ParkingLotManagement() {
         {selectedId ? (
           <aside className="admin-owners-detail admin-parking-detail">
             <button type="button" className="admin-owners-detail-close" onClick={() => { setSelectedId(null); setDetail(null); }} aria-label="Đóng">
-              ✕
+              <X size={18} />
             </button>
             {detailLoading || !detail ? (
               <p>Đang tải chi tiết...</p>
@@ -397,7 +408,7 @@ export default function ParkingLotManagement() {
           <div className="owner-modal" onClick={(e) => e.stopPropagation()}>
             <div className="owner-modal-head">
               <div><h2>Thêm bãi xe</h2><p>Tạo bãi đỗ mới trong hệ thống.</p></div>
-              <button type="button" className="owner-modal-close" onClick={() => setIsCreateModalOpen(false)}>×</button>
+              <button type="button" className="owner-modal-close" onClick={() => setIsCreateModalOpen(false)}><X size={18} /></button>
             </div>
             <form
               className="owner-form-grid"
@@ -446,7 +457,7 @@ export default function ParkingLotManagement() {
           <div className="owner-modal" onClick={(e) => e.stopPropagation()}>
             <div className="owner-modal-head">
               <div><h2>Sửa bãi xe</h2><p>Cập nhật thông tin bãi đỗ.</p></div>
-              <button type="button" className="owner-modal-close" onClick={() => setEditingLot(null)}>×</button>
+              <button type="button" className="owner-modal-close" onClick={() => setEditingLot(null)}><X size={18} /></button>
             </div>
             <form
               className="owner-form-grid"

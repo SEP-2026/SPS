@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
+import { Eye, Pencil, X, Phone, Mail, MapPin, FileText, Check, Clock, AlertCircle, RefreshCw } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { formatCurrency } from "../../owner/OwnerUI";
 import API from "../../services/api";
 import { formatDateTimeVN } from "../../utils/dateTime";
@@ -134,11 +136,51 @@ export default function AdminOwnerContracts() {
   return (
     <div className="admin-owners-page">
       <div className="admin-owners-kpis">
-        <article className="admin-owners-kpi"><div className="admin-owners-kpi-icon admin-owners-kpi-icon--blue">📄</div><div><span>Tổng hợp đồng</span><strong>{summary.total || 0}</strong></div></article>
-        <article className="admin-owners-kpi"><div className="admin-owners-kpi-icon admin-owners-kpi-icon--green">✓</div><div><span>Đang hiệu lực</span><strong>{summary.active || 0}</strong></div></article>
-        <article className="admin-owners-kpi"><div className="admin-owners-kpi-icon admin-owners-kpi-icon--amber">⏳</div><div><span>Sắp hết hạn</span><strong>{summary.expiring || 0}</strong></div></article>
-        <article className="admin-owners-kpi"><div className="admin-owners-kpi-icon admin-owners-kpi-icon--red">!</div><div><span>Đã hết hạn</span><strong>{summary.expired || 0}</strong></div></article>
-        <article className="admin-owners-kpi"><div className="admin-owners-kpi-icon admin-owners-kpi-icon--purple">↻</div><div><span>Chờ gia hạn</span><strong>{summary.renewalPending || 0}</strong></div></article>
+        <article className="admin-owners-kpi">
+          <div className="admin-owners-kpi-icon admin-owners-kpi-icon--blue">
+            <FileText size={24} />
+          </div>
+          <div>
+            <span>Tổng hợp đồng</span>
+            <strong>{summary.total || 0}</strong>
+          </div>
+        </article>
+        <article className="admin-owners-kpi">
+          <div className="admin-owners-kpi-icon admin-owners-kpi-icon--green">
+            <Check size={24} />
+          </div>
+          <div>
+            <span>Đang hiệu lực</span>
+            <strong>{summary.active || 0}</strong>
+          </div>
+        </article>
+        <article className="admin-owners-kpi">
+          <div className="admin-owners-kpi-icon admin-owners-kpi-icon--amber">
+            <Clock size={24} />
+          </div>
+          <div>
+            <span>Sắp hết hạn</span>
+            <strong>{summary.expiring || 0}</strong>
+          </div>
+        </article>
+        <article className="admin-owners-kpi">
+          <div className="admin-owners-kpi-icon admin-owners-kpi-icon--red">
+            <AlertCircle size={24} />
+          </div>
+          <div>
+            <span>Đã hết hạn</span>
+            <strong>{summary.expired || 0}</strong>
+          </div>
+        </article>
+        <article className="admin-owners-kpi">
+          <div className="admin-owners-kpi-icon admin-owners-kpi-icon--purple">
+            <RefreshCw size={24} />
+          </div>
+          <div>
+            <span>Chờ gia hạn</span>
+            <strong>{summary.renewalPending || 0}</strong>
+          </div>
+        </article>
       </div>
 
       <div className="admin-owners-toolbar">
@@ -192,7 +234,9 @@ export default function AdminOwnerContracts() {
                         {STATUS_LABELS[row.status] || row.status}
                       </span>
                     </td>
-                    <td onClick={(e) => e.stopPropagation()}>👁</td>
+                    <td onClick={(e) => e.stopPropagation()}>
+                      <Eye size={18} />
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -212,7 +256,9 @@ export default function AdminOwnerContracts() {
           <aside className="admin-contract-detail">
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
               <h3 style={{ margin: 0 }}>Chi tiết hợp đồng</h3>
-              <button type="button" className="admin-owners-icon-btn" onClick={() => setSelectedId(null)} aria-label="Đóng">✕</button>
+              <button type="button" className="admin-owners-icon-btn" onClick={() => setSelectedId(null)} aria-label="Đóng">
+                <X size={18} />
+              </button>
             </div>
             <p><strong>{detail.contractCode}</strong></p>
             <span className={`admin-owners-status admin-owners-status--${STATUS_CLASS[detail.status] || "active"}`}>
@@ -225,8 +271,8 @@ export default function AdminOwnerContracts() {
                 <div>{detail.partnerName} — {detail.companyType}</div>
                 <div>MST: {detail.taxId}</div>
                 <div>Đại diện: {detail.representative}</div>
-                <div>📞 {detail.phone} • ✉️ {detail.email}</div>
-                <div>📍 {detail.address}</div>
+                <div><Phone size={14} /> {detail.phone} • <Mail size={14} /> {detail.email}</div>
+                <div><MapPin size={14} /> {detail.address}</div>
                 <div>Bãi liên kết: {(detail.parkingLots || []).join(", ") || "—"}</div>
               </div>
             </div>

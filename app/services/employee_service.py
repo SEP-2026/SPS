@@ -132,6 +132,8 @@ def _serialize_employee(employee: User) -> dict:
     return {
         "id": employee.id,
         "username": employee.email,
+        "email": employee.email,
+        "full_name": employee.name,
         "role": employee.role,
         "owner_id": employee.owner_id,
         "parking_id": employee.parking_id,

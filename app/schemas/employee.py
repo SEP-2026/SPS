@@ -11,6 +11,8 @@ class EmployeeLoginRequest(BaseModel):
 class EmployeeInfo(BaseModel):
     id: int
     username: str
+    email: str | None = None
+    full_name: str | None = None
     role: str = "employee"
     owner_id: int | None = None
     parking_id: int

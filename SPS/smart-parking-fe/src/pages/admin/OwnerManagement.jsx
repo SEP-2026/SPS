@@ -1,4 +1,5 @@
 ﻿import { useCallback, useEffect, useState } from "react";
+import { Eye, Pencil, X, Lock, Phone, Mail, MapPin, KeyRound, Car, UserRound, Clock, Wallet } from "lucide-react";
 import {
   CartesianGrid,
   Line,
@@ -140,7 +141,9 @@ export default function OwnerManagement() {
     <div className="admin-owners-page">
       <div className="admin-owners-kpis">
         <article className="admin-owners-kpi">
-          <div className="admin-owners-kpi-icon admin-owners-kpi-icon--blue">👤</div>
+          <div className="admin-owners-kpi-icon admin-owners-kpi-icon--blue">
+            <UserRound size={24} />
+          </div>
           <div>
             <span>Tổng chủ bãi</span>
             <strong>{summary.totalOwners || 0}</strong>
@@ -150,7 +153,9 @@ export default function OwnerManagement() {
           </div>
         </article>
         <article className="admin-owners-kpi">
-          <div className="admin-owners-kpi-icon admin-owners-kpi-icon--green">🚗</div>
+          <div className="admin-owners-kpi-icon admin-owners-kpi-icon--green">
+            <Car size={24} />
+          </div>
           <div>
             <span>Đang hoạt động</span>
             <strong>{summary.activeOwners || 0}</strong>
@@ -158,7 +163,9 @@ export default function OwnerManagement() {
           </div>
         </article>
         <article className="admin-owners-kpi">
-          <div className="admin-owners-kpi-icon admin-owners-kpi-icon--amber">⏳</div>
+          <div className="admin-owners-kpi-icon admin-owners-kpi-icon--amber">
+            <Clock size={24} />
+          </div>
           <div>
             <span>Chờ duyệt</span>
             <strong>{summary.pendingOwners || 0}</strong>
@@ -166,7 +173,9 @@ export default function OwnerManagement() {
           </div>
         </article>
         <article className="admin-owners-kpi">
-          <div className="admin-owners-kpi-icon admin-owners-kpi-icon--red">🔒</div>
+          <div className="admin-owners-kpi-icon admin-owners-kpi-icon--red">
+            <Lock size={24} />
+          </div>
           <div>
             <span>Bị khóa</span>
             <strong>{summary.lockedOwners || 0}</strong>
@@ -174,7 +183,9 @@ export default function OwnerManagement() {
           </div>
         </article>
         <article className="admin-owners-kpi">
-          <div className="admin-owners-kpi-icon admin-owners-kpi-icon--purple">💰</div>
+          <div className="admin-owners-kpi-icon admin-owners-kpi-icon--purple">
+            <Wallet size={24} />
+          </div>
           <div>
             <span>Tổng doanh thu (7 ngày)</span>
             <strong>{formatCurrency(summary.totalRevenue7d)}</strong>
@@ -283,7 +294,9 @@ export default function OwnerManagement() {
                     <td>{formatDateTimeVN(owner.createdAt)}</td>
                     <td onClick={(e) => e.stopPropagation()}>
                       <div className="admin-owners-row-actions">
-                        <button type="button" className="admin-owners-icon-btn" title="Xem" onClick={() => handleSelectOwner(owner)}>👁</button>
+                        <button type="button" className="admin-owners-icon-btn" title="Xem" onClick={() => handleSelectOwner(owner)}>
+                          <Eye size={18} />
+                        </button>
                         <button
                           type="button"
                           className="admin-owners-icon-btn"
@@ -293,7 +306,7 @@ export default function OwnerManagement() {
                             setEditingOwner(owner);
                           }}
                         >
-                          ✏️
+                          <Pencil size={18} />
                         </button>
                         <button
                           type="button"
@@ -301,7 +314,7 @@ export default function OwnerManagement() {
                           title="Reset mật khẩu"
                           onClick={() => actions.resetOwnerPassword(owner.id)}
                         >
-                          🔑
+                          <KeyRound size={18} />
                         </button>
                       </div>
                     </td>
@@ -346,7 +359,7 @@ export default function OwnerManagement() {
               aria-label="Đóng chi tiết chủ bãi"
               title="Đóng"
             >
-              ✕
+              <X size={18} />
             </button>
             {detailLoading || !detail ? (
               <p>Đang tải chi tiết...</p>
@@ -366,9 +379,9 @@ export default function OwnerManagement() {
                 </div>
 
                 <div className="admin-owners-detail-meta">
-                  <div>📞 {detail.phone || "—"}</div>
-                  <div>✉️ {detail.email}</div>
-                  <div>📍 {detail.address}</div>
+                  <div><Phone size={14} /> {detail.phone || "—"}</div>
+                  <div><Mail size={14} /> {detail.email}</div>
+                  <div><MapPin size={14} /> {detail.address}</div>
                 </div>
 
                 <div className="admin-owners-detail-stats">
@@ -435,7 +448,7 @@ export default function OwnerManagement() {
           <div className="owner-modal" onClick={(e) => e.stopPropagation()}>
             <div className="owner-modal-head">
               <div><h2>Thêm chủ bãi</h2><p>Tạo tài khoản chủ bãi / đối tác mới.</p></div>
-              <button type="button" className="owner-modal-close" onClick={() => setIsCreateModalOpen(false)}>×</button>
+              <button type="button" className="owner-modal-close" onClick={() => setIsCreateModalOpen(false)}><X size={18} /></button>
             </div>
             <form className="owner-form-grid" onSubmit={async (e) => {
               e.preventDefault();
@@ -472,7 +485,7 @@ export default function OwnerManagement() {
           <div className="owner-modal" onClick={(e) => e.stopPropagation()}>
             <div className="owner-modal-head">
               <div><h2>Sửa chủ bãi / đối tác</h2><p>Cập nhật thông tin tài khoản.</p></div>
-              <button type="button" className="owner-modal-close" onClick={() => setEditingOwner(null)}>×</button>
+              <button type="button" className="owner-modal-close" onClick={() => setEditingOwner(null)}><X size={18} /></button>
             </div>
             <form className="owner-form-grid" onSubmit={async (e) => {
               e.preventDefault();

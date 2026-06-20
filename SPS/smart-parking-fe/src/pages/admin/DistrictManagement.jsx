@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { Eye, Map, Pencil, Phone, Mail, X, Car, CircleParking } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { formatCurrency } from "../../owner/OwnerUI";
 import API from "../../services/api";
@@ -101,14 +102,18 @@ export default function DistrictManagement() {
 
       <div className="admin-owners-kpis admin-parking-kpis admin-parking-kpis--4">
         <article className="admin-owners-kpi">
-          <div className="admin-owners-kpi-icon admin-owners-kpi-icon--blue">🗺️</div>
+          <div className="admin-owners-kpi-icon admin-owners-kpi-icon--blue">
+            <Map size={24} />
+          </div>
           <div>
             <span>Tổng khu vực</span>
             <strong>{summary.totalAreas || 0}</strong>
           </div>
         </article>
         <article className="admin-owners-kpi">
-          <div className="admin-owners-kpi-icon admin-owners-kpi-icon--green">P</div>
+          <div className="admin-owners-kpi-icon admin-owners-kpi-icon--green">
+            <Car size={24} />
+          </div>
           <div>
             <span>Tổng bãi xe</span>
             <strong>{summary.totalParkingLots || 0}</strong>
@@ -118,7 +123,9 @@ export default function DistrictManagement() {
           </div>
         </article>
         <article className="admin-owners-kpi">
-          <div className="admin-owners-kpi-icon admin-owners-kpi-icon--amber">🅿️</div>
+          <div className="admin-owners-kpi-icon admin-owners-kpi-icon--amber">
+            <CircleParking size={24} />
+          </div>
           <div>
             <span>Tổng chỗ đỗ</span>
             <strong>{(summary.totalSlots || 0).toLocaleString("vi-VN")}</strong>
@@ -216,14 +223,16 @@ export default function DistrictManagement() {
                     </td>
                     <td onClick={(e) => e.stopPropagation()}>
                       <div className="admin-owners-row-actions">
-                        <button type="button" className="admin-owners-icon-btn" title="Xem" onClick={() => setSelectedId(area.id)}>👁</button>
+                        <button type="button" className="admin-owners-icon-btn" title="Xem" onClick={() => setSelectedId(area.id)}>
+                          <Eye size={18} />
+                        </button>
                         <button
                           type="button"
                           className="admin-owners-icon-btn"
                           title="Chi tiết"
                           onClick={() => navigate(`/admin/parking-lots/areas/${area.id}`)}
                         >
-                          ✏️
+                          <Pencil size={18} />
                         </button>
                       </div>
                     </td>
@@ -266,7 +275,7 @@ export default function DistrictManagement() {
         {selectedId ? (
           <aside className="admin-owners-detail admin-parking-detail">
             <button type="button" className="admin-owners-detail-close" onClick={() => { setSelectedId(null); setDetail(null); }} aria-label="Đóng">
-              ✕
+              <X size={18} />
             </button>
             {detailLoading || !detail ? (
               <p>Đang tải chi tiết...</p>
@@ -286,8 +295,8 @@ export default function DistrictManagement() {
 
                 <div className="admin-owners-detail-meta">
                   <div><strong>Quản lý:</strong> {detail.manager?.name}</div>
-                  <div>✉️ {detail.manager?.email || "—"}</div>
-                  <div>📞 {detail.manager?.phone || "—"}</div>
+                  <div><Mail size={14} /> {detail.manager?.email || "—"}</div>
+                  <div><Phone size={14} /> {detail.manager?.phone || "—"}</div>
                   <div><strong>Số bãi xe:</strong> {detail.stats?.parkingLotCount}</div>
                   <div><strong>Tổng chỗ đỗ:</strong> {detail.stats?.totalSlots?.toLocaleString("vi-VN")}</div>
                   <div><strong>Doanh thu tháng:</strong> {formatCurrency(detail.stats?.monthlyRevenue)}</div>

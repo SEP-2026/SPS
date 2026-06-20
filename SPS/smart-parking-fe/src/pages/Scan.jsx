@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { CheckCircle, Car, Info, AlertTriangle, X } from "lucide-react";
 
 import ActionButtons from "../features/gate/ActionButtons";
 import BookingInfoPanel from "../features/gate/BookingInfoPanel";
@@ -164,7 +165,7 @@ export default function Scan() {
 
     setManualBookingId(String(bookingId));
     setScanMode("manual");
-    setScanSuccess("✓ Đọc QR thành công!");
+    setScanSuccess(<><CheckCircle size={16} /> Đọc QR thành công!</>);
     if (successTimeoutRef.current) {
       clearTimeout(successTimeoutRef.current);
     }
@@ -246,7 +247,7 @@ export default function Scan() {
       }));
       setUiState("success");
       setBanner({
-        title: "✓ Checkout thành công!",
+        title: <><CheckCircle size={16} /> Checkout thành công!</>,
         message: "Xe đã ra khỏi bãi. Trạng thái booking đã được cập nhật.",
       });
     } catch (error) {
@@ -328,7 +329,7 @@ export default function Scan() {
       {showCheckoutModal && checkoutPreview ? (
         <div className="checkout-modal-overlay" onClick={() => !confirmingCheckout && setShowCheckoutModal(false)}>
           <div className="checkout-modal" onClick={(event) => event.stopPropagation()}>
-            <h3>🚗 XÁC NHẬN CHO XE RA BÃI</h3>
+            <h3><Car size={20} /> XÁC NHẬN CHO XE RA BÃI</h3>
             <p><strong>Biển số:</strong> {checkoutPreview.license_plate || "--"}</p>
             <p><strong>Check-in:</strong> {checkoutPreview.actual_checkin || "--"}</p>
             <p><strong>Check-out:</strong> {checkoutPreview.current_time || "--"}</p>
@@ -339,15 +340,15 @@ export default function Scan() {
               ))}
             </div>
             {checkoutPreview.is_overstay ? (
-              <p className="checkout-warning">⚠️ Quá giờ {checkoutPreview.overstay_minutes} phút (tính thêm {checkoutPreview.overstay_hours_billed} giờ)</p>
+              <p className="checkout-warning"><AlertTriangle size={16} /> Quá giờ {checkoutPreview.overstay_minutes} phút (tính thêm {checkoutPreview.overstay_hours_billed} giờ)</p>
             ) : null}
-            {checkoutPreview.is_early ? <p className="checkout-note">ℹ️ Checkout sớm, không hoàn tiền</p> : null}
+            {checkoutPreview.is_early ? <p className="checkout-note"><Info size={16} /> Checkout sớm, không hoàn tiền</p> : null}
             <div className="checkout-actions">
               <button type="button" className="scan-secondary-btn" onClick={() => setShowCheckoutModal(false)} disabled={confirmingCheckout}>
                 Hủy
               </button>
               <button type="button" className="btn-checkout" onClick={handleConfirmCheckout} disabled={confirmingCheckout}>
-                {confirmingCheckout ? "Đang xử lý..." : "✓ Xác nhận cho xe ra"}
+                {confirmingCheckout ? "Đang xử lý..." : <><CheckCircle size={16} /> Xác nhận cho xe ra</>}
               </button>
             </div>
           </div>

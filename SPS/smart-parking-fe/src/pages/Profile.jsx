@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import API, { getAuth, saveAuth } from "../services/api";
 import { buildDynamicVietQrUrl } from "../features/gate/gateFormatters";
 import { isStrongPassword, PASSWORD_POLICY_TEXT } from "../services/passwordPolicy";
+import { User, Mail, Phone, MapPin, BarChart3, Lock, Plus, CreditCard, Shield, IdCard, Car, CarFront, Palette, Eye, EyeOff, Wrench, CircleParking, Sparkles } from "lucide-react";
 import "./Profile.css";
 
 const normalizeError = (err, fallback) => {
@@ -521,10 +522,10 @@ export default function Profile({ onAuthUpdated }) {
     <section className="page-wrap">
       <div className="page-card profile-shell profile-frame">
         <header className="profile-header">
-          <span className="profile-spark profile-spark-left" aria-hidden="true">✦</span>
-          <span className="profile-spark profile-spark-right" aria-hidden="true">✦</span>
+          <span className="profile-spark profile-spark-left" aria-hidden="true"><Sparkles size={18} /></span>
+          <span className="profile-spark profile-spark-right" aria-hidden="true"><Sparkles size={18} /></span>
           <h1 className="page-title">Hồ sơ tài khoản</h1>
-          <p className="page-subtitle profile-subtitle">👤 Xin chào, <strong>{greetingName}</strong></p>
+          <p className="page-subtitle profile-subtitle"><User size={18} /> Xin chào, <strong>{greetingName}</strong></p>
           <div className="profile-divider" aria-hidden="true">────◆────</div>
           <div className="profile-summary" role="list" aria-label="Tóm tắt tài khoản">
             <span className="profile-summary-chip" role="listitem">Vai trò: {role}</span>
@@ -540,7 +541,7 @@ export default function Profile({ onAuthUpdated }) {
               className={`profile-menu-item ${activeSection === "personal" ? "is-active" : ""}`}
               onClick={() => setActiveSection("personal")}
             >
-              <span aria-hidden="true">🪪</span>
+              <IdCard size={18} />
               Thông tin cá nhân
               {isPersonalDirty ? <span className="profile-pill">Chưa lưu</span> : null}
             </button>
@@ -550,7 +551,7 @@ export default function Profile({ onAuthUpdated }) {
                 className={`profile-menu-item ${activeSection === "vehicle" ? "is-active" : ""}`}
                 onClick={() => setActiveSection("vehicle")}
               >
-                <span aria-hidden="true">🚗</span>
+                <Car size={18} />
                 Thông tin xe
                 {isVehicleDirty ? <span className="profile-pill">Chưa lưu</span> : null}
               </button>
@@ -560,7 +561,7 @@ export default function Profile({ onAuthUpdated }) {
                 className={`profile-menu-item ${activeSection === "manager" ? "is-active" : ""}`}
                 onClick={() => setActiveSection("manager")}
               >
-                <span aria-hidden="true">{isAdmin ? "🛠" : "🅿"}</span>
+                {isAdmin ? <Wrench size={18} /> : <CircleParking size={18} />}
                 {isAdmin ? "Thông tin quản trị" : "Thông tin quản lý"}
               </button>
             )}
@@ -570,7 +571,7 @@ export default function Profile({ onAuthUpdated }) {
                 className={`profile-menu-item ${activeSection === "wallet" ? "is-active" : ""}`}
                 onClick={() => setActiveSection("wallet")}
               >
-                <span aria-hidden="true">💳</span>
+                <CreditCard size={18} />
                 Ví điện tử
               </button>
             ) : null}
@@ -579,7 +580,7 @@ export default function Profile({ onAuthUpdated }) {
               className={`profile-menu-item ${activeSection === "password" ? "is-active" : ""}`}
               onClick={() => setActiveSection("password")}
             >
-              <span aria-hidden="true">🛡</span>
+              <Shield size={18} />
               Đổi mật khẩu
             </button>
           </aside>
@@ -591,7 +592,7 @@ export default function Profile({ onAuthUpdated }) {
               <form className="profile-card" onSubmit={handleSavePersonal}>
                 <label>Họ và tên</label>
                 <div className="profile-input-shell">
-                  <span className="profile-input-icon" aria-hidden="true">👤</span>
+                  <User className="profile-input-icon" aria-hidden="true" size={18} />
                   <input
                     className="booking-input profile-input"
                     autoComplete="name"
@@ -603,7 +604,7 @@ export default function Profile({ onAuthUpdated }) {
 
                 <label>Email</label>
                 <div className="profile-input-shell">
-                  <span className="profile-input-icon" aria-hidden="true">✉</span>
+                  <Mail className="profile-input-icon" aria-hidden="true" size={18} />
                   <input
                     className="booking-input profile-input"
                     type="email"
@@ -616,7 +617,7 @@ export default function Profile({ onAuthUpdated }) {
 
                 <label>Số điện thoại</label>
                 <div className="profile-input-shell">
-                  <span className="profile-input-icon" aria-hidden="true">📞</span>
+                  <Phone className="profile-input-icon" aria-hidden="true" size={18} />
                   <input
                     className="booking-input profile-input"
                     autoComplete="tel"
@@ -657,7 +658,7 @@ export default function Profile({ onAuthUpdated }) {
 
                 <label>Quận phụ trách</label>
                 <div className="profile-input-shell">
-                  <span className="profile-input-icon" aria-hidden="true">📍</span>
+                  <MapPin className="profile-input-icon" aria-hidden="true" size={18} />
                   <input
                     className="booking-input profile-input"
                     value={managerInfo.managedDistrict}
@@ -667,7 +668,7 @@ export default function Profile({ onAuthUpdated }) {
 
                 <label>Tình trạng vận hành hiện tại</label>
                 <div className="profile-input-shell">
-                  <span className="profile-input-icon" aria-hidden="true">📊</span>
+                  <BarChart3 className="profile-input-icon" aria-hidden="true" size={18} />
                   <input
                     className="booking-input profile-input"
                     value={`Đang sử dụng ${managerInfo.occupiedSlots}/${managerInfo.totalSlots} chỗ đỗ`}
@@ -677,7 +678,7 @@ export default function Profile({ onAuthUpdated }) {
 
                 <label>Email liên hệ</label>
                 <div className="profile-input-shell">
-                  <span className="profile-input-icon" aria-hidden="true">✉</span>
+                  <Mail className="profile-input-icon" aria-hidden="true" size={18} />
                   <input
                     className="booking-input profile-input"
                     value={personalForm.email}
@@ -723,7 +724,7 @@ export default function Profile({ onAuthUpdated }) {
                   ))}
                 </div>
                 <div className="profile-input-shell">
-                  <span className="profile-input-icon" aria-hidden="true">➕</span>
+                  <Plus className="profile-input-icon" aria-hidden="true" size={18} />
                   <input
                     className="booking-input profile-input"
                     type="text"
@@ -787,7 +788,7 @@ export default function Profile({ onAuthUpdated }) {
               <form className="profile-card" onSubmit={handleSaveVehicle}>
                 <label>Biển số xe</label>
                 <div className="profile-input-shell">
-                  <span className="profile-input-icon" aria-hidden="true">🪪</span>
+                  <IdCard className="profile-input-icon" aria-hidden="true" size={18} />
                   <input
                     className="booking-input profile-input"
                     placeholder="Ví dụ: 30A-123.45"
@@ -798,7 +799,7 @@ export default function Profile({ onAuthUpdated }) {
 
                 <label>Thương hiệu</label>
                 <div className="profile-input-shell">
-                  <span className="profile-input-icon" aria-hidden="true">🚘</span>
+                  <CarFront className="profile-input-icon" aria-hidden="true" size={18} />
                   <input
                     className="booking-input profile-input"
                     placeholder="Toyota, Honda..."
@@ -809,7 +810,7 @@ export default function Profile({ onAuthUpdated }) {
 
                 <label>Dòng xe</label>
                 <div className="profile-input-shell">
-                  <span className="profile-input-icon" aria-hidden="true">🚙</span>
+                  <Car className="profile-input-icon" aria-hidden="true" size={18} />
                   <input
                     className="booking-input profile-input"
                     placeholder="Vios, City..."
@@ -820,7 +821,7 @@ export default function Profile({ onAuthUpdated }) {
 
                 <label>Số chỗ</label>
                 <div className="profile-input-shell">
-                  <span className="profile-input-icon" aria-hidden="true">🪑</span>
+                  <Users className="profile-input-icon" aria-hidden="true" size={18} />
                   <input
                     className="booking-input profile-input"
                     type="number"
@@ -833,7 +834,7 @@ export default function Profile({ onAuthUpdated }) {
 
                 <label>Màu xe</label>
                 <div className="profile-input-shell">
-                  <span className="profile-input-icon" aria-hidden="true">🎨</span>
+                  <Palette className="profile-input-icon" aria-hidden="true" size={18} />
                   <input
                     className="booking-input profile-input"
                     placeholder="Đen, trắng..."
@@ -854,7 +855,7 @@ export default function Profile({ onAuthUpdated }) {
               <form className="profile-card" onSubmit={handleChangePassword}>
                 <label>Mật khẩu cũ</label>
                 <div className="profile-input-shell">
-                  <span className="profile-input-icon" aria-hidden="true">🔒</span>
+                  <Lock className="profile-input-icon" aria-hidden="true" size={18} />
                   <input
                     className="booking-input profile-input"
                     type={passwordVisibility.oldPassword ? "text" : "password"}
@@ -873,7 +874,7 @@ export default function Profile({ onAuthUpdated }) {
 
                 <label>Mật khẩu mới</label>
                 <div className="profile-input-shell">
-                  <span className="profile-input-icon" aria-hidden="true">🔒</span>
+                  <Lock className="profile-input-icon" aria-hidden="true" size={18} />
                   <input
                     className="booking-input profile-input"
                     type={passwordVisibility.newPassword ? "text" : "password"}
@@ -893,7 +894,7 @@ export default function Profile({ onAuthUpdated }) {
 
                 <label>Xác nhận mật khẩu mới</label>
                 <div className="profile-input-shell">
-                  <span className="profile-input-icon" aria-hidden="true">🔒</span>
+                  <span className="profile-input-icon" aria-hidden="true"><Lock size={18} /></span>
                   <input
                     className="booking-input profile-input"
                     type={passwordVisibility.confirmPassword ? "text" : "password"}

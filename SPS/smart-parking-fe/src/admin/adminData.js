@@ -207,5 +207,9 @@ export const createAdminSeedData = () => ({
     supportEmail: "admin@smartparking.vn",
     maintenanceWindow: "Chủ nhật 23:00 - 01:00",
     alertThreshold: "85",
+    vietqrClientId: "",
+    vietqrApiKey: "",
+    vietqrApiKeySet: false,
+    vietqrLookupEnabled: false,
   },
 });

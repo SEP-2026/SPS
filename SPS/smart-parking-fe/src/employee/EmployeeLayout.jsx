@@ -213,7 +213,12 @@ export default function EmployeeLayout({ auth, onLogout }) {
   const pageTitle = parkingLot?.parking_name || profile?.parking_lot?.parking_name || "Bãi xe Trường Chinh";
   const lotShortName = pageTitle.replace(/^Bãi xe\s+/i, "").trim() || pageTitle;
   const pageAddress = parkingLot?.address || profile?.parking_lot?.address || "Trường Chinh, Tân Phú, TP.HCM";
-  const currentShift = "Ca sáng (06:00 - 14:00)";
+  const employeeEmail =
+    profile?.employee?.email
+    || auth?.user?.email
+    || profile?.employee?.username
+    || auth?.user?.username
+    || "Đang tải tài khoản";
   const headerTitle = isOverviewPage
     ? `Tổng quan bãi xe ${lotShortName}`
     : workspaceHeader?.title || pageTitle;
@@ -261,7 +266,7 @@ export default function EmployeeLayout({ auth, onLogout }) {
             <span className="employee-modern-lot-icon">P</span>
             <div>
               <strong title={pageTitle}>{lotShortName}</strong>
-              <small>{currentShift}</small>
+              <small>{employeeEmail}</small>
             </div>
           </div>
 
@@ -279,7 +284,7 @@ export default function EmployeeLayout({ auth, onLogout }) {
           </button>
 
           <div className="employee-modern-title-block">
-            <p>{headerEyebrow || `Xin chào, ${displayName} 👋`}</p>
+            <p>{headerEyebrow || <><UserRound size={18} /> Xin chào, {displayName}</>}</p>
             <h1>{headerTitle}</h1>
             <span className={isOverviewPage || workspaceHeader ? "employee-modern-header-subtitle" : ""}>
               {!isOverviewPage && !workspaceHeader ? <MapPin size={17} /> : null}
@@ -294,7 +299,7 @@ export default function EmployeeLayout({ auth, onLogout }) {
                 <span className="employee-modern-lot-icon">P</span>
                 <div>
                   <strong>{lotShortName}</strong>
-                  <small>{currentShift}</small>
+                  <small>{employeeEmail}</small>
                 </div>
               </div>
             ) : null}
