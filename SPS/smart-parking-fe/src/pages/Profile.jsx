@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import API, { getAuth, saveAuth } from "../services/api";
 import { buildDynamicVietQrUrl } from "../features/gate/gateFormatters";
 import { isStrongPassword, PASSWORD_POLICY_TEXT } from "../services/passwordPolicy";
-import { User, Mail, Phone, MapPin, BarChart3, Lock, Plus, CreditCard, Shield, IdCard, Car, CarFront, Palette, Eye, EyeOff, Wrench, CircleParking, Sparkles } from "lucide-react";
+import { User, Mail, Phone, MapPin, BarChart3, Lock, Plus, CreditCard, Shield, IdCard, Car, CarFront, Palette, Eye, EyeOff, Wrench, CircleParking, Sparkles, Users } from "lucide-react";
 import "./Profile.css";
 
 const normalizeError = (err, fallback) => {
