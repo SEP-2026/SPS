@@ -5851,20 +5851,24 @@
 }
 
 .owner-sidebar {
-  height: auto !important;
-  min-height: 100vh;
-  align-self: stretch;
-  overflow: visible;
+  height: 100dvh !important;
+  min-height: 100dvh;
+  max-height: 100dvh;
+  align-self: flex-start;
+  overflow: hidden;
 }
 
 .owner-sidebar-scroll {
-  flex: 0 0 auto;
-  overflow: visible;
-  padding-bottom: 12px;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding-bottom: 8px;
 }
 
 .owner-profile-card {
-  margin-top: 12px;
+  flex: 0 0 auto;
+  margin-top: auto;
+  padding-top: 10px;
 }
 
 @media (max-width: 1120px) {
